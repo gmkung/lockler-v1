@@ -39,6 +39,7 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress, 
   const [isDeploying, setIsDeploying] = useState<boolean>(false);
   const [deployedModuleAddress, setDeployedModuleAddress] = useState<string | null>(null);
   const [xdaiBalance, setXdaiBalance] = useState<string>("0");
+  const [formIsValid, setFormIsValid] = useState<boolean>(false);
   
   const { toast } = useToast();
   
@@ -46,8 +47,12 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress, 
   useEffect(() => {
     const setDefaultExecutor = async () => {
       if (signer) {
-        const address = await signer.getAddress();
-        setExecutor(address);
+        try {
+          const address = await signer.getAddress();
+          setExecutor(address);
+        } catch (error) {
+          console.error("Error setting default executor:", error);
+        }
       }
     };
     
@@ -78,51 +83,67 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress, 
     };
   }, [signer]);
 
+  // Validate form whenever inputs change
+  useEffect(() => {
+    const isValid = validateInputs(false);
+    setFormIsValid(isValid);
+  }, [safeAddress, executor, bond, templateQuestion, xdaiBalance]);
+
   // Validate inputs before deployment
-  const validateInputs = () => {
+  const validateInputs = (showToast = true) => {
     if (!safeAddress) {
-      toast({
-        variant: "destructive",
-        title: "No Safe Address",
-        description: "Please deploy a Safe first or provide a Safe address.",
-      });
+      if (showToast) {
+        toast({
+          variant: "destructive",
+          title: "No Safe Address",
+          description: "Please deploy a Safe first or provide a Safe address.",
+        });
+      }
       return false;
     }
     
     if (!ethers.utils.isAddress(executor)) {
-      toast({
-        variant: "destructive",
-        title: "Invalid Executor Address",
-        description: "Please enter a valid Ethereum address for the executor.",
-      });
+      if (showToast) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Executor Address",
+          description: "Please enter a valid Ethereum address for the executor.",
+        });
+      }
       return false;
     }
     
     const bondValue = parseFloat(bond);
     if (isNaN(bondValue) || bondValue <= 0) {
-      toast({
-        variant: "destructive",
-        title: "Invalid Bond Amount",
-        description: "Please enter a valid bond amount greater than 0.",
-      });
+      if (showToast) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Bond Amount",
+          description: "Please enter a valid bond amount greater than 0.",
+        });
+      }
       return false;
     }
     
     if (parseFloat(xdaiBalance) < bondValue) {
-      toast({
-        variant: "destructive",
-        title: "Insufficient Balance",
-        description: `You need at least ${bond} xDAI for the bond. Current balance: ${xdaiBalance} xDAI.`,
-      });
+      if (showToast) {
+        toast({
+          variant: "destructive",
+          title: "Insufficient Balance",
+          description: `You need at least ${bond} xDAI for the bond. Current balance: ${xdaiBalance} xDAI.`,
+        });
+      }
       return false;
     }
     
     if (!templateQuestion || templateQuestion.trim() === "") {
-      toast({
-        variant: "destructive",
-        title: "Invalid Template Question",
-        description: "Please enter a valid template question.",
-      });
+      if (showToast) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Template Question",
+          description: "Please enter a valid template question.",
+        });
+      }
       return false;
     }
     
@@ -130,7 +151,7 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress, 
   };
 
   const deployRealityModule = async () => {
-    if (!validateInputs()) return;
+    if (!validateInputs(true)) return;
     
     setIsDeploying(true);
     
@@ -255,7 +276,7 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress, 
             placeholder="0x..."
           />
           <p className="text-xs text-gray-500 mt-1">
-            Address that can execute proposals
+            Address that can execute proposals (usually your wallet address)
           </p>
         </div>
       </div>
@@ -358,7 +379,7 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress, 
       <Button 
         className="w-full" 
         onClick={deployRealityModule} 
-        disabled={isDeploying || !safeAddress}
+        disabled={isDeploying || !formIsValid}
       >
         {isDeploying ? "Deploying..." : "Deploy Reality Module"}
       </Button>
