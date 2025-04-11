@@ -10,7 +10,7 @@ export const SAFE_SINGLETON_ADDRESS = "0x41675C099F32341bf84BFc5382aF534df5C7461
 export const FALLBACK_HANDLER_ADDRESS = "0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99";
 
 // Reality Module constants
-export const DEFAULT_BOND = "0.001"; // Further reduced bond amount to 0.001 xDAI for testing
+export const DEFAULT_BOND = "0.0001"; // Further reduced bond amount to 0.0001 xDAI for testing
 
 // Reality Module contract addresses - using checksummed addresses
 export const REALITY_MODULE_CONTRACTS = {
@@ -32,7 +32,7 @@ export const REALITY_MODULE_CONTRACTS = {
 
 // Reality Module default parameters - reduced for easier testing
 export const REALITY_MODULE_DEFAULTS = {
-  BOND: "0.001", // Reduced to 0.001 xDAI for easier testing
+  BOND: "0.0001", // Reduced to 0.0001 xDAI for easier testing
   TIMEOUT: "86400",      // 1 day in seconds
   COOLDOWN: "86400",     // 1 day in seconds
   EXPIRATION: "604800",  // 7 days in seconds

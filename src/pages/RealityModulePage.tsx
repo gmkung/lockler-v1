@@ -5,8 +5,13 @@ import { ethers } from "ethers";
 import MetamaskConnect from "@/components/MetamaskConnect";
 import { Button } from "@/components/ui/button";
 import RealityModuleForm from "@/components/RealityModuleForm";
-import { ChevronLeft, AlertTriangle, Info } from "lucide-react";
+import { ChevronLeft, AlertTriangle, Info, HelpCircle } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { 
+  Popover,
+  PopoverTrigger,
+  PopoverContent 
+} from "@/components/ui/popover";
 
 const RealityModulePage = () => {
   const [connectedAddress, setConnectedAddress] = useState<string | null>(null);
@@ -75,6 +80,41 @@ const RealityModulePage = () => {
               <li>Ensure the Safe address is valid and exists on Gnosis Chain</li>
               <li>You must have sufficient xDAI for gas fees</li>
               <li>If deployment fails, check console logs for detailed error information</li>
+            </ul>
+          </AlertDescription>
+        </Alert>
+        
+        <Alert className="mb-8 border-amber-200 bg-amber-50">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-800">Common Deployment Issues</AlertTitle>
+          <AlertDescription className="text-amber-700">
+            <p className="mb-2">If your deployment fails, it may be due to one of these common issues:</p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li className="font-medium">
+                Invalid Safe Address
+                <p className="font-normal mt-1">Ensure the Safe address is correct and exists on Gnosis Chain. The address must be checksummed properly.</p>
+              </li>
+              <li className="font-medium">
+                Permission Issues
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="link" className="h-auto p-0 ml-1">
+                      <HelpCircle className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <p className="text-sm">
+                      The Safe needs to have the helper contract as an enabled module before deployment.
+                      This typically happens if the Safe was not originally deployed with the correct configuration.
+                    </p>
+                  </PopoverContent>
+                </Popover>
+                <p className="font-normal mt-1">The deployment helper contract may not have permission to deploy modules to this Safe. Try using a newly deployed Safe.</p>
+              </li>
+              <li className="font-medium">
+                Transaction Reverted
+                <p className="font-normal mt-1">If the blockchain reverts the transaction, it might be because the Safe doesn't recognize the operation. Try with a lower bond amount (0.0001 xDAI).</p>
+              </li>
             </ul>
           </AlertDescription>
         </Alert>
