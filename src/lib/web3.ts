@@ -1,3 +1,4 @@
+
 import { ethers } from "ethers";
 import { 
   CHAIN_ID, 
@@ -10,7 +11,8 @@ import {
 
 // ABI for SafeProxyFactory contract's createProxyWithNonce function
 export const SAFE_PROXY_FACTORY_ABI = [
-  "function createProxyWithNonce(address singleton, bytes memory initializer, uint256 saltNonce) public returns (address proxy)"
+  "function createProxyWithNonce(address singleton, bytes memory initializer, uint256 saltNonce) public returns (address proxy)",
+  "event ProxyCreation(address indexed proxy, address singleton)"
 ];
 
 // ABI fragment for Gnosis Safe setup function
@@ -129,13 +131,39 @@ export const deploySafe = async (
   console.log("Transaction confirmed:", receipt);
   
   // Extract the deployed Safe address from events
-  // The address is emitted in the ProxyCreation event
+  // Find ProxyCreation event which has the proxy address as the first indexed parameter
   const proxyCreationEvent = receipt.events?.find(
     (event) => event.event === "ProxyCreation"
   );
   
-  const safeAddress = proxyCreationEvent?.args?.proxy;
-  return safeAddress;
+  // If we found the event, extract the proxy address from its args
+  if (proxyCreationEvent && proxyCreationEvent.args) {
+    // The proxy address is the first argument in the ProxyCreation event
+    const safeAddress = proxyCreationEvent.args.proxy;
+    console.log("Safe deployed at address:", safeAddress);
+    return safeAddress;
+  }
+  
+  // If we couldn't find the event or extract the address, look at the logs directly
+  for (const log of receipt.logs || []) {
+    // Check if this log is from our factory contract
+    if (log.address.toLowerCase() === SAFE_PROXY_FACTORY_ADDRESS.toLowerCase()) {
+      try {
+        // Try to parse the log as a ProxyCreation event
+        const parsedLog = factory.interface.parseLog(log);
+        if (parsedLog.name === "ProxyCreation") {
+          const safeAddress = parsedLog.args.proxy;
+          console.log("Safe deployed at address (from logs):", safeAddress);
+          return safeAddress;
+        }
+      } catch (error) {
+        console.error("Error parsing log:", error);
+      }
+    }
+  }
+  
+  console.error("Could not extract Safe address from transaction receipt");
+  return null;
 };
 
 // Add typings for window.ethereum
