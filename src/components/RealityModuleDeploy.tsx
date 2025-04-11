@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   REALITY_MODULE_CONTRACTS,
   DEFAULT_BOND,
@@ -30,6 +31,7 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress: 
   // Form state
   const [safeAddress, setSafeAddress] = useState<string>(propSafeAddress || "");
   const [executor, setExecutor] = useState<string>("");
+  const [permissionless, setPermissionless] = useState<boolean>(false);
   const [bond, setBond] = useState<string>(DEFAULT_BOND);
   const [timeout, setTimeout] = useState<string>(DEFAULT_TIMEOUT);
   const [cooldown, setCooldown] = useState<string>(DEFAULT_COOLDOWN);
@@ -95,7 +97,7 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress: 
   useEffect(() => {
     const isValid = validateInputs(false);
     setFormIsValid(isValid);
-  }, [safeAddress, executor, bond, templateQuestion, xdaiBalance]);
+  }, [safeAddress, executor, permissionless, bond, templateQuestion, xdaiBalance]);
 
   // Validate inputs before deployment
   const validateInputs = (showToast = true) => {
@@ -110,12 +112,12 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress: 
       return false;
     }
     
-    if (!ethers.utils.isAddress(executor)) {
+    if (!permissionless && (!ethers.utils.isAddress(executor))) {
       if (showToast) {
         toast({
           variant: "destructive",
           title: "Invalid Executor Address",
-          description: "Please enter a valid Ethereum address for the executor.",
+          description: "Please enter a valid Ethereum address for the executor or select permissionless mode.",
         });
       }
       return false;
@@ -180,13 +182,16 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress: 
         content: templateQuestion
       });
       
+      // If permissionless, use Zero address as executor
+      const executorAddress = permissionless ? ethers.constants.AddressZero : executor;
+      
       // Encode initialization parameters
       const initParams = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'address', 'uint32', 'uint32', 'uint32', 'uint256', 'uint256', 'address'],
         [
           safeAddress,
           safeAddress,
-          executor,
+          executorAddress, // Zero address if permissionless, specific executor otherwise
           parseInt(timeout),
           parseInt(cooldown),
           parseInt(expiration),
@@ -203,7 +208,8 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress: 
         saltNonce,
         oracle: REALITY_MODULE_CONTRACTS.REALITY_ORACLE,
         templateContent,
-        finalOwner: safeAddress
+        finalOwner: safeAddress,
+        permissionless: permissionless
       });
       
       // Deploy the module
@@ -224,8 +230,6 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress: 
       console.log("Transaction confirmed:", receipt);
       
       // Extract the deployed module address from events
-      // This depends on the event structure from the contracts
-      // We'll use a placeholder and improve this later if needed
       const moduleAddress = "0x" + receipt.logs[0].topics[2].slice(26);
       setDeployedModuleAddress(moduleAddress);
       
@@ -282,21 +286,43 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress: 
         </div>
       </div>
       
-      {/* Executor Address */}
+      {/* Permissionless Checkbox */}
       <div className="mb-6">
-        <Label htmlFor="executor">Executor Address</Label>
-        <div className="mt-1">
-          <Input
-            id="executor"
-            value={executor}
-            onChange={(e) => setExecutor(e.target.value)}
-            placeholder="0x..."
+        <div className="flex items-center space-x-2">
+          <Checkbox 
+            id="permissionless" 
+            checked={permissionless} 
+            onCheckedChange={(checked) => setPermissionless(checked === true)}
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Address that can execute proposals (usually your wallet address)
-          </p>
+          <Label 
+            htmlFor="permissionless" 
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Make module permissionless
+          </Label>
         </div>
+        <p className="text-xs text-gray-500 mt-1 pl-6">
+          When enabled, any address can execute approved proposals (recommended)
+        </p>
       </div>
+      
+      {/* Executor Address (only show if not permissionless) */}
+      {!permissionless && (
+        <div className="mb-6">
+          <Label htmlFor="executor">Executor Address</Label>
+          <div className="mt-1">
+            <Input
+              id="executor"
+              value={executor}
+              onChange={(e) => setExecutor(e.target.value)}
+              placeholder="0x..."
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Address that can execute proposals (restricted mode)
+            </p>
+          </div>
+        </div>
+      )}
       
       {/* Bond Amount */}
       <div className="mb-6">
