@@ -15,9 +15,14 @@ import { useToast } from "@/hooks/use-toast";
 type SafeDeployFormProps = {
   connectedAddress: string;
   signer: ethers.Signer;
+  onSafeDeployed?: (safeAddress: string | null) => void;
 };
 
-const SafeDeployForm: React.FC<SafeDeployFormProps> = ({ connectedAddress, signer }) => {
+const SafeDeployForm: React.FC<SafeDeployFormProps> = ({ 
+  connectedAddress, 
+  signer, 
+  onSafeDeployed = () => {} 
+}) => {
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD.toString());
   const [saltNonce, setSaltNonce] = useState(DEFAULT_SALT_NONCE);
   const [additionalOwners, setAdditionalOwners] = useState<string[]>([]);
@@ -75,17 +80,27 @@ const SafeDeployForm: React.FC<SafeDeployFormProps> = ({ connectedAddress, signe
       
       setDeployedSafeAddress(safeAddress);
       
+      // Call the callback with the deployed Safe address
+      if (onSafeDeployed) {
+        onSafeDeployed(safeAddress);
+      }
+      
       toast({
         title: "Safe Deployed!",
         description: `Your new Gnosis Safe has been deployed at: ${safeAddress}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Deployment error:", error);
       toast({
         variant: "destructive",
         title: "Deployment Failed",
         description: error.message || "Failed to deploy Safe",
       });
+      
+      // Call the callback with null to indicate failure
+      if (onSafeDeployed) {
+        onSafeDeployed(null);
+      }
     } finally {
       setIsDeploying(false);
     }
