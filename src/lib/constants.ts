@@ -18,10 +18,11 @@ export const REALITY_MODULE_CONTRACTS = {
   DETERMINISTIC_DEPLOYMENT_HELPER: "0x0961F418E0B6efaA073004989EF1B2fd1bc4a41c",
   
   // Module Proxy Factory - official verified address
-    MODULE_PROXY_FACTORY: "0x000000000000aDdB49795b0f9bA5BC298cDda236",
+  MODULE_PROXY_FACTORY: "0x000000000000aDdB49795b0f9bA5BC298cDda236",
   
   // Reality Module Master Copy - verified implementation
-  REALITY_MODULE_MASTER_COPY: "0x96d2d97a2483710b76b25f1de3cef81d80020e69", //0x96d2d97a2483710b76b25f1de3cef81d80020e69 is one that I deployed using copied bytecode, still need to find a realy one. 
+  REALITY_MODULE_MASTER_COPY: "0x96d2D97A2483710b76B25F1dE3cef81D80020E69", // 0x96d2D97A2483710b76B25F1dE3cef81D80020E69 is a copy made from bytecode from ETH, so we still need a proper master copy some day.
+  
   // Reality Oracle - official Reality.eth oracle on Gnosis Chain
   REALITY_ORACLE: "0xE78996A233895bE74a66F451f1019cA9734205cc",
   
