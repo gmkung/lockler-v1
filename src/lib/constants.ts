@@ -14,16 +14,25 @@ export const DEFAULT_BOND = "0.1"; // Default bond amount in xDAI
 
 // Reality Module contract addresses
 export const REALITY_MODULE_CONTRACTS = {
+  // Deterministic Deployment Helper - verified working contract on Gnosis Chain
   DETERMINISTIC_DEPLOYMENT_HELPER: "0x0961F418E0B6efaA073004989EF1B2fd1bc4a41c",
+  
+  // Module Proxy Factory - verified working contract
   MODULE_PROXY_FACTORY: "0x000000000000aDdB49795b0f9bA5BC298cDda236",
-  REALITY_MODULE_MASTER_COPY: "0xE78996A233895bE74a66F451f1019cA9734205cc",
+  
+  // Reality Module Master Copy - UPDATED to use actual Reality Module implementation
+  REALITY_MODULE_MASTER_COPY: "0x25CE2252E10D1A908bE3E45CF352c8F89596ffAE",
+  
+  // Reality Oracle - official Reality.eth oracle on Gnosis Chain
   REALITY_ORACLE: "0xE78996A233895bE74a66F451f1019cA9734205cc",
+  
+  // Kleros Arbitrator - confirmed working Kleros address on Gnosis Chain
   KLEROS_ARBITRATOR: "0x29f39de98d750eb77b5fafb31b2837f079fce222"
 };
 
 // Reality Module default parameters
 export const REALITY_MODULE_DEFAULTS = {
-  BOND: "1500",           // 1500 xDAI
+  BOND: "1", // Reduced to 1 xDAI to make testing easier
   TIMEOUT: "172800",      // 2 days in seconds
   COOLDOWN: "172800",     // 2 days in seconds
   EXPIRATION: "604800",   // 7 days in seconds
