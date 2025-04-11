@@ -20,13 +20,13 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { REALITY_MODULE_CONTRACTS, REALITY_MODULE_DEFAULTS } from "@/lib/constants";
-import { deployRealityModule } from "@/lib/realityModule";
+import { deployRealityModule, RealityModuleParams } from "@/lib/realityModule";
 
 // Form schema with validation
 const formSchema = z.object({
   safeAddress: z.string()
     .regex(/^0x[a-fA-F0-9]{40}$/, { message: "Invalid Ethereum address format" })
-    .refine(address => ethers.isAddress(address), {
+    .refine(address => ethers.utils.isAddress(address), {
       message: "Invalid Ethereum address",
     }),
   bond: z.string()
@@ -78,7 +78,18 @@ const RealityModuleForm: React.FC<RealityModuleFormProps> = ({ connectedAddress,
   const onSubmit = async (data: FormValues) => {
     try {
       setIsDeploying(true);
-      const result = await deployRealityModule(signer, data);
+      
+      // Ensure all required parameters are provided
+      const params: RealityModuleParams = {
+        safeAddress: data.safeAddress,
+        bond: data.bond,
+        timeout: data.timeout,
+        cooldown: data.cooldown,
+        expiration: data.expiration,
+        templateQuestion: data.templateQuestion
+      };
+      
+      const result = await deployRealityModule(signer, params);
       
       if (result.moduleAddress) {
         setDeployedModuleAddress(result.moduleAddress);
@@ -253,3 +264,4 @@ const RealityModuleForm: React.FC<RealityModuleFormProps> = ({ connectedAddress,
 };
 
 export default RealityModuleForm;
+
