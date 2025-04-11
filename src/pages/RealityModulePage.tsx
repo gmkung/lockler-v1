@@ -5,7 +5,7 @@ import { ethers } from "ethers";
 import MetamaskConnect from "@/components/MetamaskConnect";
 import { Button } from "@/components/ui/button";
 import RealityModuleForm from "@/components/RealityModuleForm";
-import { ChevronLeft, AlertTriangle } from "lucide-react";
+import { ChevronLeft, AlertTriangle, Info } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const RealityModulePage = () => {
@@ -65,14 +65,19 @@ const RealityModulePage = () => {
           )}
         </div>
         
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 text-sm text-blue-800">
-          <p className="font-medium">Deployment Requirements:</p>
-          <ul className="mt-2 list-disc pl-5 space-y-1">
-            <li>You must have xDAI in your wallet for gas fees</li>
-            <li>The Safe address must be a valid Gnosis Safe on Gnosis Chain</li>
-            <li>You can use a small bond amount (0.01 xDAI) for testing</li>
-          </ul>
-        </div>
+        <Alert className="mb-8">
+          <Info className="h-4 w-4" />
+          <AlertTitle>Deployment Instructions</AlertTitle>
+          <AlertDescription>
+            <p className="mb-2">Based on Solidity code analysis, please follow these guidelines:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Use a very small bond amount (0.001 xDAI) for testing</li>
+              <li>Ensure the Safe address is valid and exists on Gnosis Chain</li>
+              <li>You must have sufficient xDAI for gas fees</li>
+              <li>If deployment fails, check console logs for detailed error information</li>
+            </ul>
+          </AlertDescription>
+        </Alert>
         
         {connectedAddress && signer && (
           <div className="flex justify-center">
@@ -86,8 +91,8 @@ const RealityModulePage = () => {
         <footer className="mt-20 text-center text-sm text-gray-500">
           <p>
             Using Reality Module at {import.meta.env.DEV ? 
-              "0xE78996A233895bE74a66F451f1019cA9734205cc" : 
-              "0xE78996A233895bE74a66F451f1019cA9734205cc"} on Gnosis Chain
+              "0x25CE2252e10d1a908be3e45CF352c8f89596ffae" : 
+              "0x25CE2252e10d1a908be3e45CF352c8f89596ffae"} on Gnosis Chain
           </p>
         </footer>
       </div>

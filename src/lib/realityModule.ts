@@ -50,6 +50,10 @@ export async function deployRealityModule(
     throw new Error("No provider available");
   }
 
+  // Log the signer address we're using
+  const signerAddress = await signer.getAddress();
+  console.log(`Using signer: ${signerAddress}`);
+
   // Ensure all contract addresses have correct checksums
   const deterministicHelperAddress = toChecksumAddress(REALITY_MODULE_CONTRACTS.DETERMINISTIC_DEPLOYMENT_HELPER);
   const moduleProxyFactoryAddress = toChecksumAddress(REALITY_MODULE_CONTRACTS.MODULE_PROXY_FACTORY);
@@ -104,11 +108,13 @@ export async function deployRealityModule(
     throw new Error("Invalid parameters: timeout, cooldown, and expiration must be valid numbers");
   }
 
-  // Encode the module initialization parameters
-  console.log("Encoding initialization parameters...");
+  // CRITICAL FIX: Based on the contract code, the owner in the initParams must be set to the 
+  // DeterministicDeploymentHelper contract address, not the Safe address
+  
+  console.log("Encoding initialization parameters with HELPER as initial owner...");
   const initParams = ethers.utils.defaultAbiCoder.encode(
     [
-      'address',  // owner
+      'address',  // owner - MUST BE HELPER CONTRACT ADDRESS
       'address',  // avatar
       'address',  // executor
       'address',  // oracle
@@ -116,11 +122,11 @@ export async function deployRealityModule(
       'uint32',   // cooldown
       'uint32',   // expiration
       'uint256',  // bond
-      'uint256',  // templateId
+      'uint256',  // templateId - MUST BE 0
       'address'   // arbitrator
     ],
     [
-      safeAddress,    // owner
+      deterministicHelperAddress, // CRITICAL: owner must be helper contract initially
       safeAddress,    // avatar
       safeAddress,    // executor (same as avatar)
       realityOracleAddress, // oracle address
@@ -128,7 +134,7 @@ export async function deployRealityModule(
       cooldown,
       expiration,
       ethers.utils.parseEther(params.bond), // convert xDAI to wei
-      0,                     // templateId (will be created)
+      0,              // templateId MUST be 0 initially
       klerosArbitratorAddress
     ]
   );
@@ -156,7 +162,6 @@ export async function deployRealityModule(
 
   try {
     // Check if the signer has enough balance
-    const signerAddress = await signer.getAddress();
     const balance = await signer.provider?.getBalance(signerAddress);
     console.log(`Signer address: ${signerAddress}, Balance: ${ethers.utils.formatEther(balance || '0')} xDAI`);
 
@@ -174,7 +179,7 @@ export async function deployRealityModule(
     const adjustedGasPrice = gasPrice ? gasPrice.mul(150).div(100) : undefined; // 50% higher
     
     const options = {
-      gasLimit: 7000000, // Increased gas limit
+      gasLimit: 8000000, // Increased gas limit further
       gasPrice: adjustedGasPrice
     };
 
@@ -195,16 +200,28 @@ export async function deployRealityModule(
         saltNonce,
         realityOracleAddress,
         templateContent,
-        safeAddress
+        safeAddress  // Final module owner will be the Safe
       ]);
       
       console.log("Call data length:", callData.length);
       console.log("Call data (first 100 chars):", callData.substring(0, 100) + "...");
       
+      // Detailed debug info about parameters
+      console.log("Parameter values:", {
+        moduleProxyFactory: moduleProxyFactoryAddress,
+        masterCopy: realityModuleMasterCopyAddress,
+        initParamsLength: initParams.length,
+        saltNonce: saltNonce,
+        realityOracle: realityOracleAddress,
+        templateContent: templateContent,
+        finalOwner: safeAddress
+      });
+      
       // Estimate gas using raw call instead of estimateGas for better error details
       const callResult = await provider.call({
         to: deterministicHelperAddress,
-        data: callData
+        data: callData,
+        from: signerAddress // Add from address to simulate the call exactly
       });
       
       console.log("Dry-run successful, result:", callResult);
@@ -248,12 +265,31 @@ export async function deployRealityModule(
       throw new Error("Transaction failed. Check contract addresses and parameters.");
     }
 
-    // If we're here, the transaction succeeded. Look for events to extract the module address
-    // In a real scenario, we'd parse the ProxyCreation event
-    // For now, use a placeholder as a successful result
+    console.log("Transaction succeeded! Looking for module address in logs...");
+    
+    // Try to extract the module address from logs 
+    let moduleAddress = null;
+    
+    // Look specifically for the ModuleProxyCreation event
+    for (const log of receipt.logs) {
+      console.log(`Log address: ${log.address}, Topics length: ${log.topics.length}`);
+      
+      // The ModuleProxyCreation event has 2 indexed parameters (proxy and masterCopy)
+      if (log.topics.length === 3) {
+        const proxyAddress = "0x" + log.topics[1].substring(26);
+        console.log(`Potential module address found: ${proxyAddress}`);
+        moduleAddress = proxyAddress;
+        break;
+      }
+    }
+    
+    if (!moduleAddress) {
+      console.log("Could not find module address in logs, but transaction was successful");
+      moduleAddress = "Success (module address not extracted from logs)";
+    }
+    
     return {
-      moduleAddress: receipt.logs && receipt.logs.length > 0 ? 
-        "0x" + receipt.logs[0].topics[1].substring(26) : "Success (module address not parsed)",
+      moduleAddress,
       txHash: tx.hash
     };
   } catch (error: any) {
@@ -266,7 +302,7 @@ export async function deployRealityModule(
         templateContentLength: templateContent.length
       });
       
-      throw new Error("Gas estimation failed. This could be due to invalid parameters or contract requirements not being met. Try with a lower bond amount (0.01 xDAI) or check if the Safe address is correct.");
+      throw new Error("Gas estimation failed. Try with an even lower bond amount (0.001 xDAI) or check if the Safe address is correct.");
     }
     
     // Check if the error is due to insufficient funds
@@ -281,11 +317,11 @@ export async function deployRealityModule(
     
     // Check if transaction was reverted
     if (error.receipt?.status === 0) {
-      throw new Error("Transaction was submitted but reverted by the blockchain. Verify that the Safe address is correct and you have permission to deploy modules to it.");
+      throw new Error("Transaction was submitted but reverted by the blockchain. The helper contract might not have permission to deploy modules to this Safe, or the Safe address may be incorrect.");
     }
     
     // Re-throw the error with more context
-    throw new Error(`Deployment failed: ${error.message || "Unknown error"}. Try using a lower bond amount (0.01 xDAI) or check if your Safe address is correct.`);
+    throw new Error(`Deployment failed: ${error.message || "Unknown error"}. Try using a much lower bond amount (0.001 xDAI).`);
   }
 }
 
