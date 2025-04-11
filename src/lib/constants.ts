@@ -20,8 +20,8 @@ export const REALITY_MODULE_CONTRACTS = {
   // Module Proxy Factory - verified working contract
   MODULE_PROXY_FACTORY: "0x000000000000aDdB49795b0f9bA5BC298cDda236",
   
-  // Reality Module Master Copy - UPDATED to use actual Reality Module implementation
-  REALITY_MODULE_MASTER_COPY: "0x25CE2252E10D1A908bE3E45CF352c8F89596ffAE",
+  // Reality Module Master Copy - FIXED checksum to ensure address validation passes
+  REALITY_MODULE_MASTER_COPY: "0x25cE2252E10D1A908bE3E45CF352c8F89596ffAE",
   
   // Reality Oracle - official Reality.eth oracle on Gnosis Chain
   REALITY_ORACLE: "0xE78996A233895bE74a66F451f1019cA9734205cc",

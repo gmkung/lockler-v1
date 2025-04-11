@@ -2,6 +2,16 @@
 import { ethers } from "ethers";
 import { REALITY_MODULE_CONTRACTS } from "./constants";
 
+// Helper function to ensure addresses have correct checksum
+function toChecksumAddress(address: string): string {
+  try {
+    return ethers.utils.getAddress(address);
+  } catch (error) {
+    console.error(`Invalid address format: ${address}`);
+    throw new Error(`Invalid address format: ${address}`);
+  }
+}
+
 // Type definition for Reality Module deployment parameters
 export interface RealityModuleParams {
   safeAddress: string;
@@ -22,9 +32,27 @@ export async function deployRealityModule(
     throw new Error("Invalid Safe address format");
   }
 
+  // Ensure all contract addresses have correct checksums
+  const deterministicHelperAddress = toChecksumAddress(REALITY_MODULE_CONTRACTS.DETERMINISTIC_DEPLOYMENT_HELPER);
+  const moduleProxyFactoryAddress = toChecksumAddress(REALITY_MODULE_CONTRACTS.MODULE_PROXY_FACTORY);
+  const realityModuleMasterCopyAddress = toChecksumAddress(REALITY_MODULE_CONTRACTS.REALITY_MODULE_MASTER_COPY);
+  const realityOracleAddress = toChecksumAddress(REALITY_MODULE_CONTRACTS.REALITY_ORACLE);
+  const klerosArbitratorAddress = toChecksumAddress(REALITY_MODULE_CONTRACTS.KLEROS_ARBITRATOR);
+  const safeAddress = toChecksumAddress(params.safeAddress);
+
+  // Log checksummed addresses for verification
+  console.log("Using checksummed addresses:", {
+    deterministicHelper: deterministicHelperAddress,
+    moduleProxyFactory: moduleProxyFactoryAddress,
+    realityModuleMaster: realityModuleMasterCopyAddress,
+    realityOracle: realityOracleAddress,
+    arbitrator: klerosArbitratorAddress,
+    safe: safeAddress
+  });
+
   // Connect to Deterministic Deployment Helper contract
   const deterministicHelper = new ethers.Contract(
-    REALITY_MODULE_CONTRACTS.DETERMINISTIC_DEPLOYMENT_HELPER,
+    deterministicHelperAddress,
     [
       'function deployWithEncodedParams(address factory, address masterCopy, bytes initParams, uint256 saltNonce, address realityOracle, string templateContent, address finalModuleOwner) returns (address)'
     ],
@@ -47,16 +75,16 @@ export async function deployRealityModule(
       'address'   // arbitrator
     ],
     [
-      params.safeAddress,    // owner
-      params.safeAddress,    // avatar
-      params.safeAddress,    // executor (same as avatar)
-      REALITY_MODULE_CONTRACTS.REALITY_ORACLE, // oracle address
+      safeAddress,    // owner
+      safeAddress,    // avatar
+      safeAddress,    // executor (same as avatar)
+      realityOracleAddress, // oracle address
       params.timeout,
       params.cooldown,
       params.expiration,
       ethers.utils.parseEther(params.bond), // convert xDAI to wei
       0,                     // templateId (will be created)
-      REALITY_MODULE_CONTRACTS.KLEROS_ARBITRATOR
+      klerosArbitratorAddress
     ]
   );
 
@@ -69,23 +97,12 @@ export async function deployRealityModule(
   });
 
   console.log("Deploying Reality Module with parameters:", {
-    safeAddress: params.safeAddress,
+    safeAddress: safeAddress,
     timeout: params.timeout,
     cooldown: params.cooldown,
     expiration: params.expiration,
     bond: params.bond,
-    templateQuestion: params.templateQuestion,
-    realityOracle: REALITY_MODULE_CONTRACTS.REALITY_ORACLE,
-    arbitrator: REALITY_MODULE_CONTRACTS.KLEROS_ARBITRATOR
-  });
-
-  // Log contract addresses being used
-  console.log("Contract addresses:", {
-    deterministicHelper: REALITY_MODULE_CONTRACTS.DETERMINISTIC_DEPLOYMENT_HELPER,
-    moduleProxyFactory: REALITY_MODULE_CONTRACTS.MODULE_PROXY_FACTORY,
-    realityModuleMaster: REALITY_MODULE_CONTRACTS.REALITY_MODULE_MASTER_COPY,
-    realityOracle: REALITY_MODULE_CONTRACTS.REALITY_ORACLE,
-    arbitrator: REALITY_MODULE_CONTRACTS.KLEROS_ARBITRATOR
+    templateQuestion: params.templateQuestion
   });
 
   // Generate a unique salt nonce
@@ -115,13 +132,13 @@ export async function deployRealityModule(
     // Try to estimate gas first to check if the transaction is likely to succeed
     try {
       const estimatedGas = await deterministicHelper.estimateGas.deployWithEncodedParams(
-        REALITY_MODULE_CONTRACTS.MODULE_PROXY_FACTORY,
-        REALITY_MODULE_CONTRACTS.REALITY_MODULE_MASTER_COPY,
+        moduleProxyFactoryAddress,
+        realityModuleMasterCopyAddress,
         initParams,
         saltNonce,
-        REALITY_MODULE_CONTRACTS.REALITY_ORACLE,
+        realityOracleAddress,
         templateContent,
-        params.safeAddress  // final owner (the Safe)
+        safeAddress  // final owner (the Safe)
       );
       
       console.log("Estimated gas:", estimatedGas.toString());
@@ -130,10 +147,10 @@ export async function deployRealityModule(
       console.log("Full error object:", JSON.stringify(estimateError, null, 2));
       
       // Check if the contract exists and has the expected code
-      const realityOracleCode = await signer.provider?.getCode(REALITY_MODULE_CONTRACTS.REALITY_ORACLE);
+      const realityOracleCode = await signer.provider?.getCode(realityOracleAddress);
       console.log(`Reality Oracle code length: ${realityOracleCode?.length}`);
       
-      const moduleProxyFactoryCode = await signer.provider?.getCode(REALITY_MODULE_CONTRACTS.MODULE_PROXY_FACTORY);
+      const moduleProxyFactoryCode = await signer.provider?.getCode(moduleProxyFactoryAddress);
       console.log(`Module Proxy Factory code length: ${moduleProxyFactoryCode?.length}`);
       
       // Continue with deployment despite estimation failure, using our manual gas limit
@@ -142,13 +159,13 @@ export async function deployRealityModule(
 
     // Deploy the module
     const tx = await deterministicHelper.deployWithEncodedParams(
-      REALITY_MODULE_CONTRACTS.MODULE_PROXY_FACTORY,
-      REALITY_MODULE_CONTRACTS.REALITY_MODULE_MASTER_COPY,
+      moduleProxyFactoryAddress,
+      realityModuleMasterCopyAddress,
       initParams,
       saltNonce,
-      REALITY_MODULE_CONTRACTS.REALITY_ORACLE,
+      realityOracleAddress,
       templateContent,
-      params.safeAddress,  // final owner (the Safe)
+      safeAddress,  // final owner (the Safe)
       options
     );
 
@@ -188,6 +205,11 @@ export async function deployRealityModule(
     // Check if the error is due to insufficient funds
     if (error.code === 'INSUFFICIENT_FUNDS') {
       throw new Error("Not enough xDAI in wallet to pay for gas and bond. Please add more xDAI to your wallet.");
+    }
+    
+    // Check if error is related to address checksum
+    if (error.message && error.message.includes("bad address checksum")) {
+      throw new Error("Address checksum validation failed. Please verify all contract addresses are correct. Error: " + error.message);
     }
     
     // Re-throw the error with more context
