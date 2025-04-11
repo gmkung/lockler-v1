@@ -62,33 +62,47 @@ export async function deployRealityModule(
   // Generate a unique salt nonce
   const saltNonce = Date.now().toString();
 
-  // Deploy the module
-  const tx = await deterministicHelper.deployWithEncodedParams(
-    REALITY_MODULE_CONTRACTS.MODULE_PROXY_FACTORY,
-    REALITY_MODULE_CONTRACTS.REALITY_MODULE_MASTER_COPY,
-    initParams,
-    saltNonce,
-    REALITY_MODULE_CONTRACTS.REALITY_ORACLE,
-    templateContent,
-    params.safeAddress  // final owner (the Safe)
-  );
+  try {
+    // Set up transaction options with manual gas limit
+    const options = {
+      gasLimit: 5000000, // Manually setting a high gas limit
+    };
 
-  console.log("Transaction sent:", tx.hash);
-  
-  // Wait for the transaction to be mined
-  const receipt = await tx.wait();
-  console.log("Transaction confirmed:", receipt);
+    // Deploy the module
+    const tx = await deterministicHelper.deployWithEncodedParams(
+      REALITY_MODULE_CONTRACTS.MODULE_PROXY_FACTORY,
+      REALITY_MODULE_CONTRACTS.REALITY_MODULE_MASTER_COPY,
+      initParams,
+      saltNonce,
+      REALITY_MODULE_CONTRACTS.REALITY_ORACLE,
+      templateContent,
+      params.safeAddress,  // final owner (the Safe)
+      options
+    );
 
-  // Try to extract the module address from the events or logs
-  // Note: This part depends on the actual events emitted by the contract
-  // You might need to adjust this based on the actual implementation
-  
-  // For now, we'll return a placeholder - in a real implementation, you would parse the log
-  // to extract the deployed module address
-  return {
-    moduleAddress: "0x...", // In a real implementation, extract from logs
-    txHash: tx.hash
-  };
+    console.log("Transaction sent:", tx.hash);
+    
+    // Wait for the transaction to be mined
+    const receipt = await tx.wait();
+    console.log("Transaction confirmed:", receipt);
+
+    // Extract the module address from the events
+    // For now, we'll return a placeholder and the transaction hash
+    return {
+      moduleAddress: "0x...", // In a real implementation, this would be parsed from the transaction logs
+      txHash: tx.hash
+    };
+  } catch (error: any) {
+    console.error("Error deploying Reality Module:", error);
+    
+    // Check for specific error codes
+    if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
+      throw new Error("Failed to estimate gas. This could be due to invalid parameters or an issue with the contract. Please verify the Safe address is valid and you have enough xDAI for gas and bond.");
+    }
+    
+    // Re-throw the error with more context
+    throw new Error(`Deployment failed: ${error.message || "Unknown error"}`);
+  }
 }
 
 // Helper function to format time durations
