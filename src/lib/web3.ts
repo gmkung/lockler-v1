@@ -1,6 +1,12 @@
-
 import { ethers } from "ethers";
-import { CHAIN_ID, CHAIN_NAME, RPC_URL } from "./constants";
+import { 
+  CHAIN_ID, 
+  CHAIN_NAME, 
+  RPC_URL, 
+  SAFE_PROXY_FACTORY_ADDRESS, 
+  SAFE_SINGLETON_ADDRESS,
+  FALLBACK_HANDLER_ADDRESS 
+} from "./constants";
 
 // ABI for SafeProxyFactory contract's createProxyWithNonce function
 export const SAFE_PROXY_FACTORY_ABI = [
