@@ -46,7 +46,7 @@ const Index = () => {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="safe">Safe Deployment</TabsTrigger>
-                <TabsTrigger value="reality" disabled={!connectedAddress}>
+                <TabsTrigger value="reality">
                   Reality Module
                 </TabsTrigger>
               </TabsList>

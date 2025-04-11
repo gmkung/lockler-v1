@@ -26,8 +26,9 @@ type RealityModuleDeployProps = {
   signer: ethers.Signer;
 };
 
-const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress, signer }) => {
+const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress: propSafeAddress, signer }) => {
   // Form state
+  const [safeAddress, setSafeAddress] = useState<string>(propSafeAddress || "");
   const [executor, setExecutor] = useState<string>("");
   const [bond, setBond] = useState<string>(DEFAULT_BOND);
   const [timeout, setTimeout] = useState<string>(DEFAULT_TIMEOUT);
@@ -42,6 +43,13 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress, 
   const [formIsValid, setFormIsValid] = useState<boolean>(false);
   
   const { toast } = useToast();
+  
+  // Update local state when prop changes
+  useEffect(() => {
+    if (propSafeAddress) {
+      setSafeAddress(propSafeAddress);
+    }
+  }, [propSafeAddress]);
   
   // Set executor to connected wallet address by default
   useEffect(() => {
@@ -91,12 +99,12 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress, 
 
   // Validate inputs before deployment
   const validateInputs = (showToast = true) => {
-    if (!safeAddress) {
+    if (!safeAddress || !ethers.utils.isAddress(safeAddress)) {
       if (showToast) {
         toast({
           variant: "destructive",
-          title: "No Safe Address",
-          description: "Please deploy a Safe first or provide a Safe address.",
+          title: "Invalid Safe Address",
+          description: "Please enter a valid Safe address.",
         });
       }
       return false;
@@ -241,19 +249,28 @@ const RealityModuleDeploy: React.FC<RealityModuleDeployProps> = ({ safeAddress, 
     <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6">Deploy Reality Module</h2>
       
-      {/* Safe Address Display */}
+      {/* Safe Address Input/Display */}
       <div className="mb-6">
         <Label htmlFor="safeAddress">Safe Address</Label>
         <div className="mt-1">
-          {safeAddress ? (
+          {propSafeAddress ? (
             <div className="p-3 bg-gray-50 rounded flex items-center justify-between">
               <span className="text-sm font-mono">{safeAddress}</span>
             </div>
           ) : (
-            <div className="p-3 bg-red-50 text-red-600 rounded">
-              Please deploy a Safe first or enter a Safe address
-            </div>
+            <Input
+              id="safeAddress"
+              value={safeAddress}
+              onChange={(e) => setSafeAddress(e.target.value)}
+              placeholder="0x... (Enter existing Safe address)"
+              className="font-mono"
+            />
           )}
+          <p className="text-xs text-gray-500 mt-1">
+            {propSafeAddress 
+              ? "Safe address from previous deployment" 
+              : "Enter an existing Safe address on Gnosis Chain"}
+          </p>
         </div>
       </div>
       
