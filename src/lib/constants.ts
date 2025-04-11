@@ -21,7 +21,7 @@ export const REALITY_MODULE_CONTRACTS = {
   MODULE_PROXY_FACTORY: "0x000000000000aDdB49795b0f9bA5BC298cDda236",
   
   // Reality Module Master Copy - verified implementation
-  REALITY_MODULE_MASTER_COPY: "0x96d2D97A2483710b76B25F1dE3cef81D80020E69", // 0x96d2D97A2483710b76B25F1dE3cef81D80020E69 is a copy made from bytecode from ETH, so we still need a proper master copy some day.
+  REALITY_MODULE_MASTER_COPY: "0xAba53Da6b68DA1D4FB00419691dCe6518E7fBd58", // 0xAba53Da6b68DA1D4FB00419691dCe6518E7fBd58 is a copy made from bytecode from ETH, so we still need a proper master copy some day.
   
   // Reality Oracle - official Reality.eth oracle on Gnosis Chain
   REALITY_ORACLE: "0xE78996A233895bE74a66F451f1019cA9734205cc",
