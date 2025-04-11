@@ -26,13 +26,26 @@ export async function deployRealityModule(
     signer
   );
 
-  // Encode the module initialization parameters
+  // Encode the module initialization parameters with the updated structure
+  // Including the Reality Oracle address as part of the initialization parameters
   const initParams = ethers.utils.defaultAbiCoder.encode(
-    ['address', 'address', 'address', 'uint32', 'uint32', 'uint32', 'uint256', 'uint256', 'address'],
+    [
+      'address',  // owner
+      'address',  // avatar
+      'address',  // executor
+      'address',  // oracle
+      'uint32',   // timeout
+      'uint32',   // cooldown
+      'uint32',   // expiration
+      'uint256',  // bond
+      'uint256',  // templateId
+      'address'   // arbitrator
+    ],
     [
       params.safeAddress,    // owner
       params.safeAddress,    // avatar
       params.safeAddress,    // executor (same as avatar)
+      REALITY_MODULE_CONTRACTS.REALITY_ORACLE, // oracle address
       params.timeout,
       params.cooldown,
       params.expiration,
@@ -56,7 +69,8 @@ export async function deployRealityModule(
     cooldown: params.cooldown,
     expiration: params.expiration,
     bond: params.bond,
-    templateQuestion: params.templateQuestion
+    templateQuestion: params.templateQuestion,
+    realityOracle: REALITY_MODULE_CONTRACTS.REALITY_ORACLE
   });
 
   // Generate a unique salt nonce
