@@ -10,32 +10,32 @@ export const SAFE_SINGLETON_ADDRESS = "0x41675C099F32341bf84BFc5382aF534df5C7461
 export const FALLBACK_HANDLER_ADDRESS = "0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99";
 
 // Reality Module constants
-export const DEFAULT_BOND = "0.1"; // Default bond amount in xDAI
+export const DEFAULT_BOND = "0.01"; // Reduced bond amount to 0.01 xDAI for testing
 
 // Reality Module contract addresses
 export const REALITY_MODULE_CONTRACTS = {
-  // Deterministic Deployment Helper - verified working contract on Gnosis Chain
+  // Deterministic Deployment Helper - latest trusted address on Gnosis Chain
   DETERMINISTIC_DEPLOYMENT_HELPER: "0x0961F418E0B6efaA073004989EF1B2fd1bc4a41c",
   
-  // Module Proxy Factory - verified working contract
+  // Module Proxy Factory - official verified address
   MODULE_PROXY_FACTORY: "0x000000000000aDdB49795b0f9bA5BC298cDda236",
   
-  // Reality Module Master Copy - FIXED checksum to ensure address validation passes
+  // Reality Module Master Copy
   REALITY_MODULE_MASTER_COPY: "0x25CE2252e10d1a908be3e45CF352c8f89596ffae",
   
   // Reality Oracle - official Reality.eth oracle on Gnosis Chain
   REALITY_ORACLE: "0xE78996A233895bE74a66F451f1019cA9734205cc",
   
-  // Kleros Arbitrator - confirmed working Kleros address on Gnosis Chain
+  // Kleros Arbitrator - verified Kleros address on Gnosis Chain
   KLEROS_ARBITRATOR: "0x29F39dE98D750eb77b5FAfb31B2837f079FcE222"
 };
 
-// Reality Module default parameters
+// Reality Module default parameters - reduced for easier testing
 export const REALITY_MODULE_DEFAULTS = {
-  BOND: "1", // Reduced to 1 xDAI to make testing easier
-  TIMEOUT: "172800",      // 2 days in seconds
-  COOLDOWN: "172800",     // 2 days in seconds
-  EXPIRATION: "604800",   // 7 days in seconds
+  BOND: "0.01", // Reduced to 0.01 xDAI for easier testing
+  TIMEOUT: "86400",      // 1 day in seconds
+  COOLDOWN: "86400",     // 1 day in seconds
+  EXPIRATION: "604800",  // 7 days in seconds
   TEMPLATE_QUESTION: "Should the proposal referenced by the ID in the transaction data be executed?"
 };
 

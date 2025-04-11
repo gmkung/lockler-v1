@@ -5,15 +5,30 @@ import { ethers } from "ethers";
 import MetamaskConnect from "@/components/MetamaskConnect";
 import { Button } from "@/components/ui/button";
 import RealityModuleForm from "@/components/RealityModuleForm";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, AlertTriangle } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const RealityModulePage = () => {
   const [connectedAddress, setConnectedAddress] = useState<string | null>(null);
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
+  const [networkError, setNetworkError] = useState<string | null>(null);
 
-  const handleConnect = (address: string, walletSigner: ethers.Signer) => {
-    setConnectedAddress(address);
-    setSigner(walletSigner);
+  const handleConnect = async (address: string, walletSigner: ethers.Signer) => {
+    try {
+      // Verify we're on Gnosis Chain
+      const network = await walletSigner.provider?.getNetwork();
+      if (network?.chainId !== 100) {
+        setNetworkError("Please connect to Gnosis Chain (Chain ID: 100)");
+        return;
+      }
+      
+      setNetworkError(null);
+      setConnectedAddress(address);
+      setSigner(walletSigner);
+    } catch (error: any) {
+      console.error("Connection error:", error);
+      setNetworkError(`Connection error: ${error.message || "Unknown error"}`);
+    }
   };
 
   return (
@@ -31,9 +46,32 @@ const RealityModulePage = () => {
           </p>
         </header>
         
+        {networkError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Network Error</AlertTitle>
+            <AlertDescription>{networkError}</AlertDescription>
+          </Alert>
+        )}
+        
         <div className="bg-white shadow rounded-lg p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">Connect Wallet</h2>
           <MetamaskConnect onConnect={handleConnect} />
+          
+          {connectedAddress && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800">
+              Connected: {connectedAddress.substring(0, 6)}...{connectedAddress.substring(connectedAddress.length - 4)}
+            </div>
+          )}
+        </div>
+        
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 text-sm text-blue-800">
+          <p className="font-medium">Deployment Requirements:</p>
+          <ul className="mt-2 list-disc pl-5 space-y-1">
+            <li>You must have xDAI in your wallet for gas fees</li>
+            <li>The Safe address must be a valid Gnosis Safe on Gnosis Chain</li>
+            <li>You can use a small bond amount (0.01 xDAI) for testing</li>
+          </ul>
         </div>
         
         {connectedAddress && signer && (
