@@ -1,10 +1,8 @@
 
 import React, { useState } from "react";
 import { ethers } from "ethers";
-import { Link } from "react-router-dom";
 import MetamaskConnect from "@/components/MetamaskConnect";
 import SafeDeployForm from "@/components/SafeDeployForm";
-import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const [connectedAddress, setConnectedAddress] = useState<string | null>(null);
@@ -23,11 +21,6 @@ const Index = () => {
           <p className="mt-2 text-gray-600">
             Connect your Metamask wallet to deploy a new Gnosis Safe on Gnosis Chain (Chain ID: 100)
           </p>
-          <div className="mt-4">
-            <Link to="/reality-module">
-              <Button variant="outline">Deploy Reality Module</Button>
-            </Link>
-          </div>
         </header>
         
         <div className="bg-white shadow rounded-lg p-6 mb-8">
