@@ -3,6 +3,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card, CardHeader, CardContent } from "../components/ui/card";
 import { calculateProxyAddress } from '@gnosis.pm/zodiac';
+import { ethers } from 'ethers';
 
 // Extend Window interface to include ethers
 declare global {
@@ -12,310 +13,186 @@ declare global {
     }
 }
 
-// Constants
-const MODULE_PROXY_FACTORY = '0x000000000000aDdB49795b0f9bA5BC298cDda236';
-const REALITY_MASTER_COPY = '0x4e35DA39Fa5893a70A40Ce964F993d891E607cC0';
-const DDH_ADDRESS = '0x0961F418E0B6efaA073004989EF1B2fd1bc4a41c';
-const SAFE_MULTISEND = '0x40A2aCCbd92BCA938b02010E17A5b8929b49130D';
+import {
+    MODULE_PROXY_FACTORY,
+    REALITY_MASTER_COPY,
+    DDH_ADDRESS,
+    SAFE_MULTISEND,
+    DEFAULT_ORACLE,
+    DEFAULT_ARBITRATOR,
+    DEFAULT_TEMPLATE_CONTENT,
+    DEFAULT_TIMEOUTS,
+    DEFAULT_BOND
+} from '../constants/addresses';
 
-// ABIs
-const MODULE_PROXY_FACTORY_ABI = [
-    {
-        inputs: [
-            {
-                internalType: 'address',
-                name: 'masterCopy',
-                type: 'address',
-            },
-            {
-                internalType: 'bytes',
-                name: 'initializer',
-                type: 'bytes',
-            },
-            {
-                internalType: 'uint256',
-                name: 'saltNonce',
-                type: 'uint256',
-            },
+import {
+    MODULE_PROXY_FACTORY_ABI,
+    DDH_ABI,
+    SAFE_ABI,
+    MULTISEND_ABI
+} from '../abis/contracts';
+
+import type {
+    SetupParams,
+    SafeTransaction,
+    MultiSendTx,
+    ModuleDeploymentResult,
+    SafeTransactionPreparation
+} from '../types/contracts';
+
+// Utility functions
+const encodeSetupParams = (params: SetupParams): string => {
+    return ethers.AbiCoder.defaultAbiCoder().encode(
+        [
+            'address', 'address', 'address', 'address',
+            'uint32', 'uint32', 'uint32',
+            'uint256', 'uint256', 'address',
         ],
-        name: 'deployModule',
-        outputs: [
-            {
-                internalType: 'address',
-                name: 'proxy',
-                type: 'address',
-            },
-        ],
-        stateMutability: 'nonpayable',
-        type: 'function',
-    },
-];
+        [
+            params.owner, params.avatar, params.target, params.oracle,
+            params.timeout, params.cooldown, params.expiration,
+            params.bond, params.templateId, params.arbitrator
+        ]
+    );
+};
 
-const MULTISEND_ABI = [
-    {
-        inputs: [{ internalType: 'bytes', name: 'transactions', type: 'bytes' }],
-        name: 'multiSend',
-        outputs: [],
-        stateMutability: 'payable',
-        type: 'function',
-    },
-];
+const createSetUpCalldata = (initializerParams: string): string => { // essential implementation, preserve it at all costs
+    return ethers.concat([
+        '0xa4f9edbf', // setUp function selector, do not touch
+        ethers.zeroPadValue('0x0000000000000000000000000000000000000000000000000000000000000020', 32),//do not touch
+        ethers.zeroPadValue(ethers.toBeHex(ethers.dataLength(initializerParams)), 32), //do not touch
+        initializerParams
+    ]);
+};
 
-// Add Safe Contract ABI
-const SAFE_ABI = [
-    {
-        "inputs": [{ "internalType": "address", "name": "module", "type": "address" }],
-        "name": "enableModule",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            { "internalType": "address", "name": "to", "type": "address" },
-            { "internalType": "uint256", "name": "value", "type": "uint256" },
-            { "internalType": "bytes", "name": "data", "type": "bytes" },
-            { "internalType": "uint8", "name": "operation", "type": "uint8" },
-            { "internalType": "uint256", "name": "safeTxGas", "type": "uint256" },
-            { "internalType": "uint256", "name": "baseGas", "type": "uint256" },
-            { "internalType": "uint256", "name": "gasPrice", "type": "uint256" },
-            { "internalType": "address", "name": "gasToken", "type": "address" },
-            { "internalType": "address payable", "name": "refundReceiver", "type": "address" },
-            { "internalType": "bytes", "name": "signatures", "type": "bytes" }
-        ],
-        "name": "execTransaction",
-        "outputs": [{ "internalType": "bool", "name": "success", "type": "bool" }],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }],
-        "name": "isOwner",
-        "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getThreshold",
-        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "nonce",
-        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            { "internalType": "address", "name": "to", "type": "address" },
-            { "internalType": "uint256", "name": "value", "type": "uint256" },
-            { "internalType": "bytes", "name": "data", "type": "bytes" },
-            { "internalType": "uint8", "name": "operation", "type": "uint8" },
-            { "internalType": "uint256", "name": "safeTxGas", "type": "uint256" },
-            { "internalType": "uint256", "name": "baseGas", "type": "uint256" },
-            { "internalType": "uint256", "name": "gasPrice", "type": "uint256" },
-            { "internalType": "address", "name": "gasToken", "type": "address" },
-            { "internalType": "address", "name": "refundReceiver", "type": "address" },
-            { "internalType": "uint256", "name": "_nonce", "type": "uint256" }
-        ],
-        "name": "getTransactionHash",
-        "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "domainSeparator",
-        "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
-        "stateMutability": "view",
-        "type": "function"
-    }
-];
+const encodeMultiSendTx = (tx: MultiSendTx): string => { // essential implementation, preserve it at all costs
+    return window.ethers.concat([
+        '0x00', // operation (0 = CALL)
+        window.ethers.zeroPadValue(tx.to.toLowerCase(), 20), // to address
+        window.ethers.zeroPadValue('0x0000000000000000000000000000000000000000000000000000000000000000', 32), // value
+        window.ethers.zeroPadValue(window.ethers.toBeHex(window.ethers.dataLength(tx.data)), 32), // data length
+        tx.data // actual data
+    ]);
+};
 
-const DDH_ABI = [
-    {
-        inputs: [
-            { name: "factory", type: "address" },
-            { name: "masterCopy", type: "address" },
-            { name: "initParams", type: "bytes" },
-            { name: "saltNonce", type: "uint256" },
-            { name: "realityOracle", type: "address" },
-            { name: "templateContent", type: "string" },
-            { name: "finalModuleOwner", type: "address" }
-        ],
-        name: "deployWithEncodedParams",
-        outputs: [{ name: "realityModuleProxy", type: "address" }],
-        stateMutability: "nonpayable",
-        type: "function"
-    }
-];
+const formatSignature = (signerAddress: string): string => { // essential implementation, preserve it at all costs
+    return '0x000000000000000000000000' + // 24 bytes of zeros
+        signerAddress.slice(2).toLowerCase() + // owner address without 0x prefix
+        '000000000000000000000000000000000000000000000000000000000000000001'; // 32 bytes of zeros + 01
+};
 
-async function executeMultisendTx(signer: any, safeAddress: string, chainId: number) {
-    if (!safeAddress) {
-        throw new Error('Safe address is required');
-    }
+const prepareSafeTransaction = async (
+    signer: ethers.Signer,
+    safeAddress: string
+): Promise<SafeTransactionPreparation> => {
+    const safe = new ethers.Contract(safeAddress, SAFE_ABI, signer);
+    const signerAddress = await signer.getAddress();
 
+    // Validate signer is owner
+    const isOwner = await safe.isOwner(signerAddress);
+    if (!isOwner) throw new Error('Signer is not an owner of this Safe');
+
+    const threshold = await safe.getThreshold();
+    const nonce = await safe.nonce();
+
+    return { safe, signerAddress, threshold, nonce };
+};
+
+const prepareModuleDeployment = async (
+    signer: ethers.Signer,
+    safeAddress: string,
+    setupParams: SetupParams
+): Promise<ModuleDeploymentResult> => {
+    const moduleProxyFactory = new ethers.Contract(MODULE_PROXY_FACTORY, MODULE_PROXY_FACTORY_ABI, signer);
+    const ddh = new ethers.Contract(DDH_ADDRESS, DDH_ABI, signer);
+    const safe = new ethers.Contract(safeAddress, SAFE_ABI, signer);
+
+    const initializerParams = encodeSetupParams(setupParams);
+    const setUpCalldata = createSetUpCalldata(initializerParams);
+    const saltNonce = Date.now().toString();
+
+    const expectedAddress = await calculateProxyAddress(
+        moduleProxyFactory,
+        REALITY_MASTER_COPY,
+        setUpCalldata,
+        saltNonce
+    );
+
+    const deployTx = await ddh.deployWithEncodedParams.populateTransaction(
+        MODULE_PROXY_FACTORY,
+        REALITY_MASTER_COPY,
+        setUpCalldata,
+        saltNonce,
+        setupParams.oracle,
+        DEFAULT_TEMPLATE_CONTENT,
+        safeAddress
+    );
+
+    const enableModuleTx = await safe.enableModule.populateTransaction(expectedAddress);
+
+    return { expectedAddress, deployTx, enableModuleTx };
+};
+
+async function executeMultisendTx(signer: ethers.Signer, safeAddress: string) {
     try {
-        // Create Safe instance
-        const safe = new window.ethers.Contract(safeAddress, SAFE_ABI, signer);
+        // Prepare Safe and validate signer
+        const { safe, signerAddress, threshold, nonce } = await prepareSafeTransaction(signer, safeAddress);
 
-        // Get the current address (owner)
-        const signerAddress = await signer.getAddress();
+        // Prepare setup parameters
+        const setupParams: SetupParams = {
+            owner: DDH_ADDRESS,
+            avatar: safeAddress,
+            target: safeAddress,
+            oracle: DEFAULT_ORACLE,
+            timeout: DEFAULT_TIMEOUTS.TIMEOUT,
+            cooldown: DEFAULT_TIMEOUTS.COOLDOWN,
+            expiration: DEFAULT_TIMEOUTS.EXPIRATION,
+            bond: ethers.parseEther(DEFAULT_BOND).toString(),
+            templateId: 0,
+            arbitrator: DEFAULT_ARBITRATOR
+        };
 
-        // Check if signer is an owner
-        const isOwner = await safe.isOwner(signerAddress);
-        if (!isOwner) {
-            throw new Error('Signer is not an owner of this Safe');
-        }
+        // Prepare module deployment transactions
+        const { deployTx, enableModuleTx } = await prepareModuleDeployment(signer, safeAddress, setupParams);
 
-        // Get Safe threshold
-        const threshold = await safe.getThreshold();
-        console.log('Safe threshold:', threshold.toString());
-
-        // Get current nonce
-        const nonce = await safe.nonce();
-        console.log('Safe nonce:', nonce.toString());
-
-        // Create contract instances with signer
-        const moduleProxyFactory = new window.ethers.Contract(
-            MODULE_PROXY_FACTORY,
-            MODULE_PROXY_FACTORY_ABI,
-            signer
-        );
-
-        // Encode initialization parameters
-        const defaultOracle = '0x5b7dD1E86623548AF054A4985F7fc8Ccbb554E2c';
-        const defaultArbitrator = '0xf72CfD1B34a91A64f9A98537fe63FBaB7530AdcA';
-
-        console.log('Encoding setUp parameters with:');
-        console.log('- DDH_ADDRESS:', DDH_ADDRESS);
-        console.log('- Safe Address:', safeAddress);
-        console.log('- Oracle:', defaultOracle);
-        console.log('- Arbitrator:', defaultArbitrator);
-        console.log('- Reality Master Copy:', REALITY_MASTER_COPY);
-
-        // Encode initialization parameters for setUp
-        const initializerParams = window.ethers.AbiCoder.defaultAbiCoder().encode(
-            [
-                'address',
-                'address',
-                'address',
-                'address',
-                'uint32',
-                'uint32',
-                'uint32',
-                'uint256',
-                'uint256',
-                'address',
-            ],
-            [
-                DDH_ADDRESS, // owner
-                safeAddress, // avatar
-                safeAddress, // target
-                defaultOracle, // oracle
-                172800, // timeout (2 days)
-                172800, // cooldown (2 days)
-                604800, // expiration (7 days)
-                window.ethers.parseEther('0.1'), // bond
-                0, // templateId
-                defaultArbitrator, // arbitrator
-            ]
-        );
-
-        // Encode the complete setUp call with function selector
-        const setUpCalldata = window.ethers.concat([
-            '0xa4f9edbf', // setUp function selector
-            window.ethers.zeroPadValue('0x0000000000000000000000000000000000000000000000000000000000000020', 32), // offset
-            window.ethers.zeroPadValue(window.ethers.toBeHex(window.ethers.dataLength(initializerParams)), 32), // length
-            initializerParams // actual setUp parameters
+        // Encode transactions for multisend
+        const encodedTxs = ethers.concat([
+            encodeMultiSendTx({
+                operation: 0,
+                to: DDH_ADDRESS,
+                value: '0',
+                data: deployTx.data || ''
+            }),
+            encodeMultiSendTx({
+                operation: 0,
+                to: safeAddress,
+                value: '0',
+                data: enableModuleTx.data || ''
+            })
         ]);
 
-        // Generate a unique salt nonce
-        const saltNonce = Date.now().toString();
-        console.log('Using salt nonce:', saltNonce);
-
-        // Calculate the expected module address using Zodiac SDK
-        const expectedAddress = await calculateProxyAddress(
-            moduleProxyFactory,
-            REALITY_MASTER_COPY,
-            setUpCalldata,
-            saltNonce
-        );
-
-        console.log('Expected module address:', expectedAddress);
-
-        // Create DDH contract instance
-        const ddh = new window.ethers.Contract(DDH_ADDRESS, DDH_ABI, signer);
-
-        // Get deployWithEncodedParams transaction data
-        const templateContent = "What is the outcome of this event %s? Answer with 0 for no, 1 for yes, or 2 for unknown.";
-        const deployTx = await ddh.deployWithEncodedParams.populateTransaction(
-            MODULE_PROXY_FACTORY,
-            REALITY_MASTER_COPY,
-            setUpCalldata,
-            saltNonce,
-            defaultOracle,
-            templateContent,
-            safeAddress // Safe will be the final owner
-        );
-
-        console.log('Deploy with DDH transaction data:', deployTx.data);
-
-        // Get enableModule transaction data
-        const enableModuleTx = await safe.enableModule.populateTransaction(expectedAddress);
-        console.log('Enable module transaction data:', enableModuleTx.data);
-
-        // Encode both transactions for multiSend
-        const encodedTxs = window.ethers.concat([
-            // First transaction: deployWithEncodedParams
-            '0x00', // operation (0 = CALL)
-            window.ethers.zeroPadValue(DDH_ADDRESS.toLowerCase(), 20), // to address
-            window.ethers.zeroPadValue('0x0000000000000000000000000000000000000000000000000000000000000000', 32), // value
-            window.ethers.zeroPadValue(window.ethers.toBeHex(window.ethers.dataLength(deployTx.data)), 32), // data length
-            deployTx.data, // data for deployWithEncodedParams
-
-            // Second transaction: enableModule
-            '0x00', // operation (0 = CALL)
-            window.ethers.zeroPadValue(safeAddress.toLowerCase(), 20), // to address (the Safe)
-            window.ethers.zeroPadValue('0x0000000000000000000000000000000000000000000000000000000000000000', 32), // value
-            window.ethers.zeroPadValue(window.ethers.toBeHex(window.ethers.dataLength(enableModuleTx.data)), 32), // data length
-            enableModuleTx.data // data for enableModule
-        ]);
-
-        console.log('Encoded multisend transactions:', encodedTxs);
-
-        // Create multiSend contract instance and get transaction data
-        const multiSend = new window.ethers.Contract(SAFE_MULTISEND, MULTISEND_ABI, signer);
-        const multiSendTx = await multiSend.multiSend.populateTransaction(encodedTxs);
-
-        console.log('MultiSend transaction data:', multiSendTx.data);
-
-        // If threshold > 1, we need to get signatures
+        // Handle multi-sig case
         if (threshold > 1n) {
-            // We should propose the transaction to the Safe Transaction Service
-            console.log('Safe requires multiple signatures. Transaction needs to be proposed.');
             throw new Error('Safe requires multiple signatures. Please use the Safe Transaction Service.');
         }
 
-        // Prepare the transaction parameters
-        const safeTx = {
+        // Create and execute Safe transaction
+        const multiSend = new ethers.Contract(SAFE_MULTISEND, MULTISEND_ABI, signer);
+        const multiSendTx = await multiSend.multiSend.populateTransaction(encodedTxs);
+
+        const safeTx: SafeTransaction = {
             to: SAFE_MULTISEND,
             value: "0",
-            data: multiSendTx.data,
-            operation: 1, // DelegateCall
+            data: multiSendTx.data || '',
+            operation: 1,
             safeTxGas: "0",
             baseGas: "0",
             gasPrice: "0",
-            gasToken: "0x0000000000000000000000000000000000000000",
-            refundReceiver: "0x0000000000000000000000000000000000000000",
+            gasToken: ethers.ZeroAddress,
+            refundReceiver: ethers.ZeroAddress,
             nonce: nonce.toString()
         };
 
-        // Get the transaction hash that needs to be signed
         const txHash = await safe.getTransactionHash(
             safeTx.to,
             safeTx.value,
@@ -329,16 +206,8 @@ async function executeMultisendTx(signer: any, safeAddress: string, chainId: num
             safeTx.nonce
         );
 
-        // Format the signature
-        const formattedSignature =
-            '0x000000000000000000000000' + // 24 bytes of zeros
-            signerAddress.slice(2).toLowerCase() + // owner address without 0x prefix
-            '000000000000000000000000000000000000000000000000000000000000000001'; // 32 bytes of zeros + 01
+        const signature = formatSignature(signerAddress);
 
-        console.log('Transaction hash:', txHash);
-        console.log('Owner signature:', formattedSignature);
-
-        // Execute the transaction through the Safe
         const tx = await safe.execTransaction(
             safeTx.to,
             safeTx.value,
@@ -349,18 +218,12 @@ async function executeMultisendTx(signer: any, safeAddress: string, chainId: num
             safeTx.gasPrice,
             safeTx.gasToken,
             safeTx.refundReceiver,
-            formattedSignature,
-            { gasLimit: 1000000 } // Add explicit gas limit
+            signature,
+            { gasLimit: 1000000 }
         );
 
-        console.log('Transaction sent:', tx.hash);
         const receipt = await tx.wait();
-        console.log('Transaction confirmed:', receipt);
-
-        return {
-            hash: tx.hash,
-            receipt
-        };
+        return { hash: tx.hash, receipt };
     } catch (error) {
         console.error('Error executing transaction:', error);
         throw error;
@@ -399,15 +262,12 @@ export default function Reality() {
                 throw new Error('MetaMask is not installed');
             }
 
-            const provider = new window.ethers.BrowserProvider(window.ethereum);
+            const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
-            const network = await provider.getNetwork();
-            const chainId = Number(network.chainId);
 
-            console.log('Connected to network:', chainId);
             console.log('Using Safe address:', safeAddress);
 
-            const result = await executeMultisendTx(signer, safeAddress, chainId);
+            const result = await executeMultisendTx(signer, safeAddress);
             setTxHash(result.hash);
             setTransactionData(result.receipt);
         } catch (err: any) {

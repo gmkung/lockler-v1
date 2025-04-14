@@ -1,12 +1,17 @@
-
-import { ethers } from "ethers";
 import { 
-  CHAIN_ID, 
-  CHAIN_NAME, 
-  RPC_URL, 
-  SAFE_PROXY_FACTORY_ADDRESS, 
-  SAFE_SINGLETON_ADDRESS,
-  FALLBACK_HANDLER_ADDRESS 
+  ethers,
+  JsonRpcProvider,
+  BrowserProvider,
+  Contract,
+  Interface,
+  ZeroAddress,
+  Signer
+} from "ethers";
+import { 
+  DEFAULT_CHAIN_ID,
+  getChainConfig,
+  getContractAddresses,
+  getRpcUrl
 } from "./constants";
 
 // ABI for SafeProxyFactory contract's createProxyWithNonce function
@@ -23,10 +28,10 @@ export const SAFE_SETUP_ABI = [
 // Connect to provider
 export const getProvider = () => {
   if (window.ethereum) {
-    return new ethers.providers.Web3Provider(window.ethereum);
+    return new BrowserProvider(window.ethereum);
   }
   // Fallback to read-only provider
-  return new ethers.providers.JsonRpcProvider(RPC_URL);
+  return new JsonRpcProvider(getRpcUrl());
 };
 
 // Connect wallet and ensure correct chain
@@ -35,36 +40,33 @@ export const connectWallet = async () => {
     throw new Error("Metamask not detected! Please install Metamask extension.");
   }
 
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const provider = new BrowserProvider(window.ethereum);
   
   // Request accounts
   await provider.send("eth_requestAccounts", []);
   
   // Check if we're on the correct chain
   const network = await provider.getNetwork();
-  if (network.chainId !== CHAIN_ID) {
+  if (network.chainId !== BigInt(DEFAULT_CHAIN_ID)) {
     try {
-      // Try to switch to Gnosis Chain
+      // Try to switch to the correct chain
       await window.ethereum.request({
         method: "wallet_switchEthereumChain",
-        params: [{ chainId: `0x${CHAIN_ID.toString(16)}` }],
+        params: [{ chainId: `0x${DEFAULT_CHAIN_ID.toString(16)}` }],
       });
     } catch (error) {
       // If the chain is not added to MetaMask, let's add it
       if (error.code === 4902) {
+        const chainConfig = getChainConfig();
         await window.ethereum.request({
           method: "wallet_addEthereumChain",
           params: [
             {
-              chainId: `0x${CHAIN_ID.toString(16)}`,
-              chainName: CHAIN_NAME,
-              nativeCurrency: {
-                name: "xDAI",
-                symbol: "xDAI",
-                decimals: 18,
-              },
-              rpcUrls: [RPC_URL],
-              blockExplorerUrls: ["https://gnosisscan.io/"],
+              chainId: `0x${DEFAULT_CHAIN_ID.toString(16)}`,
+              chainName: chainConfig.name,
+              nativeCurrency: chainConfig.nativeCurrency,
+              rpcUrls: [chainConfig.rpcUrl],
+              blockExplorerUrls: [chainConfig.blockExplorer],
             },
           ],
         });
@@ -83,30 +85,31 @@ export const createSafeSetupInitializer = (
   threshold: number,
   fallbackHandler: string
 ) => {
-  const safeInterface = new ethers.utils.Interface(SAFE_SETUP_ABI);
+  const safeInterface = new Interface(SAFE_SETUP_ABI);
   
   return safeInterface.encodeFunctionData("setup", [
     owners,
     threshold,
-    ethers.constants.AddressZero, // to
+    ZeroAddress, // to
     "0x", // data
     fallbackHandler, // fallbackHandler
-    ethers.constants.AddressZero, // paymentToken
+    ZeroAddress, // paymentToken
     0, // payment
-    ethers.constants.AddressZero, // paymentReceiver
+    ZeroAddress, // paymentReceiver
   ]);
 };
 
 // Deploy a new Safe via factory
 export const deploySafe = async (
-  signer: ethers.Signer,
+  signer: Signer,
   owners: string[],
   threshold: number,
   fallbackHandler: string,
   saltNonce: string
 ) => {
-  const factory = new ethers.Contract(
-    SAFE_PROXY_FACTORY_ADDRESS,
+  const contractAddresses = getContractAddresses();
+  const factory = new Contract(
+    contractAddresses.safeProxyFactory,
     SAFE_PROXY_FACTORY_ABI,
     signer
   );
@@ -121,7 +124,7 @@ export const deploySafe = async (
   });
   
   const tx = await factory.createProxyWithNonce(
-    SAFE_SINGLETON_ADDRESS,
+    contractAddresses.safeSingleton,
     initializer,
     saltNonce
   );
@@ -132,14 +135,14 @@ export const deploySafe = async (
   
   // Extract the deployed Safe address from events
   // Find ProxyCreation event which has the proxy address as the first indexed parameter
-  const proxyCreationEvent = receipt.events?.find(
-    (event) => event.event === "ProxyCreation"
+  const proxyCreationEvent = receipt.logs?.find(
+    (event) => event.fragment?.name === "ProxyCreation"
   );
   
   // If we found the event, extract the proxy address from its args
   if (proxyCreationEvent && proxyCreationEvent.args) {
     // The proxy address is the first argument in the ProxyCreation event
-    const safeAddress = proxyCreationEvent.args.proxy;
+    const safeAddress = proxyCreationEvent.args[0];
     console.log("Safe deployed at address:", safeAddress);
     return safeAddress;
   }
@@ -147,12 +150,15 @@ export const deploySafe = async (
   // If we couldn't find the event or extract the address, look at the logs directly
   for (const log of receipt.logs || []) {
     // Check if this log is from our factory contract
-    if (log.address.toLowerCase() === SAFE_PROXY_FACTORY_ADDRESS.toLowerCase()) {
+    if (log.address.toLowerCase() === contractAddresses.safeProxyFactory.toLowerCase()) {
       try {
         // Try to parse the log as a ProxyCreation event
-        const parsedLog = factory.interface.parseLog(log);
-        if (parsedLog.name === "ProxyCreation") {
-          const safeAddress = parsedLog.args.proxy;
+        const parsedLog = factory.interface.parseLog({
+          topics: log.topics,
+          data: log.data
+        });
+        if (parsedLog?.name === "ProxyCreation") {
+          const safeAddress = parsedLog.args[0];
           console.log("Safe deployed at address (from logs):", safeAddress);
           return safeAddress;
         }

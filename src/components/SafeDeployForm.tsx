@@ -1,6 +1,5 @@
-
 import React, { useState } from "react";
-import { ethers } from "ethers";
+import { ethers, isAddress } from "ethers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +7,7 @@ import { deploySafe } from "@/lib/web3";
 import { 
   DEFAULT_THRESHOLD,
   DEFAULT_SALT_NONCE,
-  FALLBACK_HANDLER_ADDRESS
+  getContractAddresses
 } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,12 +25,13 @@ const SafeDeployForm: React.FC<SafeDeployFormProps> = ({ connectedAddress, signe
   const [deployedSafeAddress, setDeployedSafeAddress] = useState<string | null>(null);
   
   const { toast } = useToast();
+  const { fallbackHandler } = getContractAddresses();
 
   const addOwner = () => {
-    if (ethers.utils.isAddress(newOwnerAddress) && !additionalOwners.includes(newOwnerAddress)) {
+    if (isAddress(newOwnerAddress) && !additionalOwners.includes(newOwnerAddress)) {
       setAdditionalOwners([...additionalOwners, newOwnerAddress]);
       setNewOwnerAddress("");
-    } else if (!ethers.utils.isAddress(newOwnerAddress)) {
+    } else if (!isAddress(newOwnerAddress)) {
       toast({
         variant: "destructive",
         title: "Invalid address",
@@ -69,7 +69,7 @@ const SafeDeployForm: React.FC<SafeDeployFormProps> = ({ connectedAddress, signe
         signer,
         allOwners,
         thresholdValue,
-        FALLBACK_HANDLER_ADDRESS,
+        fallbackHandler,
         saltNonce
       );
       
