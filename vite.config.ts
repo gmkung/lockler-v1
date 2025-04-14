@@ -19,4 +19,11 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  define: {// added to be able to use @gnosis.pm/zodiac 
+    'process.env': {},
+    'process': {
+      env: {},
+      browser: true
+    }
+  }
 }));
