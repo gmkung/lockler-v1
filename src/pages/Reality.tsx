@@ -64,6 +64,13 @@ const MULTISEND_ABI = [
 // Add Safe Contract ABI
 const SAFE_ABI = [
     {
+        "inputs": [{ "internalType": "address", "name": "module", "type": "address" }],
+        "name": "enableModule",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
         "inputs": [
             { "internalType": "address", "name": "to", "type": "address" },
             { "internalType": "uint256", "name": "value", "type": "uint256" },
@@ -126,6 +133,24 @@ const SAFE_ABI = [
         "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
         "stateMutability": "view",
         "type": "function"
+    }
+];
+
+const DDH_ABI = [
+    {
+        inputs: [
+            { name: "factory", type: "address" },
+            { name: "masterCopy", type: "address" },
+            { name: "initParams", type: "bytes" },
+            { name: "saltNonce", type: "uint256" },
+            { name: "realityOracle", type: "address" },
+            { name: "templateContent", type: "string" },
+            { name: "finalModuleOwner", type: "address" }
+        ],
+        name: "deployWithEncodedParams",
+        outputs: [{ name: "realityModuleProxy", type: "address" }],
+        stateMutability: "nonpayable",
+        type: "function"
     }
 ];
 
@@ -223,29 +248,49 @@ async function executeMultisendTx(signer: any, safeAddress: string, chainId: num
 
         console.log('Expected module address:', expectedAddress);
 
-        // Get deployModule transaction data
-        const deployModuleTx = await moduleProxyFactory.deployModule.populateTransaction(
+        // Create DDH contract instance
+        const ddh = new window.ethers.Contract(DDH_ADDRESS, DDH_ABI, signer);
+
+        // Get deployWithEncodedParams transaction data
+        const templateContent = "What is the outcome of this event %s? Answer with 0 for no, 1 for yes, or 2 for unknown.";
+        const deployTx = await ddh.deployWithEncodedParams.populateTransaction(
+            MODULE_PROXY_FACTORY,
             REALITY_MASTER_COPY,
             setUpCalldata,
-            saltNonce
+            saltNonce,
+            defaultOracle,
+            templateContent,
+            safeAddress // Safe will be the final owner
         );
 
-        console.log('Deploy module transaction data:', deployModuleTx.data);
+        console.log('Deploy with DDH transaction data:', deployTx.data);
 
-        // Encode the transaction for multiSend
-        const encodedTx = window.ethers.concat([
+        // Get enableModule transaction data
+        const enableModuleTx = await safe.enableModule.populateTransaction(expectedAddress);
+        console.log('Enable module transaction data:', enableModuleTx.data);
+
+        // Encode both transactions for multiSend
+        const encodedTxs = window.ethers.concat([
+            // First transaction: deployWithEncodedParams
             '0x00', // operation (0 = CALL)
-            window.ethers.zeroPadValue(MODULE_PROXY_FACTORY.toLowerCase(), 20), // to address
+            window.ethers.zeroPadValue(DDH_ADDRESS.toLowerCase(), 20), // to address
             window.ethers.zeroPadValue('0x0000000000000000000000000000000000000000000000000000000000000000', 32), // value
-            window.ethers.zeroPadValue(window.ethers.toBeHex(window.ethers.dataLength(deployModuleTx.data)), 32), // data length
-            deployModuleTx.data // data for deployModule
+            window.ethers.zeroPadValue(window.ethers.toBeHex(window.ethers.dataLength(deployTx.data)), 32), // data length
+            deployTx.data, // data for deployWithEncodedParams
+
+            // Second transaction: enableModule
+            '0x00', // operation (0 = CALL)
+            window.ethers.zeroPadValue(safeAddress.toLowerCase(), 20), // to address (the Safe)
+            window.ethers.zeroPadValue('0x0000000000000000000000000000000000000000000000000000000000000000', 32), // value
+            window.ethers.zeroPadValue(window.ethers.toBeHex(window.ethers.dataLength(enableModuleTx.data)), 32), // data length
+            enableModuleTx.data // data for enableModule
         ]);
 
-        console.log('Encoded multisend transaction:', encodedTx);
+        console.log('Encoded multisend transactions:', encodedTxs);
 
         // Create multiSend contract instance and get transaction data
         const multiSend = new window.ethers.Contract(SAFE_MULTISEND, MULTISEND_ABI, signer);
-        const multiSendTx = await multiSend.multiSend.populateTransaction(encodedTx);
+        const multiSendTx = await multiSend.multiSend.populateTransaction(encodedTxs);
 
         console.log('MultiSend transaction data:', multiSendTx.data);
 
