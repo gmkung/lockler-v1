@@ -67,6 +67,8 @@ export const DEFAULT_TIMEOUTS = {
   EXPIRATION: 300, // 5 minutes
 } as const;
 
+//export const DEFAULT_TEMPLATE_CONTENT = "Did the event %s occur ?";
+
 // Helper functions to get chain-specific values
 export const getChainConfig = (chainId: number = DEFAULT_CHAIN_ID): Chain => {
   const config = CHAIN_CONFIG[chainId];

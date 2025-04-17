@@ -81,20 +81,20 @@ export interface SafeTransactionPreparation {
   nonce: bigint;
 }
 
-export interface Payment {
+export type Payment = {
   address: string;
   amount: string;
-  currency: string; // Token address (0x000... for native)
-}
+  currency: string;
+  role: 'sender' | 'receiver';
+};
 
-export interface EscrowContractTerms {
+export type EscrowContractTerms = {
   title: string;
   description: string;
-  senders: Payment[];
-  receivers: Payment[];
-  additionalTerms?: string;
+  type: 'p2p' | 'grant';
+  payments: Payment[];
   createdAt: number;
-}
+};
 
 export interface TemplateData {
   questionTitle: string;

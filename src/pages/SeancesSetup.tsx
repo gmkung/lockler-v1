@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { ethers } from "ethers";
 import {
     BrowserProvider,
     Contract,
@@ -8,7 +9,8 @@ import {
     toBeHex,
     getAddress,
     parseEther,
-    ZeroAddress
+    ZeroAddress,
+    dataLength
 } from "ethers";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -47,9 +49,13 @@ import type {
     SafeTransactionPreparation
 } from '../lib/types';
 
+type EscrowMode = 'p2p' | 'grant';
+type P2PRole = 'sender' | 'receiver';
+
 // Utility functions from Reality.tsx
 const encodeSetupParams = (params: SetupParams): string => {
-    return AbiCoder.defaultAbiCoder().encode(
+    console.log('Setup params before encoding:', params);
+    const encoded = ethers.AbiCoder.defaultAbiCoder().encode(
         [
             'address', 'address', 'address', 'address',
             'uint32', 'uint32', 'uint32',
@@ -61,23 +67,30 @@ const encodeSetupParams = (params: SetupParams): string => {
             params.bond, params.templateId, params.arbitrator
         ]
     );
+    console.log('Encoded setup params:', encoded);
+    return encoded;
 };
 
 const createSetUpCalldata = (initializerParams: string): string => {
-    return concat([
+    console.log('Initializer params before creating calldata:', initializerParams);
+    console.log('Initializer params length:', ethers.dataLength(initializerParams));
+    const calldata = ethers.concat([
         '0xa4f9edbf',
-        zeroPadValue('0x0000000000000000000000000000000000000000000000000000000000000020', 32),
-        zeroPadValue(toBeHex(AbiCoder.defaultAbiCoder().encode(['uint256'], [AbiCoder.defaultAbiCoder().encode(['string'], [initializerParams])])), 32),
+        ethers.zeroPadValue('0x0000000000000000000000000000000000000000000000000000000000000020', 32),
+        ethers.zeroPadValue(ethers.toBeHex(ethers.dataLength(initializerParams)), 32),
         initializerParams
     ]);
+    console.log('Final setup calldata:', calldata);
+    return calldata;
 };
 
+
 const encodeMultiSendTx = (tx: MultiSendTx): string => {
-    return concat([
+    return ethers.concat([
         '0x00',
-        zeroPadValue(tx.to.toLowerCase(), 20),
-        zeroPadValue('0x0000000000000000000000000000000000000000000000000000000000000000', 32),
-        zeroPadValue(toBeHex(AbiCoder.defaultAbiCoder().encode(['uint256'], [AbiCoder.defaultAbiCoder().encode(['bytes'], [tx.data])])), 32),
+        ethers.zeroPadValue(tx.to.toLowerCase(), 20),
+        ethers.zeroPadValue('0x0000000000000000000000000000000000000000000000000000000000000000', 32),
+        ethers.zeroPadValue(ethers.toBeHex(ethers.dataLength(tx.data)), 32),
         tx.data
     ]);
 };
@@ -89,11 +102,11 @@ const formatSignature = (signerAddress: string): string => {
 };
 
 const prepareSafeTransaction = async (
-    signer: BrowserProvider,
+    signer: ethers.BrowserProvider,
     safeAddress: string
 ): Promise<SafeTransactionPreparation> => {
-    const safe = new Contract(safeAddress, SAFE_ABI, signer);
     const signerInstance = await signer.getSigner();
+    const safe = new ethers.Contract(safeAddress, SAFE_ABI, signerInstance);
     const signerAddress = await signerInstance.getAddress();
 
     const isOwner = await safe.isOwner(signerAddress);
@@ -105,23 +118,52 @@ const prepareSafeTransaction = async (
     return { safe, signerAddress, threshold, nonce };
 };
 
-const defaultContractTerms: EscrowContractTerms = {
-    title: "Marketing Services Agreement",
-    description: "Agreement for marketing services...",
-    senders: [{
-        address: "",
-        amount: "0.1",
-        currency: TOKENS.NATIVE.address
-    }],
-    receivers: [{
-        address: "",
-        amount: "0.1",
-        currency: TOKENS.NATIVE.address
-    }],
-    createdAt: Date.now()
+const getDefaultContractTerms = (mode: EscrowMode, signerAddress: string, counterpartyAddress: string = "", role: P2PRole = 'sender'): EscrowContractTerms => {
+    if (mode === 'p2p') {
+        return {
+            title: "P2P Escrow Agreement",
+            description: "Agreement between two parties for a secure transaction",
+            type: 'p2p',
+            payments: [
+                {
+                    address: role === 'sender' ? signerAddress : counterpartyAddress,
+                    amount: "0.1",
+                    currency: TOKENS.NATIVE.address,
+                    role: 'sender'
+                },
+                {
+                    address: role === 'receiver' ? signerAddress : counterpartyAddress,
+                    amount: "0.1",
+                    currency: TOKENS.NATIVE.address,
+                    role: 'receiver'
+                }
+            ],
+            createdAt: Date.now()
+        };
+    } else {
+        return {
+            title: "Grant Escrow Agreement",
+            description: "Agreement for grant distribution",
+            type: 'grant',
+            payments: [
+                {
+                    address: signerAddress,
+                    amount: "0.1",
+                    currency: TOKENS.NATIVE.address,
+                    role: 'sender'
+                }
+            ],
+            createdAt: Date.now()
+        };
+    }
 };
 
 export default function SeancesSetup() {
+    // Mode and role selection
+    const [escrowMode, setEscrowMode] = useState<EscrowMode>('p2p');
+    const [p2pRole, setP2PRole] = useState<P2PRole>('sender');
+    const [counterpartyAddress, setCounterpartyAddress] = useState<string>("");
+
     // Chain state
     const [chainId, setChainId] = useState<number>(DEFAULT_CHAIN_ID);
 
@@ -131,6 +173,7 @@ export default function SeancesSetup() {
     const [additionalOwners, setAdditionalOwners] = useState<string[]>([]);
     const [newOwnerAddress, setNewOwnerAddress] = useState("");
     const [deployedSafeAddress, setDeployedSafeAddress] = useState<string | null>(null);
+    const [existingSafeAddress, setExistingSafeAddress] = useState("0x3f7f43aF5AA03Eb6c70de81335EF48ef3aF0f2DF");
 
     // Module deployment state
     const [moduleDeploymentHash, setModuleDeploymentHash] = useState<string | null>(null);
@@ -138,8 +181,10 @@ export default function SeancesSetup() {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const [contractTerms, setContractTerms] = useState<EscrowContractTerms>(defaultContractTerms);
-    const [contractTermsCID, setContractTermsCID] = useState<string | null>(null);
+    // Contract terms state
+    const [contractTerms, setContractTerms] = useState<EscrowContractTerms>(() => 
+        getDefaultContractTerms('p2p', '', '')
+    );
 
     const { toast } = useToast();
 
@@ -164,6 +209,23 @@ export default function SeancesSetup() {
     const contracts = getContractAddresses(chainId);
     const blockExplorer = getBlockExplorer(chainId);
     const chainConfig = getChainConfig(chainId);
+
+    // Update contract terms when mode changes or addresses are set
+    useEffect(() => {
+        if (window.ethereum) {
+            window.ethereum.request({ method: 'eth_requestAccounts' })
+                .then((accounts: string[]) => {
+                    if (accounts[0]) {
+                        setContractTerms(getDefaultContractTerms(
+                            escrowMode,
+                            accounts[0],
+                            counterpartyAddress,
+                            p2pRole
+                        ));
+                    }
+                });
+        }
+    }, [escrowMode, counterpartyAddress, p2pRole]);
 
     const addOwner = () => {
         if (getAddress(newOwnerAddress) && !additionalOwners.includes(newOwnerAddress)) {
@@ -203,19 +265,25 @@ export default function SeancesSetup() {
             const signer = await provider.getSigner();
             const signerAddress = await signer.getAddress();
 
-            // Include the connected address and additional owners
-            const allOwners = [signerAddress, ...additionalOwners];
-            const thresholdValue = parseInt(threshold, 10);
-
-            // Validate
-            if (thresholdValue <= 0 || thresholdValue > allOwners.length) {
-                throw new Error(`Threshold must be between 1 and ${allOwners.length}`);
+            // Set owners based on escrow mode
+            let owners: string[];
+            if (escrowMode === 'p2p') {
+                if (!counterpartyAddress) {
+                    throw new Error('Counterparty address is required for P2P mode');
+                }
+                owners = p2pRole === 'sender'
+                    ? [signerAddress, counterpartyAddress]
+                    : [counterpartyAddress, signerAddress];
+            } else {
+                // Grant escrow: only guardian (signer) initially
+                owners = [signerAddress];
             }
 
+            // Deploy Safe with threshold 1
             const safeAddress = await deploySafe(
                 signer,
-                allOwners,
-                thresholdValue,
+                owners,
+                1, // Initial threshold is 1
                 contracts.fallbackHandler,
                 saltNonce
             );
@@ -261,13 +329,12 @@ export default function SeancesSetup() {
 
             // Upload contract terms to IPFS first
             const cid = await uploadContractTerms(contractTerms);
-            setContractTermsCID(cid);
 
             const provider = new BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
 
             // Prepare Safe and validate signer
-            const { safe, signerAddress, threshold, nonce } = await prepareSafeTransaction(provider, deployedSafeAddress);
+            const { safe, signerAddress, nonce } = await prepareSafeTransaction(provider, deployedSafeAddress);
 
             // Prepare setup parameters
             const setupParams: SetupParams = {
@@ -284,8 +351,8 @@ export default function SeancesSetup() {
             };
 
             // Prepare module deployment transactions
-            const moduleProxyFactory = new Contract(contracts.moduleProxyFactory, MODULE_PROXY_FACTORY_ABI, signer);
-            const ddh = new Contract(contracts.ddhAddress, DDH_ABI, signer);
+            const moduleProxyFactory = new ethers.Contract(contracts.moduleProxyFactory, MODULE_PROXY_FACTORY_ABI, signer);
+            const ddh = new ethers.Contract(contracts.ddhAddress, DDH_ABI, signer);
 
             const initializerParams = encodeSetupParams(setupParams);
             const setUpCalldata = createSetUpCalldata(initializerParams);
@@ -297,10 +364,8 @@ export default function SeancesSetup() {
                 setUpCalldata,
                 moduleSaltNonce
             );
+            const questionText = `{\"lang\":\"en\",\"type\":\"bool\",\"category\":\"Generic Escrow\",\"title\":\"Is the array of transactions in %s with txhash 0x%s in line with the agreement at ${cid}? The hash is the keccak of the concatenation of the individual EIP-712 hashes of the Module transactions.\"}`
 
-            //directly generating the questionText for simplicity
-            const questionText = `{\"title\": \"Does the array of transactions at %s with hash of 0x%s conform to the terms and conditions laid out in the contract at ${cid}?\", \"type\": \"bool\", \"category\": \"%s\", \"lang\": \"%s\"}`;
-            // Use the question text in your deployment
             const deployTx = await ddh.deployWithEncodedParams.populateTransaction(
                 contracts.moduleProxyFactory,
                 contracts.realityMasterCopy,
@@ -312,8 +377,13 @@ export default function SeancesSetup() {
             );
 
             const enableModuleTx = await safe.enableModule.populateTransaction(expectedAddress);
+            const addOwnerTx = await safe.addOwnerWithThreshold.populateTransaction(expectedAddress, 2);
 
             // Encode transactions for multisend
+            console.log('Deploy transaction data:', deployTx.data);
+            console.log('Enable module transaction data:', enableModuleTx.data);
+            console.log('Add owner transaction data:', addOwnerTx.data);
+
             const encodedTxs = concat([
                 encodeMultiSendTx({
                     operation: 0,
@@ -326,17 +396,22 @@ export default function SeancesSetup() {
                     to: deployedSafeAddress,
                     value: '0',
                     data: enableModuleTx.data || ''
+                }),
+                encodeMultiSendTx({
+                    operation: 0,
+                    to: deployedSafeAddress,
+                    value: '0',
+                    data: addOwnerTx.data || ''
                 })
             ]);
 
-            // Handle multi-sig case
-            if (threshold > 1n) {
-                throw new Error('Safe requires multiple signatures. Please use the Safe Transaction Service.');
-            }
+            console.log('Encoded multisend transactions:', encodedTxs);
 
             // Create and execute Safe transaction
-            const multiSend = new Contract(contracts.safeMultisend, MULTISEND_ABI, signer);
+            const multiSend = new ethers.Contract(contracts.safeMultisend, MULTISEND_ABI, signer);
             const multiSendTx = await multiSend.multiSend.populateTransaction(encodedTxs);
+
+            console.log('MultiSend transaction data:', multiSendTx.data);
 
             const safeTx: SafeTransaction = {
                 to: contracts.safeMultisend,
@@ -386,7 +461,7 @@ export default function SeancesSetup() {
 
             toast({
                 title: "Module Deployed!",
-                description: "Reality module has been deployed and enabled",
+                description: "Reality module has been deployed, enabled, and added as an owner",
             });
         } catch (err: any) {
             console.error("Module deployment error:", err);
@@ -416,6 +491,44 @@ export default function SeancesSetup() {
         return availableTokens;
     };
 
+    // Helper function to add a new payment
+    const addPayment = (role: 'sender' | 'receiver') => {
+        if (escrowMode === 'grant') {
+            setContractTerms({
+                ...contractTerms,
+                payments: [...contractTerms.payments, {
+                    address: "",
+                    amount: "0",
+                    currency: TOKENS.NATIVE.address,
+                    role
+                }]
+            });
+        }
+    };
+
+    // Helper function to update a payment
+    const updatePayment = (index: number, field: keyof Payment, value: string) => {
+        const newPayments = [...contractTerms.payments];
+        newPayments[index] = {
+            ...newPayments[index],
+            [field]: value
+        };
+        setContractTerms({
+            ...contractTerms,
+            payments: newPayments
+        });
+    };
+
+    // Helper function to remove a payment
+    const removePayment = (index: number) => {
+        if (escrowMode === 'grant') {
+            setContractTerms({
+                ...contractTerms,
+                payments: contractTerms.payments.filter((_, i) => i !== index)
+            });
+        }
+    };
+
     return (
         <div className="container mx-auto p-4 space-y-6">
             {/* Chain Information */}
@@ -435,91 +548,74 @@ export default function SeancesSetup() {
             {/* Step 1: Safe Deployment */}
             <Card>
                 <CardHeader>
-                    <h2 className="text-2xl font-bold">Step 1: Deploy New Safe</h2>
+                    <h2 className="text-2xl font-bold">Step 1: Configure Escrow Type</h2>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-6">
-                        {/* Owners section */}
-                        <div>
-                            <h3 className="text-lg font-semibold mb-2">Owners</h3>
-                            {additionalOwners.map((owner, index) => (
-                                <div key={index} className="p-3 bg-gray-50 rounded mb-2 flex justify-between items-center">
-                                    <span className="text-xs text-gray-800">
-                                        {owner.substring(0, 8)}...{owner.substring(owner.length - 6)}
-                                    </span>
-                                    <Button variant="ghost" size="sm" onClick={() => removeOwner(index)}>
-                                        Remove
+                        {/* Mode Selection */}
+                        <div className="space-y-4">
+                            <Label>Escrow Type</Label>
+                            <div className="flex space-x-4">
+                                <Button
+                                    variant={escrowMode === 'p2p' ? 'default' : 'outline'}
+                                    onClick={() => setEscrowMode('p2p')}
+                                >
+                                    P2P Escrow
+                                </Button>
+                                <Button
+                                    variant={escrowMode === 'grant' ? 'default' : 'outline'}
+                                    onClick={() => setEscrowMode('grant')}
+                                >
+                                    Grant Escrow
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* P2P Role Selection */}
+                        {escrowMode === 'p2p' && (
+                            <div className="space-y-4">
+                                <Label>Your Role</Label>
+                                <div className="flex space-x-4">
+                                    <Button
+                                        variant={p2pRole === 'sender' ? 'default' : 'outline'}
+                                        onClick={() => setP2PRole('sender')}
+                                    >
+                                        I am the Sender
+                                    </Button>
+                                    <Button
+                                        variant={p2pRole === 'receiver' ? 'default' : 'outline'}
+                                        onClick={() => setP2PRole('receiver')}
+                                    >
+                                        I am the Receiver
                                     </Button>
                                 </div>
-                            ))}
+                            </div>
+                        )}
 
-                            <div className="flex gap-2 mt-2">
-                                <div className="flex-1">
+                        {/* Counterparty Address Input - Only show in P2P mode */}
+                        {escrowMode === 'p2p' && (
+                            <div>
+                                <Label>
+                                    {p2pRole === 'sender' ? 'Receiver' : 'Sender'} Address
+                                </Label>
+                                <div className="mt-1">
                                     <Input
-                                        placeholder="Add another owner address"
-                                        value={newOwnerAddress}
-                                        onChange={(e) => setNewOwnerAddress(e.target.value)}
+                                        value={counterpartyAddress}
+                                        onChange={(e) => setCounterpartyAddress(e.target.value)}
+                                        placeholder={`Enter ${p2pRole === 'sender' ? 'receiver' : 'sender'} address`}
                                     />
                                 </div>
-                                <Button onClick={addOwner}>Add</Button>
                             </div>
-                        </div>
-
-                        {/* Threshold setting */}
-                        <div>
-                            <Label htmlFor="threshold">Confirmation threshold</Label>
-                            <div className="mt-1">
-                                <Input
-                                    id="threshold"
-                                    type="number"
-                                    min="1"
-                                    max={1 + additionalOwners.length}
-                                    value={threshold}
-                                    onChange={(e) => setThreshold(e.target.value)}
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Number of required confirmations for transactions ({threshold} out of {1 + additionalOwners.length} owners)
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Salt Nonce */}
-                        <div>
-                            <Label htmlFor="saltNonce">Salt Nonce</Label>
-                            <div className="mt-1">
-                                <Input
-                                    id="saltNonce"
-                                    type="text"
-                                    value={saltNonce}
-                                    onChange={(e) => setSaltNonce(e.target.value)}
-                                    placeholder="Salt nonce for deterministic address"
-                                />
-                            </div>
-                        </div>
+                        )}
 
                         {/* Deploy button */}
                         <Button
                             className="w-full"
                             onClick={handleSafeDeploy}
-                            disabled={loading || !!deployedSafeAddress}
+                            disabled={loading || !!deployedSafeAddress || (escrowMode === 'p2p' && !counterpartyAddress)}
                         >
                             {loading ? "Deploying..." : deployedSafeAddress ? "Safe Deployed ✓" : "Deploy Safe"}
                         </Button>
-
-                        {deployedSafeAddress && (
-                            <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                                <h3 className="font-semibold text-green-800">Safe Deployed!</h3>
-                                <p className="text-sm mt-1">Address: {deployedSafeAddress}</p>
-                                <a
-                                    href={`${blockExplorer}/address/${deployedSafeAddress}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-blue-600 hover:underline mt-2 inline-block"
-                                >
-                                    View on Block Explorer →
-                                </a>
-                            </div>
-                        )}
                     </div>
                 </CardContent>
             </Card>
@@ -531,6 +627,20 @@ export default function SeancesSetup() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-6">
+                        {/* Display Active Safe Address */}
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                            <h3 className="font-semibold text-blue-800">Active Safe Address</h3>
+                            <p className="text-sm mt-1">{deployedSafeAddress || existingSafeAddress}</p>
+                            <a
+                                href={`${blockExplorer}/address/${deployedSafeAddress || existingSafeAddress}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 hover:underline mt-2 inline-block"
+                            >
+                                View on Block Explorer →
+                            </a>
+                        </div>
+
                         {/* Contract Terms */}
                         <div className="space-y-6 border-b pb-6">
                             <h3 className="text-xl font-semibold">Contract Terms</h3>
@@ -557,37 +667,26 @@ export default function SeancesSetup() {
                                         />
                                     </div>
 
-                                    {/* Senders */}
+                                    {/* Payments */}
                                     <div>
-                                        <Label>Senders</Label>
-                                        {contractTerms.senders.map((sender, index) => (
+                                        <Label>Payments</Label>
+                                        {contractTerms.payments.map((payment, index) => (
                                             <div key={index} className="flex gap-2 mt-2">
                                                 <Input
                                                     placeholder="Address"
-                                                    value={sender.address}
-                                                    onChange={(e) => {
-                                                        const newSenders = [...contractTerms.senders];
-                                                        newSenders[index] = { ...sender, address: e.target.value };
-                                                        setContractTerms({ ...contractTerms, senders: newSenders });
-                                                    }}
+                                                    value={payment.address}
+                                                    onChange={(e) => updatePayment(index, 'address', e.target.value)}
+                                                    disabled={escrowMode === 'p2p'} // Locked in P2P mode
                                                 />
                                                 <Input
                                                     type="number"
                                                     placeholder="Amount"
-                                                    value={sender.amount}
-                                                    onChange={(e) => {
-                                                        const newSenders = [...contractTerms.senders];
-                                                        newSenders[index] = { ...sender, amount: e.target.value };
-                                                        setContractTerms({ ...contractTerms, senders: newSenders });
-                                                    }}
+                                                    value={payment.amount}
+                                                    onChange={(e) => updatePayment(index, 'amount', e.target.value)}
                                                 />
                                                 <select
-                                                    value={sender.currency}
-                                                    onChange={(e) => {
-                                                        const newSenders = [...contractTerms.senders];
-                                                        newSenders[index] = { ...sender, currency: e.target.value };
-                                                        setContractTerms({ ...contractTerms, senders: newSenders });
-                                                    }}
+                                                    value={payment.currency}
+                                                    onChange={(e) => updatePayment(index, 'currency', e.target.value)}
                                                     className="border rounded p-2"
                                                 >
                                                     {getAvailableTokens().map((token) => (
@@ -596,99 +695,26 @@ export default function SeancesSetup() {
                                                         </option>
                                                     ))}
                                                 </select>
-                                                <Button
-                                                    variant="destructive"
-                                                    onClick={() => {
-                                                        const newSenders = contractTerms.senders.filter((_, i) => i !== index);
-                                                        setContractTerms({ ...contractTerms, senders: newSenders });
-                                                    }}
-                                                >
-                                                    Remove
-                                                </Button>
+                                                {escrowMode === 'grant' && (
+                                                    <Button
+                                                        variant="destructive"
+                                                        onClick={() => removePayment(index)}
+                                                    >
+                                                        Remove
+                                                    </Button>
+                                                )}
                                             </div>
                                         ))}
-                                        <Button
-                                            className="mt-2"
-                                            onClick={() => {
-                                                setContractTerms({
-                                                    ...contractTerms,
-                                                    senders: [...contractTerms.senders, {
-                                                        address: "",
-                                                        amount: "0",
-                                                        currency: TOKENS.NATIVE.address
-                                                    }]
-                                                });
-                                            }}
-                                        >
-                                            Add Sender
-                                        </Button>
-                                    </div>
-
-                                    {/* Receivers */}
-                                    <div>
-                                        <Label>Receivers</Label>
-                                        {contractTerms.receivers.map((receiver, index) => (
-                                            <div key={index} className="flex gap-2 mt-2">
-                                                <Input
-                                                    placeholder="Address"
-                                                    value={receiver.address}
-                                                    onChange={(e) => {
-                                                        const newReceivers = [...contractTerms.receivers];
-                                                        newReceivers[index] = { ...receiver, address: e.target.value };
-                                                        setContractTerms({ ...contractTerms, receivers: newReceivers });
-                                                    }}
-                                                />
-                                                <Input
-                                                    type="number"
-                                                    placeholder="Amount"
-                                                    value={receiver.amount}
-                                                    onChange={(e) => {
-                                                        const newReceivers = [...contractTerms.receivers];
-                                                        newReceivers[index] = { ...receiver, amount: e.target.value };
-                                                        setContractTerms({ ...contractTerms, receivers: newReceivers });
-                                                    }}
-                                                />
-                                                <select
-                                                    value={receiver.currency}
-                                                    onChange={(e) => {
-                                                        const newReceivers = [...contractTerms.receivers];
-                                                        newReceivers[index] = { ...receiver, currency: e.target.value };
-                                                        setContractTerms({ ...contractTerms, receivers: newReceivers });
-                                                    }}
-                                                    className="border rounded p-2"
-                                                >
-                                                    {getAvailableTokens().map((token) => (
-                                                        <option key={token.address} value={token.address}>
-                                                            {token.symbol}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <Button
-                                                    variant="destructive"
-                                                    onClick={() => {
-                                                        const newReceivers = contractTerms.receivers.filter((_, i) => i !== index);
-                                                        setContractTerms({ ...contractTerms, receivers: newReceivers });
-                                                    }}
-                                                >
-                                                    Remove
+                                        {escrowMode === 'grant' && (
+                                            <div className="flex gap-2 mt-2">
+                                                <Button onClick={() => addPayment('sender')}>
+                                                    Add Sender
+                                                </Button>
+                                                <Button onClick={() => addPayment('receiver')}>
+                                                    Add Receiver
                                                 </Button>
                                             </div>
-                                        ))}
-                                        <Button
-                                            className="mt-2"
-                                            onClick={() => {
-                                                setContractTerms({
-                                                    ...contractTerms,
-                                                    receivers: [...contractTerms.receivers, {
-                                                        address: "",
-                                                        amount: "0",
-                                                        currency: TOKENS.NATIVE.address
-                                                    }]
-                                                });
-                                            }}
-                                        >
-                                            Add Receiver
-                                        </Button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -709,7 +735,7 @@ export default function SeancesSetup() {
                         {/* Module Deployment Button */}
                         <Button
                             onClick={handleModuleDeploy}
-                            disabled={!deployedSafeAddress || loading}
+                            disabled={!(deployedSafeAddress || existingSafeAddress) || loading}
                             className="w-full"
                         >
                             {loading ? 'Deploying...' : moduleDeploymentHash ? 'Module Deployed ✓' : 'Deploy Reality Module'}
@@ -726,15 +752,6 @@ export default function SeancesSetup() {
                                 <h3 className="text-xl font-semibold mb-2">Transaction Hash</h3>
                                 <pre className="bg-gray-100 p-4 rounded overflow-auto">
                                     {moduleDeploymentHash}
-                                </pre>
-                            </div>
-                        )}
-
-                        {contractTermsCID && (
-                            <div className="mt-4">
-                                <h3 className="text-xl font-semibold mb-2">Contract Terms IPFS CID</h3>
-                                <pre className="bg-gray-100 p-4 rounded overflow-auto">
-                                    {contractTermsCID}
                                 </pre>
                             </div>
                         )}
