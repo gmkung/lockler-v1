@@ -1,28 +1,34 @@
-import { 
+import {
   ethers,
   JsonRpcProvider,
   BrowserProvider,
   Contract,
   Interface,
   ZeroAddress,
-  Signer
+  Signer,
 } from "ethers";
-import { 
+import {
   DEFAULT_CHAIN_ID,
   getChainConfig,
   getContractAddresses,
-  getRpcUrl
+  getRpcUrl,
 } from "./constants";
+import { SAFE_ABI, MODULE_PROXY_FACTORY_ABI } from "../abis/contracts";
 
 // ABI for SafeProxyFactory contract's createProxyWithNonce function
 export const SAFE_PROXY_FACTORY_ABI = [
   "function createProxyWithNonce(address singleton, bytes memory initializer, uint256 saltNonce) public returns (address proxy)",
-  "event ProxyCreation(address indexed proxy, address singleton)"
+  "event ProxyCreation(address indexed proxy, address singleton)",
 ];
 
 // ABI fragment for Gnosis Safe setup function
 export const SAFE_SETUP_ABI = [
-  "function setup(address[] calldata _owners, uint256 _threshold, address to, bytes calldata data, address fallbackHandler, address paymentToken, uint256 payment, address payable paymentReceiver) external"
+  "function setup(address[] calldata _owners, uint256 _threshold, address to, bytes calldata data, address fallbackHandler, address paymentToken, uint256 payment, address payable paymentReceiver) external",
+];
+
+// Add proxy interface
+export const PROXY_ABI = [
+  "function masterCopy() external view returns (address)"
 ];
 
 // Connect to provider
@@ -37,14 +43,16 @@ export const getProvider = () => {
 // Connect wallet and ensure correct chain
 export const connectWallet = async () => {
   if (!window.ethereum) {
-    throw new Error("Metamask not detected! Please install Metamask extension.");
+    throw new Error(
+      "Metamask not detected! Please install Metamask extension."
+    );
   }
 
   const provider = new BrowserProvider(window.ethereum);
-  
+
   // Request accounts
   await provider.send("eth_requestAccounts", []);
-  
+
   // Check if we're on the correct chain
   const network = await provider.getNetwork();
   if (network.chainId !== BigInt(DEFAULT_CHAIN_ID)) {
@@ -75,7 +83,7 @@ export const connectWallet = async () => {
       }
     }
   }
-  
+
   return provider.getSigner();
 };
 
@@ -86,7 +94,7 @@ export const createSafeSetupInitializer = (
   fallbackHandler: string
 ) => {
   const safeInterface = new Interface(SAFE_SETUP_ABI);
-  
+
   return safeInterface.encodeFunctionData("setup", [
     owners,
     threshold,
@@ -113,32 +121,36 @@ export const deploySafe = async (
     SAFE_PROXY_FACTORY_ABI,
     signer
   );
-  
-  const initializer = createSafeSetupInitializer(owners, threshold, fallbackHandler);
-  
+
+  const initializer = createSafeSetupInitializer(
+    owners,
+    threshold,
+    fallbackHandler
+  );
+
   console.log("Deploying Safe with:", {
     owners,
     threshold,
     fallbackHandler,
-    saltNonce: saltNonce
+    saltNonce: saltNonce,
   });
-  
+
   const tx = await factory.createProxyWithNonce(
     contractAddresses.safeSingleton,
     initializer,
     saltNonce
   );
-  
+
   console.log("Transaction sent:", tx.hash);
   const receipt = await tx.wait();
   console.log("Transaction confirmed:", receipt);
-  
+
   // Extract the deployed Safe address from events
   // Find ProxyCreation event which has the proxy address as the first indexed parameter
   const proxyCreationEvent = receipt.logs?.find(
     (event) => event.fragment?.name === "ProxyCreation"
   );
-  
+
   // If we found the event, extract the proxy address from its args
   if (proxyCreationEvent && proxyCreationEvent.args) {
     // The proxy address is the first argument in the ProxyCreation event
@@ -146,16 +158,19 @@ export const deploySafe = async (
     console.log("Safe deployed at address:", safeAddress);
     return safeAddress;
   }
-  
+
   // If we couldn't find the event or extract the address, look at the logs directly
   for (const log of receipt.logs || []) {
     // Check if this log is from our factory contract
-    if (log.address.toLowerCase() === contractAddresses.safeProxyFactory.toLowerCase()) {
+    if (
+      log.address.toLowerCase() ===
+      contractAddresses.safeProxyFactory.toLowerCase()
+    ) {
       try {
         // Try to parse the log as a ProxyCreation event
         const parsedLog = factory.interface.parseLog({
           topics: log.topics,
-          data: log.data
+          data: log.data,
         });
         if (parsedLog?.name === "ProxyCreation") {
           const safeAddress = parsedLog.args[0];
@@ -167,14 +182,109 @@ export const deploySafe = async (
       }
     }
   }
-  
+
   console.error("Could not extract Safe address from transaction receipt");
   return null;
 };
 
-// Add typings for window.ethereum
-declare global {
-  interface Window {
-    ethereum: any;
+export async function getRealityModulesForSafe(
+  provider: JsonRpcProvider | BrowserProvider,
+  safeAddress: string,
+  chainId: number
+): Promise<{ address: string; isEnabled: boolean; isRealityModule: boolean }[]> {
+  const contracts = getContractAddresses(chainId);
+  
+  // First verify that this is a valid Safe proxy
+  console.log("Verifying Safe proxy at address:", safeAddress);
+  
+  // Use masterCopy() function to verify Safe proxy
+  const MASTER_COPY_ABI = ["function masterCopy() external view returns (address)"];
+  const safeProxy = new Contract(safeAddress, MASTER_COPY_ABI, provider);
+  
+  try {
+    console.log("Calling masterCopy() function...");
+    const implementationAddress = await safeProxy.masterCopy();
+    console.log("Implementation address from masterCopy():", implementationAddress);
+    console.log("Expected singleton address:", contracts.safeSingleton);
+    
+    const implementationCode = await provider.getCode(implementationAddress);
+    const singletonCode = await provider.getCode(contracts.safeSingleton);
+    
+    console.log("Implementation code length:", implementationCode.length);
+    console.log("Singleton code length:", singletonCode.length);
+    console.log("Implementation matches singleton:", implementationCode === singletonCode);
+    
+    if (implementationCode !== singletonCode) {
+      console.log("Implementation mismatch - not pointing to correct Safe singleton");
+      throw new Error("Safe implementation does not match expected singleton");
+    }
+    
+    console.log("Safe proxy verification successful");
+  } catch (error) {
+    console.log("Failed to verify Safe proxy:", error);
+    throw new Error("Invalid Safe proxy address");
   }
+  
+  const safe = new Contract(safeAddress, SAFE_ABI, provider);
+  
+  const PAGE_SIZE = 10;
+  const modules: { address: string; isEnabled: boolean; isRealityModule: boolean }[] = [];
+  let currentPage = 0;
+  let hasMore = true;
+  let start = "0x0000000000000000000000000000000000000001"; // SENTINEL_MODULES
+
+  while (hasMore) {
+    try {
+      const [array, next] = await safe.getModulesPaginated(start, PAGE_SIZE);
+      
+      // Check enablement and Reality Module status for each module
+      for (const address of array) {
+        let isEnabled = false;
+        let isRealityModule = false;
+        try {
+          isEnabled = await safe.isModuleEnabled(address);
+          if (isEnabled) {
+            console.log("Checking module:", address);
+            const bytecode = await provider.getCode(address);
+            
+            // Check for EIP-1167 minimal proxy pattern
+            const prefix = "0x363d3d373d3d3d363d73";
+            const suffix = "5af43d82803e903d91602b57fd5bf3";
+            
+            if (bytecode.startsWith(prefix) && bytecode.endsWith(suffix)) {
+              const implementationAddress = ethers.getAddress("0x" + bytecode.slice(prefix.length, prefix.length + 40));
+              console.log("Implementation address:", implementationAddress);
+              console.log("Against master copy:", contracts.realityMasterCopy);
+              
+              // Compare implementation bytecode with master copy
+              const implementationCode = await provider.getCode(implementationAddress);
+              const masterCode = await provider.getCode(contracts.realityMasterCopy);
+              console.log("Implementation code length:", implementationCode.length);
+              console.log("Master code length:", masterCode.length);
+              isRealityModule = implementationCode === masterCode;
+              console.log("Is Reality Module:", isRealityModule);
+            } else {
+              console.log("Not a minimal proxy or pattern not recognized");
+            }
+          }
+        } catch (error) {
+          console.error("Error checking module:", error);
+        }
+        modules.push({
+          address,
+          isEnabled,
+          isRealityModule,
+        });
+      }
+
+      start = next;
+      hasMore = next !== "0x0000000000000000000000000000000000000001" && array.length > 0;
+      currentPage++;
+    } catch (error) {
+      console.error("Error fetching modules page:", error);
+      break;
+    }
+  }
+  
+  return modules;
 }

@@ -79,4 +79,28 @@ export interface SafeTransactionPreparation {
   signerAddress: string;
   threshold: bigint;
   nonce: bigint;
+}
+
+export interface Payment {
+  address: string;
+  amount: string;
+  currency: string; // Token address (0x000... for native)
+}
+
+export interface EscrowContractTerms {
+  title: string;
+  description: string;
+  senders: Payment[];
+  receivers: Payment[];
+  additionalTerms?: string;
+  createdAt: number;
+}
+
+export interface TemplateData {
+  questionTitle: string;
+  transactionArrayCID: string;
+  transactionHash: string;
+  contractTermsCID: string;
+  category: string;
+  language: string;
 } 
