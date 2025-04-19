@@ -13,7 +13,15 @@ import { Label } from "../components/ui/label";
 import { Card, CardHeader, CardContent } from "../components/ui/card";
 import { useToast } from "../hooks/use-toast";
 import { calculateProxyAddress } from '@gnosis.pm/zodiac';
-import { deploySafe } from "../lib/web3";
+import { deploySafeWithOwners, deployRealityModule } from '../lib/deployment';
+import {
+    encodeSetupParams,
+    createSetUpCalldata,
+    encodeMultiSendTx,
+    formatSignature,
+    prepareSafeTransaction
+} from '../lib/moduleUtils';
+import { getDefaultContractTerms } from '../lib/templates';
 
 import {
     DEFAULT_THRESHOLD,
@@ -46,112 +54,6 @@ import type {
 
 type EscrowMode = 'p2p' | 'grant';
 type P2PRole = 'sender' | 'receiver';
-
-// Utility functions from Reality.tsx
-const encodeSetupParams = (params: SetupParams): string => {
-    console.log('Setup params before encoding:', params);
-    const encoded = ethers.AbiCoder.defaultAbiCoder().encode(
-        [
-            'address', 'address', 'address', 'address',
-            'uint32', 'uint32', 'uint32',
-            'uint256', 'uint256', 'address',
-        ],
-        [
-            params.owner, params.avatar, params.target, params.oracle,
-            params.timeout, params.cooldown, params.expiration,
-            params.bond, params.templateId, params.arbitrator
-        ]
-    );
-    console.log('Encoded setup params:', encoded);
-    return encoded;
-};
-
-const createSetUpCalldata = (initializerParams: string): string => {
-    console.log('Initializer params before creating calldata:', initializerParams);
-    console.log('Initializer params length:', ethers.dataLength(initializerParams));
-    const calldata = ethers.concat([
-        '0xa4f9edbf',
-        ethers.zeroPadValue('0x0000000000000000000000000000000000000000000000000000000000000020', 32),
-        ethers.zeroPadValue(ethers.toBeHex(ethers.dataLength(initializerParams)), 32),
-        initializerParams
-    ]);
-    console.log('Final setup calldata:', calldata);
-    return calldata;
-};
-
-
-const encodeMultiSendTx = (tx: MultiSendTx): string => {
-    return ethers.concat([
-        '0x00',
-        ethers.zeroPadValue(tx.to.toLowerCase(), 20),
-        ethers.zeroPadValue('0x0000000000000000000000000000000000000000000000000000000000000000', 32),
-        ethers.zeroPadValue(ethers.toBeHex(ethers.dataLength(tx.data)), 32),
-        tx.data
-    ]);
-};
-
-const formatSignature = (signerAddress: string): string => {
-    return '0x000000000000000000000000' +
-        signerAddress.slice(2).toLowerCase() +
-        '000000000000000000000000000000000000000000000000000000000000000001';
-};
-
-const prepareSafeTransaction = async (
-    signer: ethers.BrowserProvider,
-    safeAddress: string
-): Promise<SafeTransactionPreparation> => {
-    const signerInstance = await signer.getSigner();
-    const safe = new ethers.Contract(safeAddress, SAFE_ABI, signerInstance);
-    const signerAddress = await signerInstance.getAddress();
-
-    const isOwner = await safe.isOwner(signerAddress);
-    if (!isOwner) throw new Error('Signer is not an owner of this Safe');
-
-    const threshold = await safe.getThreshold();
-    const nonce = await safe.nonce();
-
-    return { safe, signerAddress, threshold, nonce };
-};
-
-const getDefaultContractTerms = (mode: EscrowMode, signerAddress: string, counterpartyAddress: string = "", role: P2PRole = 'sender'): EscrowContractTerms => {
-    if (mode === 'p2p') {
-        return {
-            title: "P2P Escrow Agreement",
-            description: "Agreement between two parties for a secure transaction",
-            type: 'p2p',
-            payments: [
-                {
-                    address: role === 'sender' ? signerAddress : counterpartyAddress,
-                    amount: "0.1",
-                    currency: TOKENS.NATIVE.address,
-                    role: 'sender'
-                },
-                {
-                    address: role === 'receiver' ? signerAddress : counterpartyAddress,
-                    amount: "0.1",
-                    currency: TOKENS.NATIVE.address,
-                    role: 'receiver'
-                }
-            ],
-            createdAt: Date.now()
-        };
-    } else {
-        return {
-            title: "Grant Escrow Agreement",
-            description: "Agreement for grant distribution",
-            type: 'grant',
-            payments: [
-                {
-                    address: signerAddress,
-                    amount: "0.1",
-                    currency: TOKENS.NATIVE.address,
-                    role: 'sender'
-                }
-            ],
-            createdAt: Date.now()
-        };
-    }
-};
 
 export default function SeancesSetup() {
     // Mode and role selection
@@ -222,31 +124,6 @@ export default function SeancesSetup() {
         }
     }, [escrowMode, counterpartyAddress, p2pRole]);
 
-    const addOwner = () => {
-        if (getAddress(newOwnerAddress) && !additionalOwners.includes(newOwnerAddress)) {
-            setAdditionalOwners([...additionalOwners, newOwnerAddress]);
-            setNewOwnerAddress("");
-        } else if (!getAddress(newOwnerAddress)) {
-            toast({
-                variant: "destructive",
-                title: "Invalid address",
-                description: "Please enter a valid Ethereum address",
-            });
-        } else {
-            toast({
-                variant: "destructive",
-                title: "Duplicate owner",
-                description: "This address is already added as an owner",
-            });
-        }
-    };
-
-    const removeOwner = (index: number) => {
-        const updatedOwners = [...additionalOwners];
-        updatedOwners.splice(index, 1);
-        setAdditionalOwners(updatedOwners);
-    };
-
     const handleSafeDeploy = async () => {
         setLoading(true);
         setError(null);
@@ -257,30 +134,13 @@ export default function SeancesSetup() {
             }
 
             const provider = new BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            const signerAddress = await signer.getAddress();
-
-            // Set owners based on escrow mode
-            let owners: string[];
-            if (escrowMode === 'p2p') {
-                if (!counterpartyAddress) {
-                    throw new Error('Counterparty address is required for P2P mode');
-                }
-                owners = p2pRole === 'sender'
-                    ? [signerAddress, counterpartyAddress]
-                    : [counterpartyAddress, signerAddress];
-            } else {
-                // Grant escrow: only guardian (signer) initially
-                owners = [signerAddress];
-            }
-
-            // Deploy Safe with threshold 1
-            const safeAddress = await deploySafe(
-                signer,
-                owners,
-                1, // Initial threshold is 1
-                contracts.fallbackHandler,
-                saltNonce
+            const safeAddress = await deploySafeWithOwners(
+                provider,
+                escrowMode,
+                p2pRole,
+                counterpartyAddress,
+                saltNonce,
+                contracts
             );
 
             setDeployedSafeAddress(safeAddress);
@@ -326,133 +186,21 @@ export default function SeancesSetup() {
             const cid = await uploadContractTerms(contractTerms);
 
             const provider = new BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-
-            // Prepare Safe and validate signer
-            const { safe, signerAddress, nonce } = await prepareSafeTransaction(provider, deployedSafeAddress);
-
-            // Prepare setup parameters
-            const setupParams: SetupParams = {
-                owner: contracts.ddhAddress,
-                avatar: deployedSafeAddress,
-                target: deployedSafeAddress,
-                oracle: contracts.defaultOracle,
-                timeout: DEFAULT_TIMEOUTS.TIMEOUT,
-                cooldown: DEFAULT_TIMEOUTS.COOLDOWN,
-                expiration: DEFAULT_TIMEOUTS.EXPIRATION,
-                bond: parseEther(DEFAULT_BOND).toString(),
-                templateId: 0,
-                arbitrator: contracts.defaultArbitrator
-            };
-
-            // Prepare module deployment transactions
-            const moduleProxyFactory = new ethers.Contract(contracts.moduleProxyFactory, MODULE_PROXY_FACTORY_ABI, signer);
-            const ddh = new ethers.Contract(contracts.ddhAddress, DDH_ABI, signer);
-
-            const initializerParams = encodeSetupParams(setupParams);
-            const setUpCalldata = createSetUpCalldata(initializerParams);
-            const moduleSaltNonce = Date.now().toString();
-
-            const expectedAddress = await calculateProxyAddress(
-                moduleProxyFactory,
-                contracts.realityMasterCopy,
-                setUpCalldata,
-                moduleSaltNonce
-            );
-            const questionText = `{\"lang\":\"en\",\"type\":\"bool\",\"category\":\"Generic Escrow\",\"title\":\"Is the array of transactions in %s with txhash 0x%s in line with the agreement at ${cid}? The hash is the keccak of the concatenation of the individual EIP-712 hashes of the Module transactions.\"}`
-
-            const deployTx = await ddh.deployWithEncodedParams.populateTransaction(
-                contracts.moduleProxyFactory,
-                contracts.realityMasterCopy,
-                setUpCalldata,
-                moduleSaltNonce,
-                setupParams.oracle,
-                questionText,
-                deployedSafeAddress
+            const result = await deployRealityModule(
+                provider,
+                deployedSafeAddress,
+                contracts,
+                cid,
+                {
+                    timeout: DEFAULT_TIMEOUTS.TIMEOUT,
+                    cooldown: DEFAULT_TIMEOUTS.COOLDOWN,
+                    expiration: DEFAULT_TIMEOUTS.EXPIRATION,
+                    bond: parseEther(DEFAULT_BOND).toString()
+                }
             );
 
-            const enableModuleTx = await safe.enableModule.populateTransaction(expectedAddress);
-            const addOwnerTx = await safe.addOwnerWithThreshold.populateTransaction(expectedAddress, 2);
-
-            // Encode transactions for multisend
-            console.log('Deploy transaction data:', deployTx.data);
-            console.log('Enable module transaction data:', enableModuleTx.data);
-            console.log('Add owner transaction data:', addOwnerTx.data);
-
-            const encodedTxs = concat([
-                encodeMultiSendTx({
-                    operation: 0,
-                    to: contracts.ddhAddress,
-                    value: '0',
-                    data: deployTx.data || ''
-                }),
-                encodeMultiSendTx({
-                    operation: 0,
-                    to: deployedSafeAddress,
-                    value: '0',
-                    data: enableModuleTx.data || ''
-                }),
-                encodeMultiSendTx({
-                    operation: 0,
-                    to: deployedSafeAddress,
-                    value: '0',
-                    data: addOwnerTx.data || ''
-                })
-            ]);
-
-            console.log('Encoded multisend transactions:', encodedTxs);
-
-            // Create and execute Safe transaction
-            const multiSend = new ethers.Contract(contracts.safeMultisend, MULTISEND_ABI, signer);
-            const multiSendTx = await multiSend.multiSend.populateTransaction(encodedTxs);
-
-            console.log('MultiSend transaction data:', multiSendTx.data);
-
-            const safeTx: SafeTransaction = {
-                to: contracts.safeMultisend,
-                value: "0",
-                data: multiSendTx.data || '',
-                operation: 1,
-                safeTxGas: "0",
-                baseGas: "0",
-                gasPrice: "0",
-                gasToken: ZeroAddress,
-                refundReceiver: ZeroAddress,
-                nonce: nonce.toString()
-            };
-
-            const txHash = await safe.getTransactionHash(
-                safeTx.to,
-                safeTx.value,
-                safeTx.data,
-                safeTx.operation,
-                safeTx.safeTxGas,
-                safeTx.baseGas,
-                safeTx.gasPrice,
-                safeTx.gasToken,
-                safeTx.refundReceiver,
-                safeTx.nonce
-            );
-
-            const signature = formatSignature(signerAddress);
-
-            const tx = await safe.execTransaction(
-                safeTx.to,
-                safeTx.value,
-                safeTx.data,
-                safeTx.operation,
-                safeTx.safeTxGas,
-                safeTx.baseGas,
-                safeTx.gasPrice,
-                safeTx.gasToken,
-                safeTx.refundReceiver,
-                signature,
-                { gasLimit: 1000000 }
-            );
-
-            const receipt = await tx.wait();
-            setModuleDeploymentHash(tx.hash);
-            setTransactionData(receipt);
+            setModuleDeploymentHash(result.txHash);
+            setTransactionData(result.receipt);
 
             toast({
                 title: "Module Deployed!",
@@ -470,7 +218,6 @@ export default function SeancesSetup() {
             setLoading(false);
         }
     };
-
 
     const getAvailableTokens = () => {
         const currentChainId = chainId || DEFAULT_CHAIN_ID;
