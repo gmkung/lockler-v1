@@ -1,56 +1,31 @@
 import { useState, useEffect } from "react";
-import { ethers } from "ethers";
 import {
     BrowserProvider,
-    concat,
-    getAddress,
     parseEther,
-    ZeroAddress,
 } from "ethers";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardHeader, CardContent } from "../components/ui/card";
 import { useToast } from "../hooks/use-toast";
-import { calculateProxyAddress } from '@gnosis.pm/zodiac';
 import { deploySafeWithOwners, deployRealityModule } from '../lib/deployment';
-import {
-    encodeSetupParams,
-    createSetUpCalldata,
-    encodeMultiSendTx,
-    formatSignature,
-    prepareSafeTransaction
-} from '../lib/moduleUtils';
 import { getDefaultContractTerms } from '../lib/templates';
 
 import {
-    DEFAULT_THRESHOLD,
     DEFAULT_SALT_NONCE,
     DEFAULT_TIMEOUTS,
     DEFAULT_BOND,
     DEFAULT_CHAIN_ID,
-    getChainConfig,
     getContractAddresses,
     getBlockExplorer,
-    TOKENS
 } from '../lib/constants';
 
 import { EscrowContractTerms, Payment } from '../lib/types';
 import { uploadContractTerms, } from '../lib/ipfs';
+import { NetworkInfo } from "../components/NetworkInfo";
+import { ContractTermsForm } from "../components/ContractTermsForm";
+import { DeploymentStatus } from "../components/DeploymentStatus";
 
-import {
-    MODULE_PROXY_FACTORY_ABI,
-    DDH_ABI,
-    SAFE_ABI,
-    MULTISEND_ABI
-} from '../abis/contracts';
-
-import type {
-    SetupParams,
-    SafeTransaction,
-    MultiSendTx,
-    SafeTransactionPreparation
-} from '../lib/types';
 
 type EscrowMode = 'p2p' | 'grant';
 type P2PRole = 'sender' | 'receiver';
@@ -65,12 +40,9 @@ export default function SeancesSetup() {
     const [chainId, setChainId] = useState<number>(DEFAULT_CHAIN_ID);
 
     // Safe deployment state
-    const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD.toString());
     const [saltNonce, setSaltNonce] = useState(DEFAULT_SALT_NONCE);
-    const [additionalOwners, setAdditionalOwners] = useState<string[]>([]);
-    const [newOwnerAddress, setNewOwnerAddress] = useState("");
     const [deployedSafeAddress, setDeployedSafeAddress] = useState<string | null>(null);
-    const [existingSafeAddress, setExistingSafeAddress] = useState("0x3f7f43aF5AA03Eb6c70de81335EF48ef3aF0f2DF");
+    const [existingSafeAddress, setExistingSafeAddress] = useState("");
 
     // Module deployment state
     const [moduleDeploymentHash, setModuleDeploymentHash] = useState<string | null>(null);
@@ -105,7 +77,6 @@ export default function SeancesSetup() {
     // Get current chain contracts
     const contracts = getContractAddresses(chainId);
     const blockExplorer = getBlockExplorer(chainId);
-    const chainConfig = getChainConfig(chainId);
 
     // Update contract terms when mode changes or addresses are set
     useEffect(() => {
@@ -219,73 +190,9 @@ export default function SeancesSetup() {
         }
     };
 
-    const getAvailableTokens = () => {
-        const currentChainId = chainId || DEFAULT_CHAIN_ID;
-        const availableTokens = [TOKENS.NATIVE]; // Always include native token
-
-        // Add all chain-specific tokens that exist for the current chain
-        Object.entries(TOKENS).forEach(([key, tokenConfig]) => {
-            if (key !== 'NATIVE' && tokenConfig[currentChainId]) {
-                availableTokens.push(tokenConfig[currentChainId]);
-            }
-        });
-
-        return availableTokens;
-    };
-
-    // Helper function to add a new payment
-    const addPayment = (role: 'sender' | 'receiver') => {
-        if (escrowMode === 'grant') {
-            setContractTerms({
-                ...contractTerms,
-                payments: [...contractTerms.payments, {
-                    address: "",
-                    amount: "0",
-                    currency: TOKENS.NATIVE.address,
-                    role
-                }]
-            });
-        }
-    };
-
-    // Helper function to update a payment
-    const updatePayment = (index: number, field: keyof Payment, value: string) => {
-        const newPayments = [...contractTerms.payments];
-        newPayments[index] = {
-            ...newPayments[index],
-            [field]: value
-        };
-        setContractTerms({
-            ...contractTerms,
-            payments: newPayments
-        });
-    };
-
-    // Helper function to remove a payment
-    const removePayment = (index: number) => {
-        if (escrowMode === 'grant') {
-            setContractTerms({
-                ...contractTerms,
-                payments: contractTerms.payments.filter((_, i) => i !== index)
-            });
-        }
-    };
-
     return (
         <div className="container mx-auto p-4 space-y-6">
-            {/* Chain Information */}
-            <Card>
-                <CardHeader>
-                    <h2 className="text-2xl font-bold">Network Information</h2>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-sm text-gray-600">
-                        <p>Connected to: {chainConfig.name}</p>
-                        <p>Chain ID: {chainConfig.id}</p>
-                        <p>Native Currency: {chainConfig.nativeCurrency.symbol}</p>
-                    </div>
-                </CardContent>
-            </Card>
+            <NetworkInfo chainId={chainId} />
 
             {/* Step 1: Safe Deployment */}
             <Card>
@@ -383,96 +290,12 @@ export default function SeancesSetup() {
                             </a>
                         </div>
 
-                        {/* Contract Terms */}
-                        <div className="space-y-6 border-b pb-6">
-                            <h3 className="text-xl font-semibold">Contract Terms</h3>
-
-                            <div className="grid grid-cols-2 gap-6">
-                                {/* Input Fields Column */}
-                                <div className="space-y-6">
-                                    {/* Basic Info */}
-                                    <div>
-                                        <Label htmlFor="title">Title</Label>
-                                        <Input
-                                            id="title"
-                                            value={contractTerms.title}
-                                            onChange={(e) => setContractTerms({ ...contractTerms, title: e.target.value })}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="description">Description</Label>
-                                        <Input
-                                            id="description"
-                                            value={contractTerms.description}
-                                            onChange={(e) => setContractTerms({ ...contractTerms, description: e.target.value })}
-                                        />
-                                    </div>
-
-                                    {/* Payments */}
-                                    <div>
-                                        <Label>Payments</Label>
-                                        {contractTerms.payments.map((payment, index) => (
-                                            <div key={index} className="flex gap-2 mt-2">
-                                                <Input
-                                                    placeholder="Address"
-                                                    value={payment.address}
-                                                    onChange={(e) => updatePayment(index, 'address', e.target.value)}
-                                                    disabled={escrowMode === 'p2p'} // Locked in P2P mode
-                                                />
-                                                <Input
-                                                    type="number"
-                                                    placeholder="Amount"
-                                                    value={payment.amount}
-                                                    onChange={(e) => updatePayment(index, 'amount', e.target.value)}
-                                                />
-                                                <select
-                                                    value={payment.currency}
-                                                    onChange={(e) => updatePayment(index, 'currency', e.target.value)}
-                                                    className="border rounded p-2"
-                                                >
-                                                    {getAvailableTokens().map((token) => (
-                                                        <option key={token.address} value={token.address}>
-                                                            {token.symbol}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                {escrowMode === 'grant' && (
-                                                    <Button
-                                                        variant="destructive"
-                                                        onClick={() => removePayment(index)}
-                                                    >
-                                                        Remove
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        ))}
-                                        {escrowMode === 'grant' && (
-                                            <div className="flex gap-2 mt-2">
-                                                <Button onClick={() => addPayment('sender')}>
-                                                    Add Sender
-                                                </Button>
-                                                <Button onClick={() => addPayment('receiver')}>
-                                                    Add Receiver
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* JSON Preview Column */}
-                                <div className="space-y-4">
-                                    <Label>Contract Terms Preview</Label>
-                                    <Card className="h-full">
-                                        <CardContent className="p-4">
-                                            <pre className="text-sm overflow-auto max-h-[600px]">
-                                                {JSON.stringify(contractTerms, null, 2)}
-                                            </pre>
-                                        </CardContent>
-                                    </Card>
-                                </div>
-                            </div>
-                        </div>
+                        <ContractTermsForm
+                            contractTerms={contractTerms}
+                            setContractTerms={setContractTerms}
+                            escrowMode={escrowMode}
+                            chainId={chainId}
+                        />
 
                         {/* Module Deployment Button */}
                         <Button
@@ -483,29 +306,11 @@ export default function SeancesSetup() {
                             {loading ? 'Deploying...' : moduleDeploymentHash ? 'Module Deployed ✓' : 'Deploy Reality Module'}
                         </Button>
 
-                        {error && (
-                            <div className="text-red-500 mt-2">
-                                Error: {error}
-                            </div>
-                        )}
-
-                        {moduleDeploymentHash && (
-                            <div className="mt-4">
-                                <h3 className="text-xl font-semibold mb-2">Transaction Hash</h3>
-                                <pre className="bg-gray-100 p-4 rounded overflow-auto">
-                                    {moduleDeploymentHash}
-                                </pre>
-                            </div>
-                        )}
-
-                        {transactionData && (
-                            <div className="mt-4">
-                                <h3 className="text-xl font-semibold mb-2">Transaction Receipt</h3>
-                                <pre className="bg-gray-100 p-4 rounded overflow-auto">
-                                    {JSON.stringify(transactionData, null, 2)}
-                                </pre>
-                            </div>
-                        )}
+                        <DeploymentStatus
+                            moduleDeploymentHash={moduleDeploymentHash}
+                            transactionData={transactionData}
+                            error={error}
+                        />
                     </div>
                 </CardContent>
             </Card>

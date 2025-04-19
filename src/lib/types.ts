@@ -103,4 +103,17 @@ export interface TemplateData {
   contractTermsCID: string;
   category: string;
   language: string;
+}
+
+export interface TransactionStatus {
+  isExecuted: boolean;
+  canExecute: boolean;
+}
+
+export interface ProposalTransaction {
+  to: string;
+  value: string;
+  data: string;
+  operation: number;
+  error?: string;
 } 
