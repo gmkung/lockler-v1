@@ -2,15 +2,10 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import {
     BrowserProvider,
-    Contract,
-    AbiCoder,
     concat,
-    zeroPadValue,
-    toBeHex,
     getAddress,
     parseEther,
     ZeroAddress,
-    dataLength
 } from "ethers";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -182,7 +177,7 @@ export default function SeancesSetup() {
     const [loading, setLoading] = useState(false);
 
     // Contract terms state
-    const [contractTerms, setContractTerms] = useState<EscrowContractTerms>(() => 
+    const [contractTerms, setContractTerms] = useState<EscrowContractTerms>(() =>
         getDefaultContractTerms('p2p', '', '')
     );
 
