@@ -1,18 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { TOKENS, getContractAddresses } from '../lib/constants';
 import { uploadJSONToIPFS } from 'light-curate-data-service';
-import { BrowserProvider, Contract, AbiCoder, parseUnits, keccak256 } from 'ethers';
+import { BrowserProvider, Contract, AbiCoder, parseUnits, keccak256, ethers } from 'ethers';
+import { REALITY_MODULE_ABI } from '../abis/realityModule';
+import { ERC20_ABI } from '../abis/erc20';
 
 export type Transaction = {
     to: string;
     value: string;
     data: string;
     operation: number;
+    type: TransactionType;
 };
 
 type TransactionType = 'native' | 'erc20' | 'custom';
@@ -31,12 +35,14 @@ export function ProposeTransactionModal({
     realityModuleAddress: string;
 }) {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [showRawIndices, setShowRawIndices] = useState<Set<number>>(new Set());
     const [currentType, setCurrentType] = useState<TransactionType>('native');
     const [currentTo, setCurrentTo] = useState('');
     const [currentValue, setCurrentValue] = useState('');
     const [currentData, setCurrentData] = useState('');
-    const [currentToken, setCurrentToken] = useState(TOKENS.NATIVE.address);
     const [currentRecipient, setCurrentRecipient] = useState('');
+    const [minimumBond, setMinimumBond] = useState<string>('0');
+    const [isLoadingBond, setIsLoadingBond] = useState(true);
 
     const availableTokens = [TOKENS.NATIVE];
     Object.entries(TOKENS).forEach(([key, tokenConfig]) => {
@@ -47,6 +53,33 @@ export function ProposeTransactionModal({
 
     // Filter out native token for ERC20 selection
     const erc20Tokens = availableTokens.filter(token => token.address !== TOKENS.NATIVE.address);
+    
+    // Set current token to first available ERC20 token
+    const [currentToken, setCurrentToken] = useState(erc20Tokens[0]?.address || TOKENS.NATIVE.address);
+
+    useEffect(() => {
+        const fetchMinimumBond = async () => {
+            if (!realityModuleAddress) return;
+            
+            try {
+                const provider = new BrowserProvider(window.ethereum);
+                const realityModule = new Contract(
+                    realityModuleAddress,
+                    REALITY_MODULE_ABI,
+                    provider
+                );
+
+                const bond = await realityModule.minimumBond();
+                setMinimumBond(bond.toString());
+            } catch (error) {
+                console.error('Failed to fetch minimum bond:', error);
+            } finally {
+                setIsLoadingBond(false);
+            }
+        };
+
+        fetchMinimumBond();
+    }, [realityModuleAddress]);
 
     const addTransaction = () => {
         // Validate inputs based on type
@@ -64,26 +97,42 @@ export function ProposeTransactionModal({
             to: currentTo,
             value: '0',
             data: '0x',
-            operation: 1
+            operation: 1,
+            type: currentType
         };
 
         if (currentType === 'native') {
-            newTransaction.value = currentValue;
+            // For native token, we need to convert the amount to wei
+            const weiAmount = parseUnits(currentValue, 18);
+            console.log('Native token transfer:', {
+                inputValue: currentValue,
+                weiAmount: weiAmount.toString(),
+                formatted: ethers.formatEther(weiAmount)
+            });
+            newTransaction.value = weiAmount.toString();
             newTransaction.to = currentTo;
         } else if (currentType === 'erc20') {
             const token = erc20Tokens.find(t => t.address === currentToken);
             if (token) {
+                // For ERC20, we need to convert the amount using the token's decimals
+                const amount = parseUnits(currentValue, token.decimals);
+                console.log('ERC20 transfer:', {
+                    inputValue: currentValue,
+                    tokenDecimals: token.decimals,
+                    rawAmount: amount.toString(),
+                    formatted: ethers.formatUnits(amount, token.decimals)
+                });
                 // Encode transfer(address,uint256) call
                 const transferData = new AbiCoder().encode(
                     ['address', 'uint256'],
-                    [currentRecipient, parseUnits(currentValue, token.decimals)]
+                    [currentRecipient, amount]
                 );
                 newTransaction.data = '0xa9059cbb' + transferData.slice(2);
                 newTransaction.to = token.address;
             }
         } else if (currentType === 'custom') {
             newTransaction.data = currentData;
-            newTransaction.value = currentValue;
+            newTransaction.value = parseUnits(currentValue || '0', 18).toString();
             newTransaction.to = currentTo;
         }
 
@@ -103,19 +152,22 @@ export function ProposeTransactionModal({
         if (transactions.length === 0) return;
         
         try {
-            // Upload transactions to IPFS to get proposalId
-            const cid = await uploadJSONToIPFS(transactions);
-            
+            // Check if user has enough ETH for the bond
             const provider = new BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
+            const balance = await provider.getBalance(await signer.getAddress());
+            
+            if (balance < BigInt(minimumBond)) {
+                throw new Error(`Insufficient ETH for bond. Required: ${ethers.formatEther(minimumBond)} ETH`);
+            }
+
+            // Upload transactions to IPFS to get proposalId
+            const cid = await uploadJSONToIPFS(transactions);
             
             // Get the Reality Module contract instance
             const realityModule = new Contract(
                 realityModuleAddress,
-                [
-                    'function addProposal(string memory proposalId, bytes32[] memory txHashes) public',
-                    'function getTransactionHash(address to, uint256 value, bytes memory data, uint8 operation, uint256 nonce) public view returns (bytes32)'
-                ],
+                REALITY_MODULE_ABI,
                 signer
             );
 
@@ -126,7 +178,7 @@ export function ProposeTransactionModal({
                     tx.value,
                     tx.data,
                     tx.operation,
-                    index // Use index as nonce
+                    index
                 );
             }));
 
@@ -138,7 +190,89 @@ export function ProposeTransactionModal({
             onClose();
         } catch (error) {
             console.error('Failed to propose transactions:', error);
+            // You might want to show an error toast here
         }
+    };
+
+    // Helper function to format amount for display
+    const formatAmount = (amount: string, decimals: number) => {
+        try {
+            return ethers.formatUnits(amount, decimals);
+        } catch (e) {
+            return '0';
+        }
+    };
+
+    // Helper function to parse amount from display
+    const parseAmount = (amount: string, decimals: number) => {
+        try {
+            return parseUnits(amount, decimals).toString();
+        } catch (e) {
+            return '0';
+        }
+    };
+
+    const decodeCalldata = (data: string, type: TransactionType, to: string): { readable: string; raw: string } => {
+        if (data === '0x') return { readable: 'No calldata', raw: data };
+        
+        try {
+            if (type === 'erc20') {
+                const iface = new ethers.Interface(ERC20_ABI);
+                const decoded = iface.parseTransaction({ data });
+                
+                if (decoded) {
+                    // Find token by contract address (to)
+                    const token = erc20Tokens.find(t => t.address.toLowerCase() === to.toLowerCase());
+                    const decimals = token?.decimals || 18;
+                    const symbol = token?.symbol || 'tokens';
+                    
+                    switch (decoded.name) {
+                        case 'transfer':
+                            return {
+                                readable: `Transfer ${ethers.formatUnits(decoded.args[1], decimals)} ${symbol} to ${decoded.args[0]}`,
+                                raw: data
+                            };
+                        case 'transferFrom':
+                            return {
+                                readable: `Transfer ${ethers.formatUnits(decoded.args[2], decimals)} ${symbol} from ${decoded.args[0]} to ${decoded.args[1]}`,
+                                raw: data
+                            };
+                        case 'approve':
+                            return {
+                                readable: `Approve ${ethers.formatUnits(decoded.args[1], decimals)} ${symbol} for ${decoded.args[0]}`,
+                                raw: data
+                            };
+                        default:
+                            return {
+                                readable: `${decoded.name}(${decoded.args.map(arg => arg.toString()).join(', ')})`,
+                                raw: data
+                            };
+                    }
+                }
+            }
+            return {
+                readable: 'Custom transaction',
+                raw: data
+            };
+        } catch (error) {
+            console.error('Error decoding calldata:', error);
+            return {
+                readable: 'Failed to decode calldata',
+                raw: data
+            };
+        }
+    };
+
+    const toggleRawCalldata = (index: number) => {
+        setShowRawIndices(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(index)) {
+                newSet.delete(index);
+            } else {
+                newSet.add(index);
+            }
+            return newSet;
+        });
     };
 
     return (
@@ -149,6 +283,19 @@ export function ProposeTransactionModal({
                 </DialogHeader>
 
                 <div className="space-y-4">
+                    {/* Bond Information */}
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                        <h3 className="font-semibold text-blue-800">Required Bond</h3>
+                        {isLoadingBond ? (
+                            <p className="text-sm mt-1">Loading minimum bond amount...</p>
+                        ) : (
+                            <p className="text-sm mt-1">
+                                You need to have at least {ethers.formatEther(minimumBond)} ETH in your wallet to propose this transaction.
+                                The bond will be automatically deducted when you submit the proposal.
+                            </p>
+                        )}
+                    </div>
+
                     <div>
                         <Label>Transaction Type</Label>
                         <Select value={currentType} onValueChange={(value: TransactionType) => setCurrentType(value)}>
@@ -174,12 +321,13 @@ export function ProposeTransactionModal({
                                 />
                             </div>
                             <div>
-                                <Label>Amount</Label>
+                                <Label>Amount (ETH)</Label>
                                 <Input
                                     type="number"
                                     value={currentValue}
                                     onChange={(e) => setCurrentValue(e.target.value)}
                                     placeholder="0.0"
+                                    step="0.000000000000000001"
                                 />
                             </div>
                         </>
@@ -220,6 +368,9 @@ export function ProposeTransactionModal({
                                     value={currentValue}
                                     onChange={(e) => setCurrentValue(e.target.value)}
                                     placeholder="0.0"
+                                    step={erc20Tokens.find(t => t.address === currentToken)?.decimals ? 
+                                        `0.${'0'.repeat(erc20Tokens.find(t => t.address === currentToken)!.decimals - 1)}1` : 
+                                        "0.000000000000000001"}
                                 />
                             </div>
                         </>
@@ -261,26 +412,62 @@ export function ProposeTransactionModal({
                             <p className="text-sm text-gray-500">No transactions added yet</p>
                         ) : (
                             <div className="space-y-2">
-                                {transactions.map((tx, index) => (
-                                    <div key={index} className="p-3 border rounded bg-gray-50">
-                                        <div className="flex justify-between items-start">
-                                            <div className="space-y-1">
-                                                <p className="text-sm font-medium">To: {tx.to}</p>
-                                                <p className="text-sm">Value: {tx.value}</p>
-                                                <p className="text-sm break-all">Data: {tx.data.slice(0, 20)}...</p>
+                                {transactions.map((tx, index) => {
+                                    const decoded = decodeCalldata(tx.data, tx.type, tx.to);
+                                    const showRaw = showRawIndices.has(index);
+                                    
+                                    return (
+                                        <div key={index} className="p-3 border rounded bg-gray-50">
+                                            <div className="flex justify-between items-start">
+                                                <div className="space-y-1">
+                                                    {tx.type !== 'erc20' && (
+                                                        <p className="text-sm font-medium">To: {tx.to}</p>
+                                                    )}
+                                                    {tx.type !== 'erc20' && (
+                                                        <p className="text-sm">Value: {ethers.formatEther(tx.value)} ETH</p>
+                                                    )}
+                                                    <p className="text-sm break-all">
+                                                        {decoded.readable}
+                                                    </p>
+                                                    <div className="mt-2">
+                                                        <button
+                                                            onClick={() => toggleRawCalldata(index)}
+                                                            className="flex items-center text-xs text-gray-500 hover:text-gray-700"
+                                                        >
+                                                            {showRaw ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
+                                                            {showRaw ? 'Hide' : 'Show'} {tx.type === 'erc20' ? 'contract details and ' : ''}raw calldata
+                                                        </button>
+                                                        {showRaw && (
+                                                            <div className="mt-1 p-2 bg-gray-100 rounded text-xs font-mono space-y-1">
+                                                                {tx.type === 'erc20' && (
+                                                                    <>
+                                                                        <p>Contract Address: {tx.to}</p>
+                                                                        <p>Native Value: {ethers.formatEther(tx.value)} ETH</p>
+                                                                    </>
+                                                                )}
+                                                                <p className="break-all">Calldata: {decoded.raw}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setTransactions(prev => prev.filter((_, i) => i !== index));
+                                                        setShowRawIndices(prev => {
+                                                            const newSet = new Set(prev);
+                                                            newSet.delete(index);
+                                                            return newSet;
+                                                        });
+                                                    }}
+                                                >
+                                                    Remove
+                                                </Button>
                                             </div>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="sm"
-                                                onClick={() => {
-                                                    setTransactions(prev => prev.filter((_, i) => i !== index));
-                                                }}
-                                            >
-                                                Remove
-                                            </Button>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
@@ -301,7 +488,7 @@ export function ProposeTransactionModal({
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
                     <Button 
                         onClick={handlePropose} 
-                        disabled={transactions.length === 0}
+                        disabled={transactions.length === 0 || isLoadingBond}
                     >
                         Propose Transactions
                     </Button>
