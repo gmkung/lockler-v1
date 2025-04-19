@@ -191,7 +191,21 @@ export async function getRealityModulesForSafe(
   provider: JsonRpcProvider | BrowserProvider,
   safeAddress: string,
   chainId: number
-): Promise<{ address: string; isEnabled: boolean; isRealityModule: boolean }[]> {
+): Promise<{
+  address: string;
+  isEnabled: boolean;
+  isRealityModule: boolean;
+  templateId: string;
+  oracle: string;
+  validationChecks: {
+    isMinimalProxy: boolean;
+    implementationMatches: boolean;
+    isOwner: boolean;
+    hasValidThreshold: boolean;
+    hasValidOwnerCount: boolean;
+    isOnlyEnabledModule: boolean;
+  };
+}[]> {
   const contracts = getContractAddresses(chainId);
   
   // First verify that this is a valid Safe proxy
@@ -228,10 +242,46 @@ export async function getRealityModulesForSafe(
   const safe = new Contract(safeAddress, SAFE_ABI, provider);
   
   const PAGE_SIZE = 10;
-  const modules: { address: string; isEnabled: boolean; isRealityModule: boolean }[] = [];
-  let currentPage = 0;
+  const modules: {
+    address: string;
+    isEnabled: boolean;
+    isRealityModule: boolean;
+    templateId: string;
+    oracle: string;
+    validationChecks: {
+      isMinimalProxy: boolean;
+      implementationMatches: boolean;
+      isOwner: boolean;
+      hasValidThreshold: boolean;
+      hasValidOwnerCount: boolean;
+      isOnlyEnabledModule: boolean;
+    };
+  }[] = [];
   let hasMore = true;
   let start = "0x0000000000000000000000000000000000000001"; // SENTINEL_MODULES
+
+  // Get Safe threshold and owners
+  const threshold = await safe.getThreshold();
+  console.log("Safe threshold:", threshold.toString());
+  
+  const owners = await safe.getOwners();
+  console.log("Safe owners:", owners);
+  console.log("Number of owners:", owners.length);
+
+  // Check if threshold and owner count are valid
+  const hasValidThreshold = threshold.toString() === "2";
+  const hasValidOwnerCount = owners.length <= 3;
+  console.log("Has valid threshold:", hasValidThreshold);
+  console.log("Has valid owner count:", hasValidOwnerCount);
+
+  // Keep track of enabled modules count
+  let enabledModulesCount = 0;
+
+  // ABI for Reality Module
+  const REALITY_MODULE_ABI = [
+    "function template() view returns (uint256)",
+    "function oracle() view returns (address)"
+  ];
 
   while (hasMore) {
     try {
@@ -241,9 +291,16 @@ export async function getRealityModulesForSafe(
       for (const address of array) {
         let isEnabled = false;
         let isRealityModule = false;
+        let isMinimalProxy = false;
+        let implementationMatches = false;
+        let isOwner = false;
+        let templateId = "0";
+        let oracle = "0x0000000000000000000000000000000000000000";
+
         try {
           isEnabled = await safe.isModuleEnabled(address);
           if (isEnabled) {
+            enabledModulesCount++;
             console.log("Checking module:", address);
             const bytecode = await provider.getCode(address);
             
@@ -251,7 +308,9 @@ export async function getRealityModulesForSafe(
             const prefix = "0x363d3d373d3d3d363d73";
             const suffix = "5af43d82803e903d91602b57fd5bf3";
             
-            if (bytecode.startsWith(prefix) && bytecode.endsWith(suffix)) {
+            isMinimalProxy = bytecode.startsWith(prefix) && bytecode.endsWith(suffix);
+            
+            if (isMinimalProxy) {
               const implementationAddress = ethers.getAddress("0x" + bytecode.slice(prefix.length, prefix.length + 40));
               console.log("Implementation address:", implementationAddress);
               console.log("Against master copy:", contracts.realityMasterCopy);
@@ -261,8 +320,22 @@ export async function getRealityModulesForSafe(
               const masterCode = await provider.getCode(contracts.realityMasterCopy);
               console.log("Implementation code length:", implementationCode.length);
               console.log("Master code length:", masterCode.length);
-              isRealityModule = implementationCode === masterCode;
+              implementationMatches = implementationCode === masterCode;
+              isRealityModule = implementationMatches;
               console.log("Is Reality Module:", isRealityModule);
+
+              // Check if module is also an owner
+              isOwner = owners.includes(address);
+              console.log("Module is owner:", isOwner);
+
+              // Get template and oracle if it's a Reality Module
+              if (isRealityModule) {
+                const moduleContract = new Contract(address, REALITY_MODULE_ABI, provider);
+                templateId = (await moduleContract.template()).toString();
+                oracle = await moduleContract.oracle();
+                console.log("Template ID:", templateId);
+                console.log("Oracle:", oracle);
+              }
             } else {
               console.log("Not a minimal proxy or pattern not recognized");
             }
@@ -270,21 +343,42 @@ export async function getRealityModulesForSafe(
         } catch (error) {
           console.error("Error checking module:", error);
         }
+
         modules.push({
           address,
           isEnabled,
           isRealityModule,
+          templateId,
+          oracle,
+          validationChecks: {
+            isMinimalProxy,
+            implementationMatches,
+            isOwner,
+            hasValidThreshold,
+            hasValidOwnerCount,
+            isOnlyEnabledModule: false // Will be updated after all modules are processed
+          }
         });
       }
 
       start = next;
       hasMore = next !== "0x0000000000000000000000000000000000000001" && array.length > 0;
-      currentPage++;
     } catch (error) {
       console.error("Error fetching modules page:", error);
       break;
     }
   }
-  
-  return modules;
+
+  // Update isOnlyEnabledModule check for all modules
+  const hasValidModuleCount = enabledModulesCount === 1;
+  console.log("Total enabled modules:", enabledModulesCount);
+  console.log("Has valid module count:", hasValidModuleCount);
+
+  return modules.map(module => ({
+    ...module,
+    validationChecks: {
+      ...module.validationChecks,
+      isOnlyEnabledModule: hasValidModuleCount
+    }
+  }));
 }
