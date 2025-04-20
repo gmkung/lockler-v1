@@ -10,6 +10,9 @@ import { uploadJSONToIPFS } from 'light-curate-data-service';
 import { BrowserProvider, Contract, AbiCoder, parseUnits, keccak256, ethers } from 'ethers';
 import { REALITY_MODULE_ABI } from '../abis/realityModule';
 import { ERC20_ABI } from '../abis/erc20';
+import { bytes32ToCidV0, cidToBytes32 } from '../lib/cid';
+
+
 
 export type Transaction = {
     to: string;
@@ -53,14 +56,14 @@ export function ProposeTransactionModal({
 
     // Filter out native token for ERC20 selection
     const erc20Tokens = availableTokens.filter(token => token.address !== TOKENS.NATIVE.address);
-    
+
     // Set current token to first available ERC20 token
     const [currentToken, setCurrentToken] = useState(erc20Tokens[0]?.address || TOKENS.NATIVE.address);
 
     useEffect(() => {
         const fetchMinimumBond = async () => {
             if (!realityModuleAddress) return;
-            
+
             try {
                 const provider = new BrowserProvider(window.ethereum);
                 const realityModule = new Contract(
@@ -150,20 +153,26 @@ export function ProposeTransactionModal({
 
     const handlePropose = async () => {
         if (transactions.length === 0) return;
-        
+
         try {
             // Check if user has enough ETH for the bond
             const provider = new BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const balance = await provider.getBalance(await signer.getAddress());
-            
+
             if (balance < BigInt(minimumBond)) {
                 throw new Error(`Insufficient ETH for bond. Required: ${ethers.formatEther(minimumBond)} ETH`);
             }
 
             // Upload transactions to IPFS to get proposalId
             const cid = await uploadJSONToIPFS(transactions);
-            
+            console.log('original CID:', cid);
+
+            // Convert CID to bytes32 for on-chain storage
+            //const bytes32Hex = cidToBytes32(cid);
+            //console.log('bytes32 value:', bytes32Hex);
+            //console.log("decoding test: ", bytes32ToCidV0(bytes32Hex))
+
             // Get the Reality Module contract instance
             const realityModule = new Contract(
                 realityModuleAddress,
@@ -182,7 +191,7 @@ export function ProposeTransactionModal({
                 );
             }));
 
-            // Call addProposal with the IPFS CID as proposalId and the array of transaction hashes
+            // Call addProposal with the  CID  and the array of transaction hashes
             const tx = await realityModule.addProposal(cid, txHashes);
             await tx.wait();
 
@@ -214,18 +223,18 @@ export function ProposeTransactionModal({
 
     const decodeCalldata = (data: string, type: TransactionType, to: string): { readable: string; raw: string } => {
         if (data === '0x') return { readable: 'No calldata', raw: data };
-        
+
         try {
             if (type === 'erc20') {
                 const iface = new ethers.Interface(ERC20_ABI);
                 const decoded = iface.parseTransaction({ data });
-                
+
                 if (decoded) {
                     // Find token by contract address (to)
                     const token = erc20Tokens.find(t => t.address.toLowerCase() === to.toLowerCase());
                     const decimals = token?.decimals || 18;
                     const symbol = token?.symbol || 'tokens';
-                    
+
                     switch (decoded.name) {
                         case 'transfer':
                             return {
@@ -368,8 +377,8 @@ export function ProposeTransactionModal({
                                     value={currentValue}
                                     onChange={(e) => setCurrentValue(e.target.value)}
                                     placeholder="0.0"
-                                    step={erc20Tokens.find(t => t.address === currentToken)?.decimals ? 
-                                        `0.${'0'.repeat(erc20Tokens.find(t => t.address === currentToken)!.decimals - 1)}1` : 
+                                    step={erc20Tokens.find(t => t.address === currentToken)?.decimals ?
+                                        `0.${'0'.repeat(erc20Tokens.find(t => t.address === currentToken)!.decimals - 1)}1` :
                                         "0.000000000000000001"}
                                 />
                             </div>
@@ -415,7 +424,7 @@ export function ProposeTransactionModal({
                                 {transactions.map((tx, index) => {
                                     const decoded = decodeCalldata(tx.data, tx.type, tx.to);
                                     const showRaw = showRawIndices.has(index);
-                                    
+
                                     return (
                                         <div key={index} className="p-3 border rounded bg-gray-50">
                                             <div className="flex justify-between items-start">
@@ -450,8 +459,8 @@ export function ProposeTransactionModal({
                                                         )}
                                                     </div>
                                                 </div>
-                                                <Button 
-                                                    variant="ghost" 
+                                                <Button
+                                                    variant="ghost"
                                                     size="sm"
                                                     onClick={() => {
                                                         setTransactions(prev => prev.filter((_, i) => i !== index));
@@ -472,7 +481,7 @@ export function ProposeTransactionModal({
                         )}
                     </div>
 
-                    <Button 
+                    <Button
                         onClick={addTransaction}
                         disabled={
                             (currentType === 'native' && (!currentTo || !currentValue)) ||
@@ -486,8 +495,8 @@ export function ProposeTransactionModal({
 
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button 
-                        onClick={handlePropose} 
+                    <Button
+                        onClick={handlePropose}
                         disabled={transactions.length === 0 || isLoadingBond}
                     >
                         Propose Transactions

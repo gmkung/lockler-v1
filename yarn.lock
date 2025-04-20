@@ -4722,10 +4722,10 @@ levn@^0.4.1:
     prelude-ls "^1.2.1"
     type-check "~0.4.0"
 
-light-curate-data-service@^0.4.5:
-  version "0.4.5"
-  resolved "https://registry.npmjs.org/light-curate-data-service/-/light-curate-data-service-0.4.5.tgz"
-  integrity sha512-2fBdH2YfRCG1dOIti+tVBwGayirFg4O2j/2j+g+HRG92+DD8u13UnvosuXeCn8H8sOm4dJUlpLo/cxMl+9ykVw==
+light-curate-data-service@^0.4.7:
+  version "0.4.7"
+  resolved "https://registry.yarnpkg.com/light-curate-data-service/-/light-curate-data-service-0.4.7.tgz#03be8cb5c8a75d4e3ba93e2579219d7985545f25"
+  integrity sha512-tJz8QO+HjoLJGdwkTFzYpJlqqVvrr4/DshPlbWw9H3JEY1Y2mNgjTz3KP+nmfmNUhaG+hWDESkQZNGsbQk04yw==
   dependencies:
     axios "^1.6.0"
     ethers "^5.7.2"

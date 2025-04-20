@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import {
     BrowserProvider,
     parseEther,
+    formatEther,
 } from "ethers";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -25,12 +26,21 @@ import { uploadContractTerms, } from '../lib/ipfs';
 import { NetworkInfo } from "../components/NetworkInfo";
 import { ContractTermsForm } from "../components/ContractTermsForm";
 import { DeploymentStatus } from "../components/DeploymentStatus";
+import { useNavigate } from "react-router-dom";
 
 
 type EscrowMode = 'p2p' | 'grant';
 type P2PRole = 'sender' | 'receiver';
 
+interface ModuleConfig {
+    timeout: number;
+    cooldown: number;
+    expiration: number;
+    bond: string;
+}
+
 export default function SeancesSetup() {
+    const navigate = useNavigate();
     // Mode and role selection
     const [escrowMode, setEscrowMode] = useState<EscrowMode>('p2p');
     const [p2pRole, setP2PRole] = useState<P2PRole>('sender');
@@ -54,6 +64,14 @@ export default function SeancesSetup() {
     const [contractTerms, setContractTerms] = useState<EscrowContractTerms>(() =>
         getDefaultContractTerms('p2p', '', '')
     );
+
+    // Module configuration state
+    const [moduleConfig, setModuleConfig] = useState<ModuleConfig>({
+        timeout: DEFAULT_TIMEOUTS.TIMEOUT,
+        cooldown: DEFAULT_TIMEOUTS.COOLDOWN,
+        expiration: DEFAULT_TIMEOUTS.EXPIRATION,
+        bond: DEFAULT_BOND
+    });
 
     const { toast } = useToast();
 
@@ -163,10 +181,10 @@ export default function SeancesSetup() {
                 contracts,
                 cid,
                 {
-                    timeout: DEFAULT_TIMEOUTS.TIMEOUT,
-                    cooldown: DEFAULT_TIMEOUTS.COOLDOWN,
-                    expiration: DEFAULT_TIMEOUTS.EXPIRATION,
-                    bond: parseEther(DEFAULT_BOND).toString()
+                    timeout: moduleConfig.timeout,
+                    cooldown: moduleConfig.cooldown,
+                    expiration: moduleConfig.expiration,
+                    bond: parseEther(moduleConfig.bond).toString()
                 }
             );
 
@@ -290,6 +308,124 @@ export default function SeancesSetup() {
                             </a>
                         </div>
 
+                        {/* Module Configuration */}
+                        <div className="space-y-4">
+                            <h3 className="font-semibold">Module Configuration</h3>
+                            
+                            {/* Bond */}
+                            <div className="space-y-2">
+                                <Label>Question Bond (ETH)</Label>
+                                <div className="flex items-center space-x-2">
+                                    <Input
+                                        type="number"
+                                        value={moduleConfig.bond}
+                                        onChange={(e) => setModuleConfig(prev => ({
+                                            ...prev,
+                                            bond: e.target.value
+                                        }))}
+                                        placeholder={DEFAULT_BOND}
+                                        step="0.000000000000000001"
+                                    />
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setModuleConfig(prev => ({
+                                            ...prev,
+                                            bond: DEFAULT_BOND
+                                        }))}
+                                    >
+                                        Reset
+                                    </Button>
+                                </div>
+                                <p className="text-sm text-gray-500">
+                                    Amount of ETH required to submit a question
+                                </p>
+                            </div>
+
+                            {/* Timeout */}
+                            <div className="space-y-2">
+                                <Label>Timeout (seconds)</Label>
+                                <div className="flex items-center space-x-2">
+                                    <Input
+                                        type="number"
+                                        value={moduleConfig.timeout}
+                                        onChange={(e) => setModuleConfig(prev => ({
+                                            ...prev,
+                                            timeout: parseInt(e.target.value)
+                                        }))}
+                                        placeholder={DEFAULT_TIMEOUTS.TIMEOUT.toString()}
+                                    />
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setModuleConfig(prev => ({
+                                            ...prev,
+                                            timeout: DEFAULT_TIMEOUTS.TIMEOUT
+                                        }))}
+                                    >
+                                        Reset
+                                    </Button>
+                                </div>
+                                <p className="text-sm text-gray-500">
+                                    Time allowed for answering questions
+                                </p>
+                            </div>
+
+                            {/* Cooldown */}
+                            <div className="space-y-2">
+                                <Label>Cooldown (seconds)</Label>
+                                <div className="flex items-center space-x-2">
+                                    <Input
+                                        type="number"
+                                        value={moduleConfig.cooldown}
+                                        onChange={(e) => setModuleConfig(prev => ({
+                                            ...prev,
+                                            cooldown: parseInt(e.target.value)
+                                        }))}
+                                        placeholder={DEFAULT_TIMEOUTS.COOLDOWN.toString()}
+                                    />
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setModuleConfig(prev => ({
+                                            ...prev,
+                                            cooldown: DEFAULT_TIMEOUTS.COOLDOWN
+                                        }))}
+                                    >
+                                        Reset
+                                    </Button>
+                                </div>
+                                <p className="text-sm text-gray-500">
+                                    Waiting period before executing approved transactions
+                                </p>
+                            </div>
+
+                            {/* Expiration */}
+                            <div className="space-y-2">
+                                <Label>Expiration (seconds)</Label>
+                                <div className="flex items-center space-x-2">
+                                    <Input
+                                        type="number"
+                                        value={moduleConfig.expiration}
+                                        onChange={(e) => setModuleConfig(prev => ({
+                                            ...prev,
+                                            expiration: parseInt(e.target.value)
+                                        }))}
+                                        placeholder={DEFAULT_TIMEOUTS.EXPIRATION.toString()}
+                                    />
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setModuleConfig(prev => ({
+                                            ...prev,
+                                            expiration: DEFAULT_TIMEOUTS.EXPIRATION
+                                        }))}
+                                    >
+                                        Reset
+                                    </Button>
+                                </div>
+                                <p className="text-sm text-gray-500">
+                                    Time until questions expire if not answered
+                                </p>
+                            </div>
+                        </div>
+
                         <ContractTermsForm
                             contractTerms={contractTerms}
                             setContractTerms={setContractTerms}
@@ -297,7 +433,7 @@ export default function SeancesSetup() {
                             chainId={chainId}
                         />
 
-                        {/* Module Deployment Button */}
+                        {/* Update handleModuleDeploy to use the new config */}
                         <Button
                             onClick={handleModuleDeploy}
                             disabled={!(deployedSafeAddress || existingSafeAddress) || loading}
@@ -311,6 +447,22 @@ export default function SeancesSetup() {
                             transactionData={transactionData}
                             error={error}
                         />
+
+                        {/* Navigation Button - Show only when both deployments are complete */}
+                        {deployedSafeAddress && moduleDeploymentHash && (
+                            <div className="mt-6 pt-6 border-t">
+                                <Button 
+                                    className="w-full bg-green-600 hover:bg-green-700"
+                                    onClick={() => navigate(`/control/${deployedSafeAddress}`)}
+                                >
+                                    Go to Control Panel →
+                                </Button>
+                                <p className="text-sm text-gray-500 text-center mt-2">
+                                    Your Safe and Reality Module have been deployed successfully. 
+                                    Click above to start managing your escrow.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>

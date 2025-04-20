@@ -10,6 +10,7 @@ import { Question } from 'reality-kleros-subgraph';
 import { handleExecuteTransaction } from '../lib/transactions';
 import { useTransactionStatus } from '../hooks/useTransactionStatus';
 import { ProposalTransaction } from '../lib/types';
+import { bytes32ToCidV0 } from '../lib/cid';
 
 export default function Control() {
   const { address: safeAddress } = useParams<{ address: string }>();
@@ -35,6 +36,16 @@ export default function Control() {
     );
 
     setTransactionStatuses(prev => ({ ...prev, ...newStatuses }));
+  };
+
+  const getIpfsLink = (proposalId: string): string | null => {
+    try {
+      const cidV0 = bytes32ToCidV0(proposalId);
+      return `https://ipfs.io/ipfs/${cidV0}`;
+    } catch (error) {
+      console.warn('Failed to decode proposalId as CID:', proposalId, error);
+      return null;
+    }
   };
 
   if (!safeAddress) {
@@ -125,45 +136,58 @@ export default function Control() {
                   <p>No proposals found</p>
                 ) : (
                   <div className="space-y-4">
-                    {questions.map((question) => (
-                      <Card key={question.id}>
-                        <CardContent className="p-4">
-                          <div className="space-y-2">
-                            <p className="font-semibold">Proposal ID: {question.id}</p>
-                            <p>Title: {question.title}</p>
-                            <p>Status: {question.phase}</p>
-                            <p>Answer: {question.currentAnswer}</p>
-
-                            {loadingStatuses[question.id] ? (
-                              <p>Loading transaction details...</p>
-                            ) : transactionDetails[question.id]?.map((tx, index) => (
-                              <div key={index} className="p-3 bg-gray-50 rounded">
-                                <p>Transaction {index + 1}</p>
-                                {tx.error ? (
-                                  <p className="text-red-600">{tx.error}</p>
-                                ) : (
-                                  <>
-                                    <p className="text-sm">To: {tx.to}</p>
-                                    <p className="text-sm">Value: {tx.value}</p>
-                                    <p className="text-sm">Data: {tx.data.slice(0, 10)}...</p>
-                                    {transactionStatuses[question.id]?.[index]?.isExecuted ? (
-                                      <p className="text-green-600">Executed ✓</p>
-                                    ) : (
-                                      <Button
-                                        disabled={!transactionStatuses[question.id]?.[index]?.canExecute}
-                                        onClick={() => handleExecuteTransactionWrapper(question, tx, index)}
-                                      >
-                                        Execute
-                                      </Button>
-                                    )}
-                                  </>
+                    {questions.map((question) => {
+                      const ipfsLink = getIpfsLink(question.id);
+                      
+                      return (
+                        <Card key={question.id}>
+                          <CardContent className="p-4">
+                            <div className="space-y-2">
+                              <div className="flex flex-col gap-1">
+                                <p className="font-semibold">Proposal ID: {question.id}</p>
+                                {ipfsLink && (
+                                  <p className="text-sm text-blue-600">
+                                    <a href={ipfsLink} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                      View on IPFS
+                                    </a>
+                                  </p>
                                 )}
                               </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                              <p>Title: {question.title}</p>
+                              <p>Status: {question.phase}</p>
+                              <p>Answer: {question.currentAnswer}</p>
+
+                              {loadingStatuses[question.id] ? (
+                                <p>Loading transaction details...</p>
+                              ) : transactionDetails[question.id]?.map((tx, index) => (
+                                <div key={index} className="p-3 bg-gray-50 rounded">
+                                  <p>Transaction {index + 1}</p>
+                                  {tx.error ? (
+                                    <p className="text-red-600">{tx.error}</p>
+                                  ) : (
+                                    <>
+                                      <p className="text-sm">To: {tx.to}</p>
+                                      <p className="text-sm">Value: {tx.value}</p>
+                                      <p className="text-sm">Data: {tx.data.slice(0, 10)}...</p>
+                                      {transactionStatuses[question.id]?.[index]?.isExecuted ? (
+                                        <p className="text-green-600">Executed ✓</p>
+                                      ) : (
+                                        <Button
+                                          disabled={!transactionStatuses[question.id]?.[index]?.canExecute}
+                                          onClick={() => handleExecuteTransactionWrapper(question, tx, index)}
+                                        >
+                                          Execute
+                                        </Button>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
               </div>
