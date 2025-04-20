@@ -39,7 +39,7 @@ interface ModuleConfig {
     bond: string;
 }
 
-export default function SeancesSetup() {
+export default function Setup() {
     const navigate = useNavigate();
     // Mode and role selection
     const [escrowMode, setEscrowMode] = useState<EscrowMode>('p2p');

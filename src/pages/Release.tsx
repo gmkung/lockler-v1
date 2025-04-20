@@ -15,7 +15,7 @@ import { VouchProposal } from '../components/VouchProposal';
 import { useAccount, useConnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 
-export default function Control() {
+export default function Release() {
   const { address: safeAddress } = useParams<{ address: string }>();
   const { address: moduleAddress, isLoading, error, modules, templateContent } = useRealityModule(safeAddress || '');
   const { questions, isLoading: questionsLoading, error: questionsError, progress } =
