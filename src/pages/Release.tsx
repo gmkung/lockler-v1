@@ -11,6 +11,9 @@ import { handleExecuteTransaction } from '../lib/transactions';
 import { useTransactionStatus } from '../hooks/useTransactionStatus';
 import { ProposalTransaction } from '../lib/types';
 import { bytes32ToCidV0 } from '../lib/cid';
+import { VouchProposal } from '../components/VouchProposal';
+import { useAccount, useConnect } from 'wagmi';
+import { injected } from 'wagmi/connectors';
 
 export default function Control() {
   const { address: safeAddress } = useParams<{ address: string }>();
@@ -19,6 +22,8 @@ export default function Control() {
     useQuestions(moduleAddress || '');
   const [isProposeModalOpen, setIsProposeModalOpen] = useState(false);
   const { transactionDetails, transactionStatuses, loadingStatuses, setTransactionStatuses } = useTransactionStatus(questions, moduleAddress);
+  const { address } = useAccount();
+  const { connect } = useConnect();
 
   const handleExecuteTransactionWrapper = async (
     question: Question,
@@ -66,9 +71,21 @@ export default function Control() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">Reality Module Control</h2>
-            <Button onClick={() => setIsProposeModalOpen(true)}>
-              Propose Transaction
-            </Button>
+            <div className="flex gap-4">
+              {!address ? (
+                <Button 
+                  onClick={() => connect({ connector: injected() })}
+                  variant="outline"
+                >
+                  Connect Wallet
+                </Button>
+              ) : (
+                <p className="text-sm text-gray-600 self-center">Connected: {address.slice(0, 6)}...{address.slice(-4)}</p>
+              )}
+              <Button onClick={() => setIsProposeModalOpen(true)}>
+                Propose Transaction
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -138,7 +155,7 @@ export default function Control() {
                   <div className="space-y-4">
                     {questions.map((question) => {
                       const ipfsLink = getIpfsLink(question.id);
-                      
+
                       return (
                         <Card key={question.id}>
                           <CardContent className="p-4">
@@ -183,6 +200,15 @@ export default function Control() {
                                   )}
                                 </div>
                               ))}
+                              {(question.phase !== "OPEN").toString()}
+                              <VouchProposal
+                                questionId={question.id}
+                                moduleAddress={moduleAddress}
+                                disabled={question.phase !== "OPEN"}
+                                onVouchComplete={() => {
+                                  // Optionally refresh data
+                                }}
+                              />
                             </div>
                           </CardContent>
                         </Card>

@@ -5,16 +5,14 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { TOKENS, getContractAddresses } from '../lib/constants';
+import { TOKENS } from '../lib/constants';
 import { uploadJSONToIPFS } from 'light-curate-data-service';
 import { BrowserProvider, Contract, AbiCoder, parseUnits, keccak256, ethers } from 'ethers';
 import { REALITY_MODULE_ABI } from '../abis/realityModule';
 import { ERC20_ABI } from '../abis/erc20';
-import { bytes32ToCidV0, cidToBytes32 } from '../lib/cid';
-
-
 
 export type Transaction = {
+    id: string;
     to: string;
     value: string;
     data: string;
@@ -97,6 +95,7 @@ export function ProposeTransactionModal({
         }
 
         let newTransaction: Transaction = {
+            id: crypto.randomUUID(),
             to: currentTo,
             value: '0',
             data: '0x',
@@ -165,21 +164,16 @@ export function ProposeTransactionModal({
                 throw new Error(`Insufficient ETH for bond. Required: ${ethers.formatEther(minimumBond)} ETH`);
             }
 
-            // Upload transactions to IPFS to get proposalId
-            const cid = await uploadJSONToIPFS(transactions);
-            console.log('original CID:', cid);
-
-            // Convert CID to bytes32 for on-chain storage
-            //const bytes32Hex = cidToBytes32(cid);
-            //console.log('bytes32 value:', bytes32Hex);
-            //console.log("decoding test: ", bytes32ToCidV0(bytes32Hex))
-
-            // Get the Reality Module contract instance
+            // Initialize Reality Module contract first
             const realityModule = new Contract(
                 realityModuleAddress,
                 REALITY_MODULE_ABI,
                 signer
             );
+
+            // Upload transactions to IPFS to get proposalId
+            const cid = await uploadJSONToIPFS(transactions);
+            console.log('original CID:', cid);
 
             // Calculate EIP-712 hashes for each transaction
             const txHashes = await Promise.all(transactions.map(async (tx, index) => {
@@ -192,7 +186,7 @@ export function ProposeTransactionModal({
                 );
             }));
 
-            // Call addProposal with the  CID  and the array of transaction hashes
+            // Call addProposal with the CID and the array of transaction hashes
             const tx = await realityModule.addProposal(cid, txHashes);
             await tx.wait();
 
@@ -427,7 +421,7 @@ export function ProposeTransactionModal({
                                     const showRaw = showRawIndices.has(index);
 
                                     return (
-                                        <div key={index} className="p-3 border rounded bg-gray-50">
+                                        <div key={tx.id} className="p-3 border rounded bg-gray-50">
                                             <div className="flex justify-between items-start">
                                                 <div className="space-y-1">
                                                     {tx.type !== 'erc20' && (
