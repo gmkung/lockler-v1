@@ -100,7 +100,7 @@ export function ProposeTransactionModal({
             to: currentTo,
             value: '0',
             data: '0x',
-            operation: 1,
+            operation: 0, //use 0 not 1 to move the Safe's assets
             type: currentType
         };
 
@@ -132,6 +132,7 @@ export function ProposeTransactionModal({
                 );
                 newTransaction.data = '0xa9059cbb' + transferData.slice(2);
                 newTransaction.to = token.address;
+                newTransaction.operation = 0; //use 0 not 1 to move the Safe's assets
             }
         } else if (currentType === 'custom') {
             newTransaction.data = currentData;

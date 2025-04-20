@@ -4,7 +4,17 @@ import { BrowserProvider, Contract, keccak256, toUtf8Bytes } from "ethers";
 import { fetchFromIPFS } from "../lib/ipfs";
 import { REALITY_MODULE_ABI } from "../abis/realityModule";
 import { ProposalTransaction, TransactionStatus } from "../lib/types";
-import { bytes32ToCidV0 } from "../lib/cid";
+
+function normalizeIpfsPath(proposalId: string): string {
+  // Remove '/ipfs/' prefix if it exists
+  const withoutPrefix = proposalId.replace(/^\/ipfs\//, '');
+  
+  // Remove any file extension or path after the CID
+  const justCid = withoutPrefix.split('/')[0];
+  
+  // Return normalized format
+  return `/ipfs/${justCid}/item.json`;
+}
 
 export function useTransactionStatus(
   questions: Question[],
@@ -39,10 +49,9 @@ export function useTransactionStatus(
           const { proposalId } = parseQuestionData(question.data);
           console.log("Parsed question data - proposalId:", proposalId);
 
-          // Convert bytes32 to CID and fetch from IPFS
-          const cidV0 = bytes32ToCidV0(proposalId);
-          const ipfsPath = `/ipfs/${cidV0}/item.json`;
-          console.log("Fetching from IPFS:", ipfsPath);
+          // Normalize IPFS path to consistent format
+          const ipfsPath = normalizeIpfsPath(proposalId);
+          console.log("Normalized IPFS path:", ipfsPath);
 
           const transactions = await fetchFromIPFS(ipfsPath);
 
@@ -62,7 +71,10 @@ export function useTransactionStatus(
           console.log("txHashes: ", txHashes);
 
           // Get the question string from the contract (this handles the proper encoding)
-          const questionString = await realityModule.buildQuestion(proposalId, txHashes);
+          const questionString = await realityModule.buildQuestion(
+            proposalId,
+            txHashes
+          );
           console.log("Question string:", questionString);
 
           // Hash the question string to get the question hash, matching the contract's keccak256(bytes(question))
@@ -76,15 +88,49 @@ export function useTransactionStatus(
                   questionHash,
                   txHash
                 );
-              console.log("question.currentAnswer: ", question.currentAnswer);
-              const canExecute =
-                question.currentAnswer === "1" && // Positive answer
-                !isExecuted && // Not already executed
-                (index === 0 ||
-                  (await realityModule.executedProposalTransactions(
+
+              // Log execution status
+              if (isExecuted) {
+                console.log(`Transaction ${index} is already executed`);
+              }
+
+              // Check and log answer status
+              console.log(question.currentAnswer)
+              const isTxApproved =
+                question.currentAnswer ==
+                "0x0000000000000000000000000000000000000000000000000000000000000001";
+              if (isTxApproved) {
+                console.log(
+                  `Transaction ${index} cannot execute: Question answer is ${question.currentAnswer} (needs to be "1")`
+                );
+              }
+
+              // Check and log previous transaction status if not first transaction
+              let previousTxExecuted = true;
+              if (index > 0) {
+                previousTxExecuted =
+                  await realityModule.executedProposalTransactions(
                     questionHash,
                     txHashes[index - 1]
-                  ))); // First tx or previous executed
+                  );
+                if (!previousTxExecuted) {
+                  console.log(
+                    `Transaction ${index} cannot execute: Previous transaction (${index - 1}) not executed yet`
+                  );
+                }
+              }
+
+              const canExecute =
+                isTxApproved && // Positive answer
+                !isExecuted && // Not already executed
+                (index === 0 || previousTxExecuted); // First tx or previous executed
+
+              console.log(`Transaction ${index} execution status:`, {
+                isTxApproved: isTxApproved,
+                isExecuted,
+                isFirstTx: index === 0,
+                previousTxExecuted,
+              });
 
               return { isExecuted, canExecute };
             })
