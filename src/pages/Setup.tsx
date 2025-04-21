@@ -7,7 +7,6 @@ import {
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Card, CardHeader, CardContent } from "../components/ui/card";
 import { useToast } from "../hooks/use-toast";
 import { deploySafeWithOwners, deployRealityModule } from '../lib/deployment';
 import { getDefaultContractTerms } from '../lib/templates';
@@ -22,14 +21,10 @@ import {
 } from '../lib/constants';
 
 import { EscrowContractTerms, Payment } from '../lib/types';
-import { uploadContractTerms, } from '../lib/ipfs';
-import { NetworkInfo } from "../components/NetworkInfo";
-import { ContractTermsForm } from "../components/ContractTermsForm";
-import { DeploymentStatus } from "../components/DeploymentStatus";
-import { useNavigate } from "react-router-dom";
-import { Lock, Shield, Wallet, ArrowDown, CircleCheck, ExternalLink } from "lucide-react";
+import { uploadContractTerms } from '../lib/ipfs';
 import { StepProgressBar } from "../components/StepProgressBar";
 import { StepWrapper } from "../components/StepWrapper";
+import { useNavigate } from "react-router-dom";
 
 type EscrowMode = 'p2p' | 'grant';
 type P2PRole = 'sender' | 'receiver';
@@ -205,44 +200,68 @@ export default function Setup() {
     const [step, setStep] = useState(1);
 
     return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a1831] to-[#231a2c] items-center justify-center py-7 px-4">
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a1831] to-[#231a2c] items-center justify-center py-7 px-3">
             <StepWrapper>
                 <StepProgressBar step={step} total={2} />
                 {step === 1 && (
-                    <>
-                        <div className="mt-3 mb-4 text-center">
+                    <div>
+                        <div className="mt-3 mb-2 text-center">
                             <div className="text-sm text-purple-300 font-semibold mb-1">
                                 Step 1 of 2
                             </div>
                             <h1 className="text-2xl font-extrabold text-white mb-2">
                                 Create Locker Safe
                             </h1>
-                            <p className="text-sm text-purple-200 mb-4 px-2">
-                                A cheerful, secure smart wallet with multi-sig protection.
+                            <p className="text-sm text-purple-200 mb-2 px-2">
+                                A cheerful, secure smart wallet with multi-sig protection!
                             </p>
                         </div>
+                        <div className="rounded-xl bg-purple-900/30 border border-purple-900 px-3 py-2 mb-4">
+                            <div className="text-xs text-purple-100 text-center">
+                                <span className="font-semibold">Locker uses Gnosis Safe under the hood</span> — a highly secure, multi-signature smart contract wallet.
+                            </div>
+                        </div>
 
-                        <div className="grid grid-cols-1 gap-3 mb-5 px-1">
-                            <Button
-                                variant={escrowMode === 'p2p' ? 'default' : 'outline'}
+                        {/* Locker Type Selection Cards */}
+                        <div className="flex gap-3 mb-5 px-1 flex-col xs:flex-row sm:flex-row justify-center">
+                            {/* Transfer Locker Card */}
+                            <button
+                                type="button"
                                 onClick={() => setEscrowMode('p2p')}
-                                className={`rounded-xl py-4 px-3 w-full text-left break-words transition-all whitespace-normal ${
-                                    escrowMode === 'p2p' ? 'bg-gradient-to-br from-purple-500 to-indigo-500 text-white scale-105' : 'bg-gray-900 text-white/80'
-                                }`}
+                                className={`w-full xs:w-1/2 rounded-2xl transition-all flex-1 flex flex-col items-start px-4 py-4 shadow-lg
+                                    ${escrowMode === 'p2p'
+                                        ? "bg-gradient-to-br from-purple-600 via-purple-600/90 to-indigo-600 ring-2 ring-fuchsia-400 border-0 scale-[1.01] text-white"
+                                        : "bg-[#242038] border border-purple-700 hover:bg-purple-800/30 text-white/85"
+                                    }
+                                    outline-none focus:outline-none`}
+                                style={{ minWidth: 0, wordBreak: 'break-word', maxWidth: '100%' }}
                             >
-                                <div className="font-semibold text-base leading-tight">Transfer Locker</div>
-                                <div className="text-xs opacity-85 pt-1 leading-snug">Use for one-to-one transfers that require both parties to agree to release funds.</div>
-                            </Button>
-                            <Button
-                                variant={escrowMode === 'grant' ? 'default' : 'outline'}
+                                <div className="font-bold text-base mb-1 text-left w-full text-white">
+                                    Transfer Locker
+                                </div>
+                                <div className={`text-xs text-left w-full break-words ${escrowMode === 'p2p' ? "text-purple-100" : "text-purple-300/90"}`}>
+                                    Use for one-to-one transfers that require both parties to agree to release funds.
+                                </div>
+                            </button>
+                            {/* Grant Locker Card */}
+                            <button
+                                type="button"
                                 onClick={() => setEscrowMode('grant')}
-                                className={`rounded-xl py-4 px-3 w-full text-left break-words transition-all whitespace-normal ${
-                                    escrowMode === 'grant' ? 'bg-gradient-to-br from-fuchsia-500 to-pink-400 text-white scale-105' : 'bg-gray-900 text-white/80'
-                                }`}
+                                className={`w-full xs:w-1/2 rounded-2xl transition-all flex-1 flex flex-col items-start px-4 py-4 shadow-lg
+                                    ${escrowMode === 'grant'
+                                        ? "bg-gradient-to-br from-pink-500 via-fuchsia-500 to-pink-400 ring-2 ring-pink-300 border-0 scale-[1.01] text-white"
+                                        : "bg-[#242038] border border-purple-700 hover:bg-pink-900/20 text-white/85"
+                                    }
+                                    outline-none focus:outline-none`}
+                                style={{ minWidth: 0, wordBreak: 'break-word', maxWidth: '100%' }}
                             >
-                                <div className="font-semibold text-base leading-tight">Grant Locker</div>
-                                <div className="text-xs opacity-85 pt-1 leading-snug">Distribute funds to multiple recipients with security and agreement checks.</div>
-                            </Button>
+                                <div className="font-bold text-base mb-1 text-left w-full text-white">
+                                    Grant Locker
+                                </div>
+                                <div className={`text-xs text-left w-full break-words ${escrowMode === 'grant' ? "text-pink-50" : "text-pink-100/80"}`}>
+                                    Distribute funds to multiple recipients with security and agreement checks.
+                                </div>
+                            </button>
                         </div>
 
                         {escrowMode === 'p2p' && (
@@ -288,13 +307,13 @@ export default function Setup() {
                         )}
 
                         <Button
-                            className="w-full py-3 rounded-3xl text-lg bg-gradient-to-br from-pink-500 to-purple-500 mt-4"
+                            className="w-full py-3 rounded-3xl text-lg bg-gradient-to-br from-pink-500 to-purple-500 mt-4 font-bold transition-colors shadow-lg"
                             onClick={handleSafeDeploy}
                             disabled={loading || !!deployedSafeAddress || (escrowMode === 'p2p' && !counterpartyAddress)}
                         >
                             {loading ? "Deploying…" : deployedSafeAddress ? "Locker Safe Created!" : "Create Locker Safe"}
                         </Button>
-                    </>
+                    </div>
                 )}
 
                 {step === 2 && (
