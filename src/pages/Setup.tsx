@@ -12,6 +12,7 @@ import { deploySafeWithOwners, deployRealityModule } from '../lib/deployment';
 import { getDefaultContractTerms } from '../lib/templates';
 import { ContractTermsForm } from "../components/ContractTermsForm";
 import { Copy, ExternalLink } from "lucide-react";
+import { switchChain } from '../lib/utils';
 
 import {
     DEFAULT_SALT_NONCE,
@@ -20,7 +21,16 @@ import {
     SUPPORTED_CHAINS,
     getContractAddresses,
     getBlockExplorer,
+    CHAIN_CONFIG,
 } from '../lib/constants';
+
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../components/ui/select";
 
 import { EscrowContractTerms, Payment } from '../lib/types';
 import { uploadContractTerms } from '../lib/ipfs';
@@ -44,7 +54,11 @@ export default function Setup() {
     const [p2pRole, setP2PRole] = useState<P2PRole>('sender');
     const [counterpartyAddress, setCounterpartyAddress] = useState<string>("");
 
-    const [chainId, setChainId] = useState<number>(SUPPORTED_CHAINS.MAINNET);
+    // Use a separate state for the selected chain (independent of connected wallet)
+    const [selectedChainId, setSelectedChainId] = useState<number>(SUPPORTED_CHAINS.GNOSIS); // Default to Gnosis
+
+    // Still track the connected wallet's chain for display purposes
+    const [connectedChainId, setConnectedChainId] = useState<number | null>(null);
     const [chainName, setChainName] = useState<string>("");
 
     const [saltNonce, setSaltNonce] = useState(DEFAULT_SALT_NONCE);
@@ -69,14 +83,15 @@ export default function Setup() {
 
     const { toast } = useToast();
 
+    // Track the connected wallet's chain for display purposes only
     useEffect(() => {
         const handleChainChanged = (newChainId: string) => {
             const parsedChainId = parseInt(newChainId, 16);
-            setChainId(parsedChainId);
-            // Update chain name based on chain ID
-            setChainName(parsedChainId === SUPPORTED_CHAINS.MAINNET ? "Ethereum Mainnet" :
-                parsedChainId === SUPPORTED_CHAINS.GNOSIS ? "Gnosis Chain" :
-                    `Chain ${parsedChainId}`);
+            setConnectedChainId(parsedChainId);
+
+            // Update chain name display based on the connected chain
+            const chainConfig = CHAIN_CONFIG[parsedChainId];
+            setChainName(chainConfig ? chainConfig.name : `Chain ${parsedChainId}`);
         };
 
         if (window.ethereum) {
@@ -93,8 +108,9 @@ export default function Setup() {
         };
     }, []);
 
-    const contracts = getContractAddresses(chainId);
-    const blockExplorer = getBlockExplorer(chainId);
+    // Get contract addresses based on the selected chain, not the connected one
+    const contracts = getContractAddresses(selectedChainId);
+    const blockExplorer = getBlockExplorer(selectedChainId);
 
     useEffect(() => {
         if (window.ethereum) {
@@ -121,14 +137,29 @@ export default function Setup() {
                 throw new Error('MetaMask is not installed');
             }
 
-            const provider = new BrowserProvider(window.ethereum);
+            // Validate selectedChainId
+            if (!selectedChainId || !CHAIN_CONFIG[selectedChainId]) {
+                throw new Error(`Invalid chain ID: ${selectedChainId}. Please select a supported chain.`);
+            }
+
+            console.log("Deploying to chain ID:", selectedChainId);
+
+            // First, attempt to switch to the selected chain
+            const switchResult = await switchChain(selectedChainId);
+            if (!switchResult.success) {
+                throw new Error(`Failed to switch to ${CHAIN_CONFIG[selectedChainId].name}: ${switchResult.error}`);
+            }
+
+            // Use the provider from the switch result
+            const provider = switchResult.provider as BrowserProvider;
             const safeAddress = await deploySafeWithOwners(
                 provider,
                 escrowMode,
                 p2pRole,
                 counterpartyAddress,
                 saltNonce,
-                contracts
+                contracts,
+                selectedChainId
             );
 
             setDeployedSafeAddress(safeAddress);
@@ -172,9 +203,23 @@ export default function Setup() {
                 throw new Error('MetaMask is not installed');
             }
 
+            // Validate selectedChainId
+            if (!selectedChainId || !CHAIN_CONFIG[selectedChainId]) {
+                throw new Error(`Invalid chain ID: ${selectedChainId}. Please select a supported chain.`);
+            }
+
+            console.log("Deploying module to chain ID:", selectedChainId);
+
+            // First, ensure we're on the selected chain
+            const switchResult = await switchChain(selectedChainId);
+            if (!switchResult.success) {
+                throw new Error(`Failed to switch to ${CHAIN_CONFIG[selectedChainId].name}: ${switchResult.error}`);
+            }
+
             const cid = await uploadContractTerms(contractTerms);
 
-            const provider = new BrowserProvider(window.ethereum);
+            // Use the provider from the switch result
+            const provider = switchResult.provider as BrowserProvider;
             const result = await deployRealityModule(
                 provider,
                 deployedSafeAddress,
@@ -224,11 +269,46 @@ export default function Setup() {
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a1831] to-[#231a2c] items-center justify-center py-7 px-3">
             <StepWrapper>
                 <div className="mb-4 text-center">
-                    <div className="text-sm text-purple-300">
-                        Active Network: {chainName} (Chain ID: {chainId})
+                    <div className="text-sm text-purple-300 flex flex-col items-center gap-1">
+                        <div>
+                            Connected: {chainName || 'Not connected'}
+                            {connectedChainId && ` (Chain ID: ${connectedChainId})`}
+                        </div>
+
+                        <div className="flex items-center mt-1">
+                            <span className="font-semibold mr-2">Deploying on:</span>
+                            <div>
+                                <Select
+                                    value={selectedChainId ? selectedChainId.toString() : Object.keys(CHAIN_CONFIG)[0]}
+                                    onValueChange={(value) => {
+                                        const chainId = parseInt(value);
+                                        console.log("Setting chain ID to:", chainId);
+                                        setSelectedChainId(chainId);
+                                    }}
+                                >
+                                    <SelectTrigger className="h-7 w-[140px] text-xs bg-purple-800/30 border-purple-600">
+                                        <SelectValue>
+                                            {selectedChainId && CHAIN_CONFIG[selectedChainId]?.name
+                                                ? CHAIN_CONFIG[selectedChainId].name
+                                                : "Select Chain"}
+                                        </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Object.entries(CHAIN_CONFIG).map(([id, config]) => (
+                                            <SelectItem key={id} value={id}>
+                                                {config.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <StepProgressBar step={step} total={3} />
+
+                <div className="mb-4">
+                    <StepProgressBar step={step} total={3} />
+                </div>
 
                 {step === 1 && (
                     <div>
@@ -412,7 +492,7 @@ export default function Setup() {
                                 contractTerms={contractTerms}
                                 setContractTerms={setContractTerms}
                                 escrowMode={escrowMode}
-                                chainId={chainId}
+                                chainId={selectedChainId}
                             />
                         </div>
                         <Button
@@ -468,7 +548,7 @@ export default function Setup() {
                                         <Copy size={18} className="text-pink-300" />
                                     </button>
                                     <a
-                                        href={`/release/${chainId}/${deployedSafeAddress}`}
+                                        href={`/release/${selectedChainId}/${deployedSafeAddress}`}
                                         className="p-1 hover:bg-indigo-700/30 rounded transition"
                                         target="_blank" rel="noopener noreferrer"
                                         aria-label="View Lockler"
@@ -490,7 +570,7 @@ export default function Setup() {
                                     </Button>
                                     <Button
                                         className="flex-1 rounded-full bg-gradient-to-r from-indigo-400 to-fuchsia-600 text-white"
-                                        onClick={() => window.open(`/release/${chainId}/${deployedSafeAddress}`, "_blank")}
+                                        onClick={() => window.open(`/release/${selectedChainId}/${deployedSafeAddress}`, "_blank")}
                                     >
                                         View Lockler
                                     </Button>

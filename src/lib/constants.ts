@@ -56,7 +56,6 @@ export const CHAIN_CONFIG: Record<number, Chain> = {
 
 // Default chain
 
-
 // Chain-agnostic constants
 export const DEFAULT_THRESHOLD = 1;
 export const DEFAULT_SALT_NONCE = Date.now().toString();
@@ -72,6 +71,7 @@ export const DEFAULT_TIMEOUTS = {
 // Helper functions to get chain-specific values
 export const getChainConfig = (chainId: number): Chain => {
   const config = CHAIN_CONFIG[chainId];
+  console.log('Found config:', config);
   if (!config) {
     throw new Error(`Unsupported chain ID: ${chainId}`);
   }

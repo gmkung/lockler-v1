@@ -18,7 +18,8 @@ export const deploySafeWithOwners = async (
     p2pRole: 'sender' | 'receiver',
     counterpartyAddress: string,
     saltNonce: string,
-    contracts: any
+    contracts: any,
+    chainId: number
 ) => {
     const signer = await provider.getSigner();
     const signerAddress = await signer.getAddress();
@@ -43,7 +44,8 @@ export const deploySafeWithOwners = async (
         owners,
         1, // Initial threshold is 1
         contracts.fallbackHandler,
-        saltNonce
+        saltNonce,
+        chainId
     );
 
     return safeAddress;
