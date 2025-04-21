@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
     BrowserProvider,
@@ -29,7 +28,8 @@ import { ContractTermsForm } from "../components/ContractTermsForm";
 import { DeploymentStatus } from "../components/DeploymentStatus";
 import { useNavigate } from "react-router-dom";
 import { Lock, Shield, Wallet, ArrowDown, CircleCheck, ExternalLink } from "lucide-react";
-
+import { StepProgressBar } from "../components/StepProgressBar";
+import { StepWrapper } from "../components/StepWrapper";
 
 type EscrowMode = 'p2p' | 'grant';
 type P2PRole = 'sender' | 'receiver';
@@ -43,31 +43,25 @@ interface ModuleConfig {
 
 export default function Setup() {
     const navigate = useNavigate();
-    // Mode and role selection
     const [escrowMode, setEscrowMode] = useState<EscrowMode>('p2p');
     const [p2pRole, setP2PRole] = useState<P2PRole>('sender');
     const [counterpartyAddress, setCounterpartyAddress] = useState<string>("");
 
-    // Chain state
     const [chainId, setChainId] = useState<number>(DEFAULT_CHAIN_ID);
 
-    // Safe deployment state
     const [saltNonce, setSaltNonce] = useState(DEFAULT_SALT_NONCE);
     const [deployedSafeAddress, setDeployedSafeAddress] = useState<string | null>(null);
     const [existingSafeAddress, setExistingSafeAddress] = useState("");
 
-    // Module deployment state
     const [moduleDeploymentHash, setModuleDeploymentHash] = useState<string | null>(null);
     const [transactionData, setTransactionData] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    // Contract terms state
     const [contractTerms, setContractTerms] = useState<EscrowContractTerms>(() =>
         getDefaultContractTerms('p2p', '', '')
     );
 
-    // Module configuration state
     const [moduleConfig, setModuleConfig] = useState<ModuleConfig>({
         timeout: DEFAULT_TIMEOUTS.TIMEOUT,
         cooldown: DEFAULT_TIMEOUTS.COOLDOWN,
@@ -77,7 +71,6 @@ export default function Setup() {
 
     const { toast } = useToast();
 
-    // Listen for chain changes
     useEffect(() => {
         const handleChainChanged = (newChainId: string) => {
             setChainId(parseInt(newChainId, 16));
@@ -94,11 +87,9 @@ export default function Setup() {
         };
     }, []);
 
-    // Get current chain contracts
     const contracts = getContractAddresses(chainId);
     const blockExplorer = getBlockExplorer(chainId);
 
-    // Update contract terms when mode changes or addresses are set
     useEffect(() => {
         if (window.ethereum) {
             window.ethereum.request({ method: 'eth_requestAccounts' })
@@ -137,9 +128,11 @@ export default function Setup() {
             setDeployedSafeAddress(safeAddress);
 
             toast({
-                title: "Lockler Safe Deployed!",
-                description: `Your new Safe has been deployed at: ${safeAddress}`,
+                title: "Locker Safe Created!",
+                description: `Your new Locker Safe is: ${safeAddress}`,
             });
+
+            setTimeout(() => setStep(2), 1200);
         } catch (error: any) {
             console.error("Safe deployment error:", error);
             toast({
@@ -173,7 +166,6 @@ export default function Setup() {
                 throw new Error('MetaMask is not installed');
             }
 
-            // Upload contract terms to IPFS first
             const cid = await uploadContractTerms(contractTerms);
 
             const provider = new BrowserProvider(window.ethereum);
@@ -210,384 +202,194 @@ export default function Setup() {
         }
     };
 
+    const [step, setStep] = useState(1);
+
     return (
-        <div className="container mx-auto p-6 max-w-6xl">
-            <div className="text-center mb-8">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                    <Lock className="h-10 w-10 text-indigo-600" />
-                    <h1 className="text-4xl font-bold text-gray-800">Lockler</h1>
-                </div>
-                <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-                    Secure smart contract wallet with Kleros-powered verification for safe fund management
-                </p>
-            </div>
-            
-            <NetworkInfo chainId={chainId} />
-
-            <div className="space-y-8">
-                {/* Step 1: Lockler Type Configuration */}
-                <Card className="border-0 shadow-lg rounded-xl overflow-hidden bg-gradient-to-r from-blue-50 to-indigo-50">
-                    <CardHeader className="bg-white border-b border-gray-100 p-6">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-indigo-600 text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">1</div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-800">Configure Lockler Type</h2>
-                                <p className="text-gray-600 mt-1">Choose the type of Lockler and configure basic settings</p>
-                            </div>
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a1831] to-[#231a2c] items-center justify-center py-7 px-2">
+            {step === 1 ? (
+                <StepWrapper>
+                    <StepProgressBar step={1} total={2} />
+                    <div className="mt-2 mb-4">
+                        <div className="text-sm text-purple-300 font-semibold mb-2 text-center">
+                            Step 1 of 2
                         </div>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                        <div className="space-y-8">
-                            {/* Lockler Type Selection */}
-                            <div className="space-y-4">
-                                <Label className="text-lg font-medium text-gray-700">Lockler Type</Label>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Button
-                                        variant={escrowMode === 'p2p' ? 'default' : 'outline'}
-                                        onClick={() => setEscrowMode('p2p')}
-                                        className={`h-auto py-6 flex flex-col items-center ${escrowMode === 'p2p' ? 'bg-indigo-600 hover:bg-indigo-700' : ''}`}
-                                    >
-                                        <div className="text-2xl mb-2">🔄</div>
-                                        <span className="font-bold text-lg">Transfer Lockler</span>
-                                        <p className="text-sm mt-2 text-center">
-                                            For secure transfers between two parties
-                                        </p>
-                                    </Button>
-                                    <Button
-                                        variant={escrowMode === 'grant' ? 'default' : 'outline'}
-                                        onClick={() => setEscrowMode('grant')}
-                                        className={`h-auto py-6 flex flex-col items-center ${escrowMode === 'grant' ? 'bg-indigo-600 hover:bg-indigo-700' : ''}`}
-                                    >
-                                        <div className="text-2xl mb-2">🏆</div>
-                                        <span className="font-bold text-lg">Grant Lockler</span>
-                                        <p className="text-sm mt-2 text-center">
-                                            For distributing funds to multiple recipients
-                                        </p>
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {/* P2P Role Selection */}
-                            {escrowMode === 'p2p' && (
-                                <div className="space-y-4">
-                                    <Label className="text-lg font-medium text-gray-700">Your Role</Label>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <Button
-                                            variant={p2pRole === 'sender' ? 'default' : 'outline'}
-                                            onClick={() => setP2PRole('sender')}
-                                            className={`h-auto py-4 flex items-center justify-center gap-3 ${p2pRole === 'sender' ? 'bg-indigo-600 hover:bg-indigo-700' : ''}`}
-                                        >
-                                            <ArrowDown className="h-5 w-5 rotate-45" />
-                                            <span className="font-medium">I am the Sender</span>
-                                        </Button>
-                                        <Button
-                                            variant={p2pRole === 'receiver' ? 'default' : 'outline'}
-                                            onClick={() => setP2PRole('receiver')}
-                                            className={`h-auto py-4 flex items-center justify-center gap-3 ${p2pRole === 'receiver' ? 'bg-indigo-600 hover:bg-indigo-700' : ''}`}
-                                        >
-                                            <ArrowDown className="h-5 w-5 -rotate-135" />
-                                            <span className="font-medium">I am the Receiver</span>
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Counterparty Address Input - Only show in P2P mode */}
-                            {escrowMode === 'p2p' && (
-                                <div className="space-y-2">
-                                    <Label className="text-lg font-medium text-gray-700">
-                                        {p2pRole === 'sender' ? 'Receiver' : 'Sender'} Address
-                                    </Label>
-                                    <Input
-                                        value={counterpartyAddress}
-                                        onChange={(e) => setCounterpartyAddress(e.target.value)}
-                                        placeholder={`Enter ${p2pRole === 'sender' ? 'receiver' : 'sender'} Ethereum address`}
-                                        className="bg-white"
-                                    />
-                                    <p className="text-sm text-gray-500">
-                                        Enter the Ethereum address of the {p2pRole === 'sender' ? 'receiver' : 'sender'}
-                                    </p>
-                                </div>
-                            )}
-
-                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                                <h3 className="font-medium text-blue-800 mb-1">About Smart Contract Wallet</h3>
-                                <p className="text-sm text-blue-700">
-                                    This will deploy a Gnosis Safe - a secure smart contract wallet that enables 
-                                    multi-signature capability and advanced security features for your funds.
-                                </p>
-                            </div>
-
-                            {/* Deploy button */}
-                            <Button
-                                className="w-full py-6 text-lg bg-indigo-600 hover:bg-indigo-700"
-                                onClick={handleSafeDeploy}
-                                disabled={loading || !!deployedSafeAddress || (escrowMode === 'p2p' && !counterpartyAddress)}
-                            >
-                                {loading ? (
-                                    <div className="flex items-center gap-2">
-                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                        <span>Deploying...</span>
-                                    </div>
-                                ) : deployedSafeAddress ? (
-                                    <div className="flex items-center gap-2">
-                                        <CircleCheck className="h-5 w-5" />
-                                        <span>Lockler Safe Deployed</span>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        <Lock className="h-5 w-5" />
-                                        <span>Deploy Lockler Safe</span>
-                                    </div>
-                                )}
-                            </Button>
+                        <h1 className="text-3xl font-extrabold text-white text-center mb-1">Create Locker Safe</h1>
+                        <p className="text-lg text-purple-200 text-center mb-3">
+                            A cheerful, secure smart wallet with multi-sig protection!
+                        </p>
+                        <div className="rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/5 mb-5 px-4 py-2">
+                            <span className="text-xs text-purple-300">
+                                Locker uses Gnosis Safe under the hood — a highly secure, multi-signature smart contract wallet.
+                            </span>
                         </div>
-                    </CardContent>
-                </Card>
-
-                {/* Step 2: Security System Setup */}
-                <Card className="border-0 shadow-lg rounded-xl overflow-hidden bg-gradient-to-r from-blue-50 to-indigo-50">
-                    <CardHeader className="bg-white border-b border-gray-100 p-6">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-indigo-600 text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">2</div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-800">Security System Setup</h2>
-                                <p className="text-gray-600 mt-1">Configure the Kleros Reality Module for fund release verification</p>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                        <div className="space-y-8">
-                            {/* Display Active Safe Address */}
-                            <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <Wallet className="h-5 w-5 text-indigo-600" />
-                                    <h3 className="text-lg font-medium text-gray-800">Active Lockler Address</h3>
-                                </div>
-                                <div className="font-mono text-sm p-3 bg-gray-50 rounded-md border border-gray-200 break-all">
-                                    {deployedSafeAddress || existingSafeAddress || "No Safe address available"}
-                                </div>
-                                {(deployedSafeAddress || existingSafeAddress) && (
-                                    <a
-                                        href={`${blockExplorer}/address/${deployedSafeAddress || existingSafeAddress}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1 mt-3"
-                                    >
-                                        <ExternalLink className="h-4 w-4" />
-                                        View on Block Explorer
-                                    </a>
-                                )}
-                            </div>
-
-                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6">
-                                <div className="flex gap-3">
-                                    <Shield className="h-5 w-5 text-blue-700 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <h3 className="font-medium text-blue-800 mb-1">Kleros Reality Module - Optimistic Oracle</h3>
-                                        <p className="text-sm text-blue-700">
-                                            This module acts as an optimistic oracle for verifying fund releases. It uses Kleros as an arbitration system for dispute resolution. 
-                                            Configure the parameters below to determine how proposals are verified and executed.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Module Configuration */}
-                            <div className="space-y-6 bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
-                                <h3 className="text-lg font-medium text-gray-800 flex items-center gap-2">
-                                    <Shield className="h-5 w-5 text-indigo-600" />
-                                    Security System Configuration
-                                </h3>
-                                
-                                {/* Bond */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="bond" className="text-gray-700">Question Bond (ETH)</Label>
-                                    <div className="flex items-center space-x-2">
-                                        <Input
-                                            id="bond"
-                                            type="number"
-                                            value={moduleConfig.bond}
-                                            onChange={(e) => setModuleConfig(prev => ({
-                                                ...prev,
-                                                bond: e.target.value
-                                            }))}
-                                            placeholder={DEFAULT_BOND}
-                                            step="0.000000000000000001"
-                                            className="bg-white"
-                                        />
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => setModuleConfig(prev => ({
-                                                ...prev,
-                                                bond: DEFAULT_BOND
-                                            }))}
-                                            className="whitespace-nowrap"
-                                        >
-                                            Reset
-                                        </Button>
-                                    </div>
-                                    <p className="text-sm text-gray-500">
-                                        Amount of ETH required to submit a verification question
-                                    </p>
-                                </div>
-
-                                {/* Timeout */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="timeout" className="text-gray-700">Timeout (seconds)</Label>
-                                    <div className="flex items-center space-x-2">
-                                        <Input
-                                            id="timeout"
-                                            type="number"
-                                            value={moduleConfig.timeout}
-                                            onChange={(e) => setModuleConfig(prev => ({
-                                                ...prev,
-                                                timeout: parseInt(e.target.value)
-                                            }))}
-                                            placeholder={DEFAULT_TIMEOUTS.TIMEOUT.toString()}
-                                            className="bg-white"
-                                        />
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => setModuleConfig(prev => ({
-                                                ...prev,
-                                                timeout: DEFAULT_TIMEOUTS.TIMEOUT
-                                            }))}
-                                            className="whitespace-nowrap"
-                                        >
-                                            Reset
-                                        </Button>
-                                    </div>
-                                    <p className="text-sm text-gray-500">
-                                        Time allowed for answering verification questions (86400 = 24 hours)
-                                    </p>
-                                </div>
-
-                                {/* Cooldown */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="cooldown" className="text-gray-700">Cooldown (seconds)</Label>
-                                    <div className="flex items-center space-x-2">
-                                        <Input
-                                            id="cooldown"
-                                            type="number"
-                                            value={moduleConfig.cooldown}
-                                            onChange={(e) => setModuleConfig(prev => ({
-                                                ...prev,
-                                                cooldown: parseInt(e.target.value)
-                                            }))}
-                                            placeholder={DEFAULT_TIMEOUTS.COOLDOWN.toString()}
-                                            className="bg-white"
-                                        />
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => setModuleConfig(prev => ({
-                                                ...prev,
-                                                cooldown: DEFAULT_TIMEOUTS.COOLDOWN
-                                            }))}
-                                            className="whitespace-nowrap"
-                                        >
-                                            Reset
-                                        </Button>
-                                    </div>
-                                    <p className="text-sm text-gray-500">
-                                        Waiting period before executing approved transactions (3600 = 1 hour)
-                                    </p>
-                                </div>
-
-                                {/* Expiration */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="expiration" className="text-gray-700">Expiration (seconds)</Label>
-                                    <div className="flex items-center space-x-2">
-                                        <Input
-                                            id="expiration"
-                                            type="number"
-                                            value={moduleConfig.expiration}
-                                            onChange={(e) => setModuleConfig(prev => ({
-                                                ...prev,
-                                                expiration: parseInt(e.target.value)
-                                            }))}
-                                            placeholder={DEFAULT_TIMEOUTS.EXPIRATION.toString()}
-                                            className="bg-white"
-                                        />
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => setModuleConfig(prev => ({
-                                                ...prev,
-                                                expiration: DEFAULT_TIMEOUTS.EXPIRATION
-                                            }))}
-                                            className="whitespace-nowrap"
-                                        >
-                                            Reset
-                                        </Button>
-                                    </div>
-                                    <p className="text-sm text-gray-500">
-                                        Time until questions expire if not answered (604800 = 1 week)
-                                    </p>
-                                </div>
-                            </div>
-
-                            <ContractTermsForm
-                                contractTerms={contractTerms}
-                                setContractTerms={setContractTerms}
-                                escrowMode={escrowMode}
-                                chainId={chainId}
-                            />
-
-                            {/* Update handleModuleDeploy to use the new config */}
-                            <Button
-                                onClick={handleModuleDeploy}
-                                disabled={!(deployedSafeAddress || existingSafeAddress) || loading}
-                                className="w-full py-6 text-lg bg-indigo-600 hover:bg-indigo-700"
-                            >
-                                {loading ? (
-                                    <div className="flex items-center gap-2">
-                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                        <span>Deploying...</span>
-                                    </div>
-                                ) : moduleDeploymentHash ? (
-                                    <div className="flex items-center gap-2">
-                                        <CircleCheck className="h-5 w-5" />
-                                        <span>Security System Deployed</span>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        <Shield className="h-5 w-5" />
-                                        <span>Deploy Security System</span>
-                                    </div>
-                                )}
-                            </Button>
-
-                            <DeploymentStatus
-                                moduleDeploymentHash={moduleDeploymentHash}
-                                transactionData={transactionData}
-                                error={error}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Navigation Button - Show only when both deployments are complete */}
-                {deployedSafeAddress && moduleDeploymentHash && (
-                    <Card className="border-0 shadow-lg rounded-xl overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50">
-                        <CardContent className="p-6">
-                            <div className="text-center space-y-4">
-                                <CircleCheck className="h-12 w-12 mx-auto text-green-600" />
-                                <h2 className="text-2xl font-bold text-gray-800">Lockler Successfully Deployed!</h2>
-                                <p className="text-gray-600 max-w-xl mx-auto">
-                                    Your Lockler Safe and Security System have been deployed. You can now manage 
-                                    your funds and verify transactions through the Lockler Control Panel.
-                                </p>
-                                <Button 
-                                    className="py-6 px-12 text-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-0 shadow-md"
-                                    onClick={() => navigate(`/control/${deployedSafeAddress}`)}
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 mb-5">
+                        <Button
+                            variant={escrowMode === 'p2p' ? 'default' : 'outline'}
+                            onClick={() => setEscrowMode('p2p')}
+                            className={`rounded-xl py-6 w-full text-left transition-all ${escrowMode === 'p2p' ? 'bg-gradient-to-br from-purple-500 to-indigo-500 text-white scale-105' : 'bg-gray-900 text-white/80'}`}
+                        >
+                            <div className="font-bold text-lg">Transfer Locker</div>
+                            <div className="text-sm opacity-85 pt-1">Use for one-to-one transfers that require both parties to agree to release funds.</div>
+                        </Button>
+                        <Button
+                            variant={escrowMode === 'grant' ? 'default' : 'outline'}
+                            onClick={() => setEscrowMode('grant')}
+                            className={`rounded-xl py-6 w-full text-left transition-all ${escrowMode === 'grant' ? 'bg-gradient-to-br from-fuchsia-500 to-pink-400 text-white scale-105' : 'bg-gray-900 text-white/80'}`}
+                        >
+                            <div className="font-bold text-lg">Grant Locker</div>
+                            <div className="text-sm opacity-85 pt-1">Distribute funds to multiple recipients with security and agreement checks.</div>
+                        </Button>
+                    </div>
+                    {escrowMode === 'p2p' && (
+                        <div className="mb-4">
+                            <label className="block text-purple-200 font-bold mb-2">Your Role</label>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant={p2pRole === 'sender' ? 'default' : 'outline'}
+                                    onClick={() => setP2PRole('sender')}
+                                    className={`rounded-full flex-1 transition-all ${p2pRole === 'sender' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' : 'bg-gray-800 text-gray-200'}`}
                                 >
-                                    Go to Lockler Control Panel
+                                    I am the Sender
+                                </Button>
+                                <Button
+                                    variant={p2pRole === 'receiver' ? 'default' : 'outline'}
+                                    onClick={() => setP2PRole('receiver')}
+                                    className={`rounded-full flex-1 transition-all ${p2pRole === 'receiver' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white' : 'bg-gray-800 text-gray-200'}`}
+                                >
+                                    I am the Receiver
                                 </Button>
                             </div>
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
+                        </div>
+                    )}
+                    {escrowMode === 'p2p' && (
+                        <div className="mb-2">
+                            <Label className="text-purple-100">{
+                                p2pRole === 'sender' ? 'Receiver' : 'Sender'
+                            } Address</Label>
+                            <Input 
+                                className="rounded-xl bg-gray-900 mt-1 text-white"
+                                value={counterpartyAddress}
+                                onChange={(e) => setCounterpartyAddress(e.target.value)}
+                                placeholder={`Enter ${p2pRole === 'sender' ? 'receiver' : 'sender'} Ethereum address`}
+                            />
+                        </div>
+                    )}
+                    <Button
+                        className="w-full py-4 rounded-xl text-lg bg-gradient-to-br from-pink-500 to-purple-500 mt-5"
+                        onClick={handleSafeDeploy}
+                        disabled={loading || !!deployedSafeAddress || (escrowMode === 'p2p' && !counterpartyAddress)}
+                    >
+                        {loading ? "Deploying…" : deployedSafeAddress ? "Locker Safe Created!" : "Create Locker Safe"}
+                    </Button>
+                </StepWrapper>
+            ) : (
+                <StepWrapper>
+                    <StepProgressBar step={2} total={2} />
+                    <div className="mt-2 mb-4">
+                        <div className="text-sm text-purple-300 font-semibold mb-2 text-center">Step 2 of 2</div>
+                        <h1 className="text-3xl font-extrabold text-white text-center mb-1">Security System Setup</h1>
+                        <p className="text-lg text-purple-200 text-center mb-3">
+                            Kleros Reality Module secures your Locker with cheerful verification!
+                        </p>
+                        <div className="rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/5 mb-3 px-4 py-2">
+                            <span className="text-xs text-purple-300">
+                                This module uses Kleros for fund release verification, using optimistic oracle technology.
+                            </span>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div>
+                            <Label className="text-purple-100 text-xs">Question Bond</Label>
+                            <Input
+                                id="bond"
+                                type="number"
+                                value={moduleConfig.bond}
+                                onChange={e => setModuleConfig(prev => ({
+                                    ...prev, bond: e.target.value
+                                }))}
+                                className="rounded-xl bg-gray-900 mt-1 text-white text-xs"
+                                placeholder={DEFAULT_BOND}
+                                step="0.000000000000000001"
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-purple-100 text-xs">Timeout (s)</Label>
+                            <Input
+                                id="timeout"
+                                type="number"
+                                value={moduleConfig.timeout}
+                                onChange={e => setModuleConfig(prev => ({
+                                    ...prev, timeout: parseInt(e.target.value)
+                                }))}
+                                className="rounded-xl bg-gray-900 mt-1 text-white text-xs"
+                                placeholder={DEFAULT_TIMEOUTS.TIMEOUT?.toString()}
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-purple-100 text-xs">Cooldown (s)</Label>
+                            <Input
+                                id="cooldown"
+                                type="number"
+                                value={moduleConfig.cooldown}
+                                onChange={e => setModuleConfig(prev => ({
+                                    ...prev, cooldown: parseInt(e.target.value)
+                                }))}
+                                className="rounded-xl bg-gray-900 mt-1 text-white text-xs"
+                                placeholder={DEFAULT_TIMEOUTS.COOLDOWN?.toString()}
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-purple-100 text-xs">Expiration (s)</Label>
+                            <Input
+                                id="expiration"
+                                type="number"
+                                value={moduleConfig.expiration}
+                                onChange={e => setModuleConfig(prev => ({
+                                    ...prev, expiration: parseInt(e.target.value)
+                                }))}
+                                className="rounded-xl bg-gray-900 mt-1 text-white text-xs"
+                                placeholder={DEFAULT_TIMEOUTS.EXPIRATION?.toString()}
+                            />
+                        </div>
+                    </div>
+                    <div className="rounded-lg bg-purple-900/30 border border-purple-700 px-3 py-2 mb-2">
+                        <div className="text-xs text-purple-200 mb-1 font-semibold">Fund Release Conditions</div>
+                        <ContractTermsForm
+                            contractTerms={contractTerms}
+                            setContractTerms={setContractTerms}
+                            escrowMode={escrowMode}
+                            chainId={chainId}
+                        />
+                    </div>
+                    <Button
+                        onClick={handleModuleDeploy}
+                        disabled={!(deployedSafeAddress || existingSafeAddress) || loading}
+                        className="w-full py-4 rounded-xl bg-gradient-to-br from-pink-500 to-purple-500 mt-4 text-lg"
+                    >
+                        {loading ? "Deploying…" 
+                            : moduleDeploymentHash
+                                ? "Security System Ready!" 
+                                : "Create Security System"}
+                    </Button>
+                    {moduleDeploymentHash && (
+                        <div className="rounded-xl bg-gradient-to-r from-purple-600/20 to-fuchsia-500/10 mt-5 py-3 px-4 border border-purple-800 text-white text-sm text-center shadow">
+                            <div className="mb-1">
+                                <span className="font-bold">Locker Safe:</span> {deployedSafeAddress}
+                            </div>
+                            <div>
+                                <span className="font-bold">Security Module Hash:</span> {moduleDeploymentHash}
+                            </div>
+                            <Button 
+                                className="mt-3 w-full rounded-xl text-base bg-gradient-to-r from-green-400 to-green-600"
+                                onClick={() => navigate(`/control/${deployedSafeAddress}`)}
+                            >
+                                Go to Lockler Control
+                            </Button>
+                        </div>
+                    )}
+                </StepWrapper>
+            )}
         </div>
     );
 }
