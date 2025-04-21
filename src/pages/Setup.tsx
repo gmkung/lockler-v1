@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
     BrowserProvider,
@@ -11,7 +10,8 @@ import { Label } from "../components/ui/label";
 import { useToast } from "../hooks/use-toast";
 import { deploySafeWithOwners, deployRealityModule } from '../lib/deployment';
 import { getDefaultContractTerms } from '../lib/templates';
-import { ContractTermsForm } from "../components/ContractTermsForm"; // Added import for ContractTermsForm
+import { ContractTermsForm } from "../components/ContractTermsForm";
+import { Copy, ExternalLink } from "lucide-react";
 
 import {
     DEFAULT_SALT_NONCE,
@@ -201,18 +201,29 @@ export default function Setup() {
 
     const [step, setStep] = useState(1);
 
+    const handleCopyAddress = () => {
+        if (deployedSafeAddress) {
+            navigator.clipboard.writeText(deployedSafeAddress);
+            toast({
+                title: "Address copied!",
+                description: "Lockler address copied to clipboard.",
+            });
+        }
+    };
+
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a1831] to-[#231a2c] items-center justify-center py-7 px-3">
             <StepWrapper>
-                <StepProgressBar step={step} total={2} />
+                <StepProgressBar step={step} total={3} />
+
                 {step === 1 && (
                     <div>
                         <div className="mt-3 mb-2 text-center">
                             <div className="text-sm text-purple-300 font-semibold mb-1">
-                                Step 1 of 2
+                                Step 1 of 3
                             </div>
                             <h1 className="text-2xl font-extrabold text-white mb-2">
-                                Create Locker Safe
+                                Create Lockler Safe
                             </h1>
                             <p className="text-sm text-purple-200 mb-2 px-2">
                                 A cheerful, secure smart wallet with multi-sig protection!
@@ -220,48 +231,45 @@ export default function Setup() {
                         </div>
                         <div className="rounded-xl bg-purple-900/30 border border-purple-900 px-3 py-2 mb-4">
                             <div className="text-xs text-purple-100 text-center">
-                                <span className="font-semibold">Locker uses Gnosis Safe under the hood</span> — a highly secure, multi-signature smart contract wallet.
+                                <span className="font-semibold">Lockler uses Gnosis Safe under the hood</span> — a highly secure, multi-signature smart contract wallet.
                             </div>
                         </div>
 
-                        {/* Locker Type Selection Cards */}
-                        <div className="flex gap-3 mb-5 px-1 flex-col xs:flex-row sm:flex-row justify-center">
-                            {/* Transfer Locker Card */}
+                        <div className="flex gap-4 mb-5 px-1 flex-col xs:flex-row sm:flex-row justify-center">
                             <button
                                 type="button"
                                 onClick={() => setEscrowMode('p2p')}
-                                className={`w-full xs:w-1/2 rounded-2xl transition-all flex-1 flex flex-col items-start px-4 py-4 shadow-lg
+                                className={`w-full xs:w-1/2 aspect-square max-w-[180px] transition-all rounded-2xl flex flex-col items-center justify-center px-4 py-5 shadow-lg border-2
                                     ${escrowMode === 'p2p'
-                                        ? "bg-gradient-to-br from-purple-600 via-purple-600/90 to-indigo-600 ring-2 ring-fuchsia-400 border-0 scale-[1.01] text-white"
+                                        ? "bg-gradient-to-br from-purple-600 via-purple-600/90 to-indigo-600 ring-2 ring-fuchsia-400 border-transparent scale-105 text-white"
                                         : "bg-[#242038] border border-purple-700 hover:bg-purple-800/30 text-white/85"
                                     }
                                     outline-none focus:outline-none`}
-                                style={{ minWidth: 0, wordBreak: 'break-word', maxWidth: '100%' }}
+                                style={{ minWidth: 0, wordBreak: 'break-word' }}
                             >
-                                <div className="font-bold text-base mb-1 text-left w-full text-white">
-                                    Transfer Locker
+                                <div className="font-bold text-base mb-2 w-full text-center text-white">
+                                    Transfer Lockler
                                 </div>
-                                <div className={`text-xs text-left w-full break-words ${escrowMode === 'p2p' ? "text-purple-100" : "text-purple-300/90"}`}>
-                                    Use for one-to-one transfers that require both parties to agree to release funds.
+                                <div className={`text-xs text-center w-full break-words ${escrowMode === 'p2p' ? "text-purple-100" : "text-purple-300/90"}`}>
+                                    For one-to-one transfers needing both parties' agreement.
                                 </div>
                             </button>
-                            {/* Grant Locker Card */}
                             <button
                                 type="button"
                                 onClick={() => setEscrowMode('grant')}
-                                className={`w-full xs:w-1/2 rounded-2xl transition-all flex-1 flex flex-col items-start px-4 py-4 shadow-lg
+                                className={`w-full xs:w-1/2 aspect-square max-w-[180px] transition-all rounded-2xl flex flex-col items-center justify-center px-4 py-5 shadow-lg border-2
                                     ${escrowMode === 'grant'
-                                        ? "bg-gradient-to-br from-pink-500 via-fuchsia-500 to-pink-400 ring-2 ring-pink-300 border-0 scale-[1.01] text-white"
+                                        ? "bg-gradient-to-br from-pink-500 via-fuchsia-500 to-pink-400 ring-2 ring-pink-300 border-transparent scale-105 text-white"
                                         : "bg-[#242038] border border-purple-700 hover:bg-pink-900/20 text-white/85"
                                     }
                                     outline-none focus:outline-none`}
-                                style={{ minWidth: 0, wordBreak: 'break-word', maxWidth: '100%' }}
+                                style={{ minWidth: 0, wordBreak: 'break-word' }}
                             >
-                                <div className="font-bold text-base mb-1 text-left w-full text-white">
-                                    Grant Locker
+                                <div className="font-bold text-base mb-2 w-full text-center text-white">
+                                    Grant Lockler
                                 </div>
-                                <div className={`text-xs text-left w-full break-words ${escrowMode === 'grant' ? "text-pink-50" : "text-pink-100/80"}`}>
-                                    Distribute funds to multiple recipients with security and agreement checks.
+                                <div className={`text-xs text-center w-full break-words ${escrowMode === 'grant' ? "text-pink-50" : "text-pink-100/80"}`}>
+                                    Distribute funds to recipients with security checks.
                                 </div>
                             </button>
                         </div>
@@ -313,7 +321,7 @@ export default function Setup() {
                             onClick={handleSafeDeploy}
                             disabled={loading || !!deployedSafeAddress || (escrowMode === 'p2p' && !counterpartyAddress)}
                         >
-                            {loading ? "Deploying…" : deployedSafeAddress ? "Locker Safe Created!" : "Create Locker Safe"}
+                            {loading ? "Deploying…" : deployedSafeAddress ? "Lockler Safe Created!" : "Create Lockler Safe"}
                         </Button>
                     </div>
                 )}
@@ -322,13 +330,13 @@ export default function Setup() {
                     <>
                         <div className="mt-3 mb-4 text-center px-1">
                             <div className="text-sm text-purple-300 font-semibold mb-1">
-                                Step 2 of 2
+                                Step 2 of 3
                             </div>
                             <h1 className="text-2xl font-extrabold text-white mb-2">
                                 Security System Setup
                             </h1>
                             <p className="text-sm text-purple-200 mb-4 px-2">
-                                Kleros Reality Module secures your Locker with cheerful verification!
+                                Kleros Reality Module secures your Lockler with cheerful verification!
                             </p>
                         </div>
                         <div className="grid grid-cols-2 gap-2 mb-3 px-1">
@@ -400,28 +408,82 @@ export default function Setup() {
                             disabled={!(deployedSafeAddress || existingSafeAddress) || loading}
                             className="w-full py-3 rounded-3xl bg-gradient-to-br from-pink-500 to-purple-500 mt-2 text-lg"
                         >
-                            {loading ? "Deploying…" 
+                            {loading ? "Deploying…"
                                 : moduleDeploymentHash
-                                    ? "Security System Ready!" 
+                                    ? "Security System Ready!"
                                     : "Create Security System"}
                         </Button>
                         {moduleDeploymentHash && (
                             <div className="rounded-xl bg-gradient-to-r from-purple-600/20 to-fuchsia-500/10 mt-4 py-3 px-4 border border-purple-800 text-white text-sm text-center shadow">
                                 <div className="mb-1">
-                                    <span className="font-bold">Locker Safe:</span> {deployedSafeAddress}
+                                    <span className="font-bold">Lockler Safe:</span> {deployedSafeAddress}
                                 </div>
                                 <div>
                                     <span className="font-bold">Security Module Hash:</span> {moduleDeploymentHash}
                                 </div>
-                                <Button 
+                                <Button
                                     className="mt-3 w-full rounded-3xl text-base bg-gradient-to-r from-green-400 to-green-600"
-                                    onClick={() => navigate(`/control/${deployedSafeAddress}`)}
+                                    onClick={() => setStep(3)}
                                 >
-                                    Go to Lockler Control
+                                    Go to Final Step
                                 </Button>
                             </div>
                         )}
                     </>
+                )}
+
+                {step === 3 && (
+                    <div className="flex flex-col items-center text-center animate-fade-in">
+                        <div className="text-3xl mb-2 font-extrabold tracking-tight text-gradient-primary">
+                            🎉 Tadaa!
+                        </div>
+                        <div className="text-xl text-white font-bold mb-3">
+                            Your single-purpose Lockler is ready 🚀
+                        </div>
+                        <div className="mb-4 text-purple-200 max-w-xs">
+                            Share your Lockler address below to receive deposits, or view & release funds anytime.
+                        </div>
+                        <div className="w-full flex flex-col gap-2 mb-4">
+                            <div className="flex flex-col items-center gap-1 rounded-3xl border border-purple-700 bg-[rgba(44,36,71,0.98)] px-5 py-3">
+                                <span className="text-xs uppercase tracking-widest text-purple-400">Lockler Address</span>
+                                <div className="flex items-center mt-1 gap-2 select-text">
+                                    <span className="font-mono text-white text-sm truncate max-w-[18ch]">{deployedSafeAddress}</span>
+                                    <button
+                                        aria-label="Copy address"
+                                        onClick={handleCopyAddress}
+                                        className="p-1 hover:bg-fuchsia-700/30 rounded transition"
+                                    >
+                                        <Copy size={18} className="text-pink-300" />
+                                    </button>
+                                    <a
+                                        href={`/release/${deployedSafeAddress}`}
+                                        className="p-1 hover:bg-indigo-700/30 rounded transition"
+                                        target="_blank" rel="noopener noreferrer"
+                                        aria-label="View Lockler"
+                                    >
+                                        <ExternalLink size={18} className="text-indigo-300" />
+                                    </a>
+                                </div>
+                                <div className="flex gap-2 mt-2 w-full">
+                                    <Button
+                                        className="flex-1 rounded-full bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white"
+                                        onClick={handleCopyAddress}
+                                    >
+                                        Copy Address
+                                    </Button>
+                                    <Button
+                                        className="flex-1 rounded-full bg-gradient-to-r from-indigo-400 to-fuchsia-600 text-white"
+                                        onClick={() => window.open(`/release/${deployedSafeAddress}`, "_blank")}
+                                    >
+                                        View Lockler
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="text-purple-200 text-xs mt-2">
+                            You can now use your Lockler to securely store and release funds!
+                        </div>
+                    </div>
                 )}
             </StepWrapper>
         </div>
