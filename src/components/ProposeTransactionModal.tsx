@@ -5,12 +5,12 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { TOKENS } from '../lib/constants';
+import { TOKENS, CHAIN_CONFIG } from '../lib/constants';
 import { uploadJSONToIPFS } from 'light-curate-data-service';
 import { BrowserProvider, Contract, AbiCoder, parseUnits, keccak256, ethers } from 'ethers';
 import { REALITY_MODULE_ABI } from '../abis/realityModule';
 import { ERC20_ABI } from '../abis/erc20';
-
+import { useAccount } from 'wagmi';
 import { switchChain } from '../lib/utils';
 
 export type Transaction = {
@@ -41,6 +41,7 @@ export function ProposeTransactionModal({
     chainId: number;
     realityModuleAddress: string;
 }) {
+    const { address } = useAccount();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [showRawIndices, setShowRawIndices] = useState<Set<number>>(new Set());
     const [currentType, setCurrentType] = useState<TransactionType>('native');
@@ -51,6 +52,7 @@ export function ProposeTransactionModal({
     const [currentJustification, setCurrentJustification] = useState({ title: '', description: '' });
     const [minimumBond, setMinimumBond] = useState<string>('0');
     const [isLoadingBond, setIsLoadingBond] = useState(true);
+    const nativeCurrency = CHAIN_CONFIG[chainId]?.nativeCurrency?.symbol || '';
 
     const availableTokens = [TOKENS.NATIVE];
     Object.entries(TOKENS).forEach(([key, tokenConfig]) => {
@@ -179,10 +181,10 @@ export function ProposeTransactionModal({
             const signer = await provider.getSigner();
             
             // Check if user has enough ETH for the bond
-            const balance = await provider.getBalance(await signer.getAddress());
+            const balance = await provider.getBalance(address);
 
             if (balance < BigInt(minimumBond)) {
-                throw new Error(`Insufficient ETH for bond. Required: ${ethers.formatEther(minimumBond)} ETH`);
+                throw new Error(`Insufficient ${nativeCurrency} for bond. Required: ${ethers.formatEther(minimumBond)} ${nativeCurrency}, you have: ${ethers.formatEther(balance)} ${nativeCurrency}`);
             }
 
             // Initialize Reality Module contract first
@@ -315,8 +317,8 @@ export function ProposeTransactionModal({
                             <p className="text-sm mt-1">Loading minimum bond amount...</p>
                         ) : (
                             <p className="text-sm mt-1">
-                                You need to have at least {ethers.formatEther(minimumBond)} ETH in your wallet to propose this transaction.
-                                The bond will be automatically deducted when you submit the proposal.
+                                You need to have at least {ethers.formatEther(minimumBond)} {nativeCurrency} to propose this transaction.
+                                The bond will be returned if your proposal is approved.
                             </p>
                         )}
                     </div>
@@ -369,7 +371,7 @@ export function ProposeTransactionModal({
                                 />
                             </div>
                             <div>
-                                <Label>Amount (ETH)</Label>
+                                <Label>Amount ({nativeCurrency})</Label>
                                 <Input
                                     type="number"
                                     value={currentValue}
@@ -435,7 +437,7 @@ export function ProposeTransactionModal({
                                 />
                             </div>
                             <div>
-                                <Label>Value (ETH)</Label>
+                                <Label>Value ({nativeCurrency})</Label>
                                 <Input
                                     type="number"
                                     value={currentValue}
@@ -478,7 +480,7 @@ export function ProposeTransactionModal({
                                                         <p className="text-sm font-medium">To: {tx.to}</p>
                                                     )}
                                                     {tx.type !== 'erc20' && (
-                                                        <p className="text-sm">Value: {ethers.formatEther(tx.value)} ETH</p>
+                                                        <p className="text-sm">Value: {ethers.formatEther(tx.value)} {nativeCurrency}</p>
                                                     )}
                                                     <p className="text-sm break-all">
                                                         {decoded.readable}
@@ -496,7 +498,7 @@ export function ProposeTransactionModal({
                                                                 {tx.type === 'erc20' && (
                                                                     <>
                                                                         <p>Contract Address: {tx.to}</p>
-                                                                        <p>Native Value: {ethers.formatEther(tx.value)} ETH</p>
+                                                                        <p>Native Value: {ethers.formatEther(tx.value)} {nativeCurrency}</p>
                                                                     </>
                                                                 )}
                                                                 <p className="break-all">Calldata: {decoded.raw}</p>

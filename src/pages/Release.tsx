@@ -31,6 +31,7 @@ export default function Release() {
   const chainId = chainIdParam ? parseInt(chainIdParam) : null;
   const blockExplorer = chainId ? getBlockExplorer(chainId) : null;
   const publicClient = usePublicClient();
+  const { address } = useAccount();
   const [safeExists, setSafeExists] = useState<boolean>(true);
 
   const { address: moduleAddress, isLoading, error, modules, templateContent } = useRealityModule(
@@ -44,7 +45,7 @@ export default function Release() {
     );
   const [isProposeModalOpen, setIsProposeModalOpen] = useState(false);
   const { transactionDetails, transactionStatuses, loadingStatuses, setTransactionStatuses } = useTransactionStatus(questions, moduleAddress, chainId);
-  const { address } = useAccount();
+
   const { connect } = useConnect();
 
   // Check if Safe exists on this chain using ethers directly
@@ -312,14 +313,16 @@ export default function Release() {
                       <p className="font-mono text-sm bg-gray-50 p-1.5 rounded border border-gray-200 flex-grow">
                         {moduleAddress}
                       </p>
-                      <a
-                        href={`https://etherscan.io/address/${moduleAddress}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 hover:text-indigo-800"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
+                      {blockExplorer && (
+                        <a
+                          href={`${blockExplorer}/address/${moduleAddress}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-800"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>

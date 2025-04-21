@@ -20,6 +20,7 @@ interface VouchProposalProps {
 export function VouchProposal({ questionId, moduleAddress, chainId, disabled, onVouchComplete }: VouchProposalProps) {
     const { address } = useAccount();
     const publicClient = usePublicClient();
+    const nativeCurrency = CHAIN_CONFIG[chainId]?.nativeCurrency?.symbol || '';
     
     // Debug logs for publicClient and chain detection
     useEffect(() => {
@@ -244,17 +245,17 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
                             <div className="text-center p-4 bg-gray-50 rounded-lg space-y-2">
                                 <div>
                                     <p className="text-sm text-gray-600">Minimum Bond</p>
-                                    <p className="text-sm font-medium">{ethers.formatEther(minBond)} ETH</p>
+                                    <p className="text-sm font-medium">{ethers.formatEther(minBond)} {nativeCurrency}</p>
                                 </div>
                                 {currentBond && currentBond > 0n && (
                                     <div>
                                         <p className="text-sm text-gray-600">Current Bond</p>
-                                        <p className="text-sm font-medium">{ethers.formatEther(currentBond)} ETH</p>
+                                        <p className="text-sm font-medium">{ethers.formatEther(currentBond)} {nativeCurrency}</p>
                                     </div>
                                 )}
                                 <div>
                                     <p className="text-sm text-gray-600">Required Bond</p>
-                                    <p className="text-lg font-semibold">{ethers.formatEther(getRequiredBond() || 0n)} ETH</p>
+                                    <p className="text-lg font-semibold">{ethers.formatEther(getRequiredBond() || 0n)} {nativeCurrency}</p>
                                 </div>
                                 {currentAnswer && (
                                     <div>
