@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
     BrowserProvider,
@@ -10,6 +11,7 @@ import { Label } from "../components/ui/label";
 import { useToast } from "../hooks/use-toast";
 import { deploySafeWithOwners, deployRealityModule } from '../lib/deployment';
 import { getDefaultContractTerms } from '../lib/templates';
+import { ContractTermsForm } from "../components/ContractTermsForm"; // Added import for ContractTermsForm
 
 import {
     DEFAULT_SALT_NONCE,
