@@ -205,191 +205,204 @@ export default function Setup() {
     const [step, setStep] = useState(1);
 
     return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a1831] to-[#231a2c] items-center justify-center py-7 px-2">
-            {step === 1 ? (
-                <StepWrapper>
-                    <StepProgressBar step={1} total={2} />
-                    <div className="mt-2 mb-4">
-                        <div className="text-sm text-purple-300 font-semibold mb-2 text-center">
-                            Step 1 of 2
-                        </div>
-                        <h1 className="text-3xl font-extrabold text-white text-center mb-1">Create Locker Safe</h1>
-                        <p className="text-lg text-purple-200 text-center mb-3">
-                            A cheerful, secure smart wallet with multi-sig protection!
-                        </p>
-                        <div className="rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/5 mb-5 px-4 py-2">
-                            <span className="text-xs text-purple-300">
-                                Locker uses Gnosis Safe under the hood — a highly secure, multi-signature smart contract wallet.
-                            </span>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3 mb-5">
-                        <Button
-                            variant={escrowMode === 'p2p' ? 'default' : 'outline'}
-                            onClick={() => setEscrowMode('p2p')}
-                            className={`rounded-xl py-6 w-full text-left transition-all ${escrowMode === 'p2p' ? 'bg-gradient-to-br from-purple-500 to-indigo-500 text-white scale-105' : 'bg-gray-900 text-white/80'}`}
-                        >
-                            <div className="font-bold text-lg">Transfer Locker</div>
-                            <div className="text-sm opacity-85 pt-1">Use for one-to-one transfers that require both parties to agree to release funds.</div>
-                        </Button>
-                        <Button
-                            variant={escrowMode === 'grant' ? 'default' : 'outline'}
-                            onClick={() => setEscrowMode('grant')}
-                            className={`rounded-xl py-6 w-full text-left transition-all ${escrowMode === 'grant' ? 'bg-gradient-to-br from-fuchsia-500 to-pink-400 text-white scale-105' : 'bg-gray-900 text-white/80'}`}
-                        >
-                            <div className="font-bold text-lg">Grant Locker</div>
-                            <div className="text-sm opacity-85 pt-1">Distribute funds to multiple recipients with security and agreement checks.</div>
-                        </Button>
-                    </div>
-                    {escrowMode === 'p2p' && (
-                        <div className="mb-4">
-                            <label className="block text-purple-200 font-bold mb-2">Your Role</label>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant={p2pRole === 'sender' ? 'default' : 'outline'}
-                                    onClick={() => setP2PRole('sender')}
-                                    className={`rounded-full flex-1 transition-all ${p2pRole === 'sender' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' : 'bg-gray-800 text-gray-200'}`}
-                                >
-                                    I am the Sender
-                                </Button>
-                                <Button
-                                    variant={p2pRole === 'receiver' ? 'default' : 'outline'}
-                                    onClick={() => setP2PRole('receiver')}
-                                    className={`rounded-full flex-1 transition-all ${p2pRole === 'receiver' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white' : 'bg-gray-800 text-gray-200'}`}
-                                >
-                                    I am the Receiver
-                                </Button>
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a1831] to-[#231a2c] items-center justify-center py-7 px-4">
+            <StepWrapper>
+                <StepProgressBar step={step} total={2} />
+                {step === 1 && (
+                    <>
+                        <div className="mt-3 mb-4 text-center">
+                            <div className="text-sm text-purple-300 font-semibold mb-1">
+                                Step 1 of 2
                             </div>
+                            <h1 className="text-2xl font-extrabold text-white mb-2">
+                                Create Locker Safe
+                            </h1>
+                            <p className="text-sm text-purple-200 mb-4 px-2">
+                                A cheerful, secure smart wallet with multi-sig protection.
+                            </p>
                         </div>
-                    )}
-                    {escrowMode === 'p2p' && (
-                        <div className="mb-2">
-                            <Label className="text-purple-100">{
-                                p2pRole === 'sender' ? 'Receiver' : 'Sender'
-                            } Address</Label>
-                            <Input 
-                                className="rounded-xl bg-gray-900 mt-1 text-white"
-                                value={counterpartyAddress}
-                                onChange={(e) => setCounterpartyAddress(e.target.value)}
-                                placeholder={`Enter ${p2pRole === 'sender' ? 'receiver' : 'sender'} Ethereum address`}
-                            />
-                        </div>
-                    )}
-                    <Button
-                        className="w-full py-4 rounded-xl text-lg bg-gradient-to-br from-pink-500 to-purple-500 mt-5"
-                        onClick={handleSafeDeploy}
-                        disabled={loading || !!deployedSafeAddress || (escrowMode === 'p2p' && !counterpartyAddress)}
-                    >
-                        {loading ? "Deploying…" : deployedSafeAddress ? "Locker Safe Created!" : "Create Locker Safe"}
-                    </Button>
-                </StepWrapper>
-            ) : (
-                <StepWrapper>
-                    <StepProgressBar step={2} total={2} />
-                    <div className="mt-2 mb-4">
-                        <div className="text-sm text-purple-300 font-semibold mb-2 text-center">Step 2 of 2</div>
-                        <h1 className="text-3xl font-extrabold text-white text-center mb-1">Security System Setup</h1>
-                        <p className="text-lg text-purple-200 text-center mb-3">
-                            Kleros Reality Module secures your Locker with cheerful verification!
-                        </p>
-                        <div className="rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/5 mb-3 px-4 py-2">
-                            <span className="text-xs text-purple-300">
-                                This module uses Kleros for fund release verification, using optimistic oracle technology.
-                            </span>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                        <div>
-                            <Label className="text-purple-100 text-xs">Question Bond</Label>
-                            <Input
-                                id="bond"
-                                type="number"
-                                value={moduleConfig.bond}
-                                onChange={e => setModuleConfig(prev => ({
-                                    ...prev, bond: e.target.value
-                                }))}
-                                className="rounded-xl bg-gray-900 mt-1 text-white text-xs"
-                                placeholder={DEFAULT_BOND}
-                                step="0.000000000000000001"
-                            />
-                        </div>
-                        <div>
-                            <Label className="text-purple-100 text-xs">Timeout (s)</Label>
-                            <Input
-                                id="timeout"
-                                type="number"
-                                value={moduleConfig.timeout}
-                                onChange={e => setModuleConfig(prev => ({
-                                    ...prev, timeout: parseInt(e.target.value)
-                                }))}
-                                className="rounded-xl bg-gray-900 mt-1 text-white text-xs"
-                                placeholder={DEFAULT_TIMEOUTS.TIMEOUT?.toString()}
-                            />
-                        </div>
-                        <div>
-                            <Label className="text-purple-100 text-xs">Cooldown (s)</Label>
-                            <Input
-                                id="cooldown"
-                                type="number"
-                                value={moduleConfig.cooldown}
-                                onChange={e => setModuleConfig(prev => ({
-                                    ...prev, cooldown: parseInt(e.target.value)
-                                }))}
-                                className="rounded-xl bg-gray-900 mt-1 text-white text-xs"
-                                placeholder={DEFAULT_TIMEOUTS.COOLDOWN?.toString()}
-                            />
-                        </div>
-                        <div>
-                            <Label className="text-purple-100 text-xs">Expiration (s)</Label>
-                            <Input
-                                id="expiration"
-                                type="number"
-                                value={moduleConfig.expiration}
-                                onChange={e => setModuleConfig(prev => ({
-                                    ...prev, expiration: parseInt(e.target.value)
-                                }))}
-                                className="rounded-xl bg-gray-900 mt-1 text-white text-xs"
-                                placeholder={DEFAULT_TIMEOUTS.EXPIRATION?.toString()}
-                            />
-                        </div>
-                    </div>
-                    <div className="rounded-lg bg-purple-900/30 border border-purple-700 px-3 py-2 mb-2">
-                        <div className="text-xs text-purple-200 mb-1 font-semibold">Fund Release Conditions</div>
-                        <ContractTermsForm
-                            contractTerms={contractTerms}
-                            setContractTerms={setContractTerms}
-                            escrowMode={escrowMode}
-                            chainId={chainId}
-                        />
-                    </div>
-                    <Button
-                        onClick={handleModuleDeploy}
-                        disabled={!(deployedSafeAddress || existingSafeAddress) || loading}
-                        className="w-full py-4 rounded-xl bg-gradient-to-br from-pink-500 to-purple-500 mt-4 text-lg"
-                    >
-                        {loading ? "Deploying…" 
-                            : moduleDeploymentHash
-                                ? "Security System Ready!" 
-                                : "Create Security System"}
-                    </Button>
-                    {moduleDeploymentHash && (
-                        <div className="rounded-xl bg-gradient-to-r from-purple-600/20 to-fuchsia-500/10 mt-5 py-3 px-4 border border-purple-800 text-white text-sm text-center shadow">
-                            <div className="mb-1">
-                                <span className="font-bold">Locker Safe:</span> {deployedSafeAddress}
-                            </div>
-                            <div>
-                                <span className="font-bold">Security Module Hash:</span> {moduleDeploymentHash}
-                            </div>
-                            <Button 
-                                className="mt-3 w-full rounded-xl text-base bg-gradient-to-r from-green-400 to-green-600"
-                                onClick={() => navigate(`/control/${deployedSafeAddress}`)}
+
+                        <div className="grid grid-cols-1 gap-3 mb-5 px-1">
+                            <Button
+                                variant={escrowMode === 'p2p' ? 'default' : 'outline'}
+                                onClick={() => setEscrowMode('p2p')}
+                                className={`rounded-xl py-4 px-3 w-full text-left break-words transition-all whitespace-normal ${
+                                    escrowMode === 'p2p' ? 'bg-gradient-to-br from-purple-500 to-indigo-500 text-white scale-105' : 'bg-gray-900 text-white/80'
+                                }`}
                             >
-                                Go to Lockler Control
+                                <div className="font-semibold text-base leading-tight">Transfer Locker</div>
+                                <div className="text-xs opacity-85 pt-1 leading-snug">Use for one-to-one transfers that require both parties to agree to release funds.</div>
+                            </Button>
+                            <Button
+                                variant={escrowMode === 'grant' ? 'default' : 'outline'}
+                                onClick={() => setEscrowMode('grant')}
+                                className={`rounded-xl py-4 px-3 w-full text-left break-words transition-all whitespace-normal ${
+                                    escrowMode === 'grant' ? 'bg-gradient-to-br from-fuchsia-500 to-pink-400 text-white scale-105' : 'bg-gray-900 text-white/80'
+                                }`}
+                            >
+                                <div className="font-semibold text-base leading-tight">Grant Locker</div>
+                                <div className="text-xs opacity-85 pt-1 leading-snug">Distribute funds to multiple recipients with security and agreement checks.</div>
                             </Button>
                         </div>
-                    )}
-                </StepWrapper>
-            )}
+
+                        {escrowMode === 'p2p' && (
+                            <div className="mb-4 px-1 text-center">
+                                <label className="block text-purple-200 font-bold mb-2">
+                                    Your Role
+                                </label>
+                                <div className="flex gap-3 justify-center">
+                                    <Button
+                                        variant={p2pRole === 'sender' ? 'default' : 'outline'}
+                                        onClick={() => setP2PRole('sender')}
+                                        className={`rounded-full flex-1 min-w-[110px] text-sm transition-all ${
+                                            p2pRole === 'sender' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' : 'bg-gray-800 text-gray-300'
+                                        }`}
+                                    >
+                                        I am the Sender
+                                    </Button>
+                                    <Button
+                                        variant={p2pRole === 'receiver' ? 'default' : 'outline'}
+                                        onClick={() => setP2PRole('receiver')}
+                                        className={`rounded-full flex-1 min-w-[110px] text-sm transition-all ${
+                                            p2pRole === 'receiver' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white' : 'bg-gray-800 text-gray-300'
+                                        }`}
+                                    >
+                                        I am the Receiver
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {escrowMode === 'p2p' && (
+                            <div className="mb-4 px-1">
+                                <Label className="text-purple-100 text-left block mb-1 text-sm">
+                                    {p2pRole === 'sender' ? 'Receiver' : 'Sender'} Address
+                                </Label>
+                                <Input
+                                    className="rounded-xl bg-gray-900 mt-1 text-white text-sm"
+                                    value={counterpartyAddress}
+                                    onChange={(e) => setCounterpartyAddress(e.target.value)}
+                                    placeholder={`Enter ${p2pRole === 'sender' ? 'receiver' : 'sender'} Ethereum address`}
+                                />
+                            </div>
+                        )}
+
+                        <Button
+                            className="w-full py-3 rounded-3xl text-lg bg-gradient-to-br from-pink-500 to-purple-500 mt-4"
+                            onClick={handleSafeDeploy}
+                            disabled={loading || !!deployedSafeAddress || (escrowMode === 'p2p' && !counterpartyAddress)}
+                        >
+                            {loading ? "Deploying…" : deployedSafeAddress ? "Locker Safe Created!" : "Create Locker Safe"}
+                        </Button>
+                    </>
+                )}
+
+                {step === 2 && (
+                    <>
+                        <div className="mt-3 mb-4 text-center px-1">
+                            <div className="text-sm text-purple-300 font-semibold mb-1">
+                                Step 2 of 2
+                            </div>
+                            <h1 className="text-2xl font-extrabold text-white mb-2">
+                                Security System Setup
+                            </h1>
+                            <p className="text-sm text-purple-200 mb-4 px-2">
+                                Kleros Reality Module secures your Locker with cheerful verification!
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mb-3 px-1">
+                            <div>
+                                <Label className="text-purple-100 text-xs">Question Bond</Label>
+                                <Input
+                                    id="bond"
+                                    type="number"
+                                    value={moduleConfig.bond}
+                                    onChange={e => setModuleConfig(prev => ({
+                                        ...prev, bond: e.target.value
+                                    }))}
+                                    className="rounded-2xl bg-gray-900 mt-1 text-white text-xs"
+                                    placeholder={DEFAULT_BOND}
+                                    step="0.000000000000000001"
+                                />
+                            </div>
+                            <div>
+                                <Label className="text-purple-100 text-xs">Timeout (s)</Label>
+                                <Input
+                                    id="timeout"
+                                    type="number"
+                                    value={moduleConfig.timeout}
+                                    onChange={e => setModuleConfig(prev => ({
+                                        ...prev, timeout: parseInt(e.target.value)
+                                    }))}
+                                    className="rounded-2xl bg-gray-900 mt-1 text-white text-xs"
+                                    placeholder={DEFAULT_TIMEOUTS.TIMEOUT?.toString()}
+                                />
+                            </div>
+                            <div>
+                                <Label className="text-purple-100 text-xs">Cooldown (s)</Label>
+                                <Input
+                                    id="cooldown"
+                                    type="number"
+                                    value={moduleConfig.cooldown}
+                                    onChange={e => setModuleConfig(prev => ({
+                                        ...prev, cooldown: parseInt(e.target.value)
+                                    }))}
+                                    className="rounded-2xl bg-gray-900 mt-1 text-white text-xs"
+                                    placeholder={DEFAULT_TIMEOUTS.COOLDOWN?.toString()}
+                                />
+                            </div>
+                            <div>
+                                <Label className="text-purple-100 text-xs">Expiration (s)</Label>
+                                <Input
+                                    id="expiration"
+                                    type="number"
+                                    value={moduleConfig.expiration}
+                                    onChange={e => setModuleConfig(prev => ({
+                                        ...prev, expiration: parseInt(e.target.value)
+                                    }))}
+                                    className="rounded-2xl bg-gray-900 mt-1 text-white text-xs"
+                                    placeholder={DEFAULT_TIMEOUTS.EXPIRATION?.toString()}
+                                />
+                            </div>
+                        </div>
+                        <div className="rounded-lg bg-purple-900/30 border border-purple-700 px-2 py-2 mb-2 max-h-52 overflow-y-auto">
+                            <div className="text-xs text-purple-200 mb-1 font-semibold">Fund Release Conditions</div>
+                            <ContractTermsForm
+                                contractTerms={contractTerms}
+                                setContractTerms={setContractTerms}
+                                escrowMode={escrowMode}
+                                chainId={chainId}
+                            />
+                        </div>
+                        <Button
+                            onClick={handleModuleDeploy}
+                            disabled={!(deployedSafeAddress || existingSafeAddress) || loading}
+                            className="w-full py-3 rounded-3xl bg-gradient-to-br from-pink-500 to-purple-500 mt-2 text-lg"
+                        >
+                            {loading ? "Deploying…" 
+                                : moduleDeploymentHash
+                                    ? "Security System Ready!" 
+                                    : "Create Security System"}
+                        </Button>
+                        {moduleDeploymentHash && (
+                            <div className="rounded-xl bg-gradient-to-r from-purple-600/20 to-fuchsia-500/10 mt-4 py-3 px-4 border border-purple-800 text-white text-sm text-center shadow">
+                                <div className="mb-1">
+                                    <span className="font-bold">Locker Safe:</span> {deployedSafeAddress}
+                                </div>
+                                <div>
+                                    <span className="font-bold">Security Module Hash:</span> {moduleDeploymentHash}
+                                </div>
+                                <Button 
+                                    className="mt-3 w-full rounded-3xl text-base bg-gradient-to-r from-green-400 to-green-600"
+                                    onClick={() => navigate(`/control/${deployedSafeAddress}`)}
+                                >
+                                    Go to Lockler Control
+                                </Button>
+                            </div>
+                        )}
+                    </>
+                )}
+            </StepWrapper>
         </div>
     );
 }
