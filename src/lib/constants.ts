@@ -44,12 +44,12 @@ export const CHAIN_CONFIG: Record<number, Chain> = {
       safeProxyFactory: "0x4e1dcf7ad4e460cfd30791ccc4f9c8a4f820ec67", //verified
       safeSingleton: "0x41675C099F32341bf84BFc5382aF534df5C7461a", //verified
       fallbackHandler: "0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99", //Verified
-      moduleProxyFactory: "0x000000000000aDdB49795b0f9bA5BC298cDda236",
-      realityMasterCopy: "0x4e35DA39Fa5893a70A40Ce964F993d891E607cC0",
-      ddhAddress: "0x0961F418E0B6efaA073004989EF1B2fd1bc4a41c",
-      safeMultisend: "0x40A2aCCbd92BCA938b02010E17A5b8929b49130D",
-      defaultOracle: "0x5b7dD1E86623548AF054A4985F7fc8Ccbb554E2c",
-      defaultArbitrator: "0xf72CfD1B34a91A64f9A98537fe63FBaB7530AdcA",
+      moduleProxyFactory: "0x000000000000aDdB49795b0f9bA5BC298cDda236", //Verified
+      realityMasterCopy: "0x4e35DA39Fa5893a70A40Ce964F993d891E607cC0", //Verified
+      ddhAddress: "0x0961F418E0B6efaA073004989EF1B2fd1bc4a41c", //Verified
+      safeMultisend: "0x40A2aCCbd92BCA938b02010E17A5b8929b49130D", //Verified
+      defaultOracle: "0xE78996A233895bE74a66F451f1019cA9734205cc", //Verified
+      defaultArbitrator: "0xe04f5791d671d5C4e08ab49b39807087B591ea3e", // Verified, same one as Susie for now
     },
   },
 };
