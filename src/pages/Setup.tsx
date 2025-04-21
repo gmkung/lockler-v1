@@ -18,6 +18,7 @@ import {
     DEFAULT_TIMEOUTS,
     DEFAULT_BOND,
     DEFAULT_CHAIN_ID,
+    SUPPORTED_CHAINS,
     getContractAddresses,
     getBlockExplorer,
 } from '../lib/constants';
@@ -45,6 +46,7 @@ export default function Setup() {
     const [counterpartyAddress, setCounterpartyAddress] = useState<string>("");
 
     const [chainId, setChainId] = useState<number>(DEFAULT_CHAIN_ID);
+    const [chainName, setChainName] = useState<string>("");
 
     const [saltNonce, setSaltNonce] = useState(DEFAULT_SALT_NONCE);
     const [deployedSafeAddress, setDeployedSafeAddress] = useState<string | null>(null);
@@ -70,11 +72,19 @@ export default function Setup() {
 
     useEffect(() => {
         const handleChainChanged = (newChainId: string) => {
-            setChainId(parseInt(newChainId, 16));
+            const parsedChainId = parseInt(newChainId, 16);
+            setChainId(parsedChainId);
+            // Update chain name based on chain ID
+            setChainName(parsedChainId === SUPPORTED_CHAINS.MAINNET ? "Ethereum Mainnet" : 
+                        parsedChainId === SUPPORTED_CHAINS.GNOSIS ? "Gnosis Chain" : 
+                        `Chain ${parsedChainId}`);
         };
 
         if (window.ethereum) {
             window.ethereum.on('chainChanged', handleChainChanged);
+            // Get initial chain ID
+            window.ethereum.request({ method: 'eth_chainId' })
+                .then(handleChainChanged);
         }
 
         return () => {
@@ -214,6 +224,11 @@ export default function Setup() {
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a1831] to-[#231a2c] items-center justify-center py-7 px-3">
             <StepWrapper>
+                <div className="mb-4 text-center">
+                    <div className="text-sm text-purple-300">
+                        Active Network: {chainName} (Chain ID: {chainId})
+                    </div>
+                </div>
                 <StepProgressBar step={step} total={3} />
 
                 {step === 1 && (
@@ -464,6 +479,11 @@ export default function Setup() {
                                         <ExternalLink size={18} className="text-indigo-300" />
                                     </a>
                                 </div>
+                                {transactionData?.contractAddress && (
+                                    <div className="mt-2 text-xs text-purple-300">
+                                        <span className="font-semibold">Security Module:</span> {transactionData.contractAddress}
+                                    </div>
+                                )}
                                 <div className="flex gap-2 mt-2 w-full">
                                     <Button
                                         className="flex-1 rounded-full bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white"
