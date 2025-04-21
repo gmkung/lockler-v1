@@ -116,4 +116,8 @@ export interface ProposalTransaction {
   data: string;
   operation: number;
   error?: string;
+  justification?: {
+    title: string;
+    description: string;
+  };
 } 

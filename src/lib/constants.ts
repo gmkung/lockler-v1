@@ -55,7 +55,7 @@ export const CHAIN_CONFIG: Record<number, Chain> = {
 };
 
 // Default chain
-export const DEFAULT_CHAIN_ID = SUPPORTED_CHAINS.MAINNET;
+
 
 // Chain-agnostic constants
 export const DEFAULT_THRESHOLD = 1;
@@ -70,7 +70,7 @@ export const DEFAULT_TIMEOUTS = {
 //export const DEFAULT_TEMPLATE_CONTENT = "Did the event %s occur ?";
 
 // Helper functions to get chain-specific values
-export const getChainConfig = (chainId: number = DEFAULT_CHAIN_ID): Chain => {
+export const getChainConfig = (chainId: number): Chain => {
   const config = CHAIN_CONFIG[chainId];
   if (!config) {
     throw new Error(`Unsupported chain ID: ${chainId}`);
@@ -79,15 +79,15 @@ export const getChainConfig = (chainId: number = DEFAULT_CHAIN_ID): Chain => {
 };
 
 // Export commonly used getters
-export const getContractAddresses = (chainId: number = DEFAULT_CHAIN_ID) => {
+export const getContractAddresses = (chainId: number) => {
   return getChainConfig(chainId).contracts;
 };
 
-export const getRpcUrl = (chainId: number = DEFAULT_CHAIN_ID) => {
+export const getRpcUrl = (chainId: number) => {
   return getChainConfig(chainId).rpcUrl;
 };
 
-export const getBlockExplorer = (chainId: number = DEFAULT_CHAIN_ID) => {
+export const getBlockExplorer = (chainId: number) => {
   return getChainConfig(chainId).blockExplorer;
 };
 
@@ -98,7 +98,7 @@ export const TOKENS = {
     decimals: 18,
   },
   USDC: {
-    [DEFAULT_CHAIN_ID]: {
+    [SUPPORTED_CHAINS.MAINNET]: {
       address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // Ethereum Mainnet
       symbol: "USDC",
       decimals: 6,
@@ -110,7 +110,7 @@ export const TOKENS = {
     },
   },
   PNK: {
-    [DEFAULT_CHAIN_ID]: {
+    [SUPPORTED_CHAINS.MAINNET]: {
       address: "0x93ED3FBe21207Ec2E8f2d3c3de6e058Cb73Bc04d", // Ethereum Mainnet
       symbol: "PNK",
       decimals: 18,

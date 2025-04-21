@@ -17,7 +17,6 @@ import {
     DEFAULT_SALT_NONCE,
     DEFAULT_TIMEOUTS,
     DEFAULT_BOND,
-    DEFAULT_CHAIN_ID,
     SUPPORTED_CHAINS,
     getContractAddresses,
     getBlockExplorer,
@@ -45,7 +44,7 @@ export default function Setup() {
     const [p2pRole, setP2PRole] = useState<P2PRole>('sender');
     const [counterpartyAddress, setCounterpartyAddress] = useState<string>("");
 
-    const [chainId, setChainId] = useState<number>(DEFAULT_CHAIN_ID);
+    const [chainId, setChainId] = useState<number>(SUPPORTED_CHAINS.MAINNET);
     const [chainName, setChainName] = useState<string>("");
 
     const [saltNonce, setSaltNonce] = useState(DEFAULT_SALT_NONCE);
@@ -75,9 +74,9 @@ export default function Setup() {
             const parsedChainId = parseInt(newChainId, 16);
             setChainId(parsedChainId);
             // Update chain name based on chain ID
-            setChainName(parsedChainId === SUPPORTED_CHAINS.MAINNET ? "Ethereum Mainnet" : 
-                        parsedChainId === SUPPORTED_CHAINS.GNOSIS ? "Gnosis Chain" : 
-                        `Chain ${parsedChainId}`);
+            setChainName(parsedChainId === SUPPORTED_CHAINS.MAINNET ? "Ethereum Mainnet" :
+                parsedChainId === SUPPORTED_CHAINS.GNOSIS ? "Gnosis Chain" :
+                    `Chain ${parsedChainId}`);
         };
 
         if (window.ethereum) {
@@ -298,18 +297,16 @@ export default function Setup() {
                                     <Button
                                         variant={p2pRole === 'sender' ? 'default' : 'outline'}
                                         onClick={() => setP2PRole('sender')}
-                                        className={`rounded-full flex-1 min-w-[110px] text-sm transition-all ${
-                                            p2pRole === 'sender' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' : 'bg-gray-800 text-gray-300'
-                                        }`}
+                                        className={`rounded-full flex-1 min-w-[110px] text-sm transition-all ${p2pRole === 'sender' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' : 'bg-gray-800 text-gray-300'
+                                            }`}
                                     >
                                         I am the Sender
                                     </Button>
                                     <Button
                                         variant={p2pRole === 'receiver' ? 'default' : 'outline'}
                                         onClick={() => setP2PRole('receiver')}
-                                        className={`rounded-full flex-1 min-w-[110px] text-sm transition-all ${
-                                            p2pRole === 'receiver' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white' : 'bg-gray-800 text-gray-300'
-                                        }`}
+                                        className={`rounded-full flex-1 min-w-[110px] text-sm transition-all ${p2pRole === 'receiver' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white' : 'bg-gray-800 text-gray-300'
+                                            }`}
                                     >
                                         I am the Receiver
                                     </Button>
@@ -471,7 +468,7 @@ export default function Setup() {
                                         <Copy size={18} className="text-pink-300" />
                                     </button>
                                     <a
-                                        href={`/release/${deployedSafeAddress}`}
+                                        href={`/release/${chainId}/${deployedSafeAddress}`}
                                         className="p-1 hover:bg-indigo-700/30 rounded transition"
                                         target="_blank" rel="noopener noreferrer"
                                         aria-label="View Lockler"
@@ -493,7 +490,7 @@ export default function Setup() {
                                     </Button>
                                     <Button
                                         className="flex-1 rounded-full bg-gradient-to-r from-indigo-400 to-fuchsia-600 text-white"
-                                        onClick={() => window.open(`/release/${deployedSafeAddress}`, "_blank")}
+                                        onClick={() => window.open(`/release/${chainId}/${deployedSafeAddress}`, "_blank")}
                                     >
                                         View Lockler
                                     </Button>

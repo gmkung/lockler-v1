@@ -11,6 +11,8 @@ import { BrowserProvider, Contract, AbiCoder, parseUnits, keccak256, ethers } fr
 import { REALITY_MODULE_ABI } from '../abis/realityModule';
 import { ERC20_ABI } from '../abis/erc20';
 
+import { switchChain } from '../lib/utils';
+
 export type Transaction = {
     id: string;
     to: string;
@@ -18,6 +20,10 @@ export type Transaction = {
     data: string;
     operation: number;
     type: TransactionType;
+    justification: {
+        title: string;
+        description: string;
+    };
 };
 
 type TransactionType = 'native' | 'erc20' | 'custom';
@@ -42,6 +48,7 @@ export function ProposeTransactionModal({
     const [currentValue, setCurrentValue] = useState('');
     const [currentData, setCurrentData] = useState('');
     const [currentRecipient, setCurrentRecipient] = useState('');
+    const [currentJustification, setCurrentJustification] = useState({ title: '', description: '' });
     const [minimumBond, setMinimumBond] = useState<string>('0');
     const [isLoadingBond, setIsLoadingBond] = useState(true);
 
@@ -84,13 +91,13 @@ export function ProposeTransactionModal({
 
     const addTransaction = () => {
         // Validate inputs based on type
-        if (currentType === 'native' && (!currentTo || !currentValue)) {
+        if (currentType === 'native' && (!currentTo || !currentValue || !currentJustification.title)) {
             return;
         }
-        if (currentType === 'erc20' && (!currentRecipient || !currentValue || !currentToken)) {
+        if (currentType === 'erc20' && (!currentRecipient || !currentValue || !currentToken || !currentJustification.title)) {
             return;
         }
-        if (currentType === 'custom' && (!currentTo || !currentData)) {
+        if (currentType === 'custom' && (!currentTo || !currentData || !currentJustification.title)) {
             return;
         }
 
@@ -99,8 +106,12 @@ export function ProposeTransactionModal({
             to: currentTo,
             value: '0',
             data: '0x',
-            operation: 0, //use 0 not 1 to move the Safe's assets
-            type: currentType
+            operation: 0,
+            type: currentType,
+            justification: {
+                title: currentJustification.title,
+                description: currentJustification.description
+            }
         };
 
         if (currentType === 'native') {
@@ -149,15 +160,25 @@ export function ProposeTransactionModal({
         setCurrentData('');
         setCurrentToken(TOKENS.NATIVE.address);
         setCurrentRecipient('');
+        setCurrentJustification({ title: '', description: '' });
     };
 
     const handlePropose = async () => {
         if (transactions.length === 0) return;
 
         try {
-            // Check if user has enough ETH for the bond
-            const provider = new BrowserProvider(window.ethereum);
+            // Use the new utility function to switch chain if needed
+            const chainSwitchResult = await switchChain(chainId);
+            
+            if (!chainSwitchResult.success) {
+                throw new Error(chainSwitchResult.error);
+            }
+            
+            // Use the provider from the chain switch result
+            const provider = chainSwitchResult.provider as BrowserProvider;
             const signer = await provider.getSigner();
+            
+            // Check if user has enough ETH for the bond
             const balance = await provider.getBalance(await signer.getAddress());
 
             if (balance < BigInt(minimumBond)) {
@@ -194,7 +215,7 @@ export function ProposeTransactionModal({
             onClose();
         } catch (error) {
             console.error('Failed to propose transactions:', error);
-            // You might want to show an error toast here
+            alert(error.message || 'Failed to propose transactions. Please try again.');
         }
     };
 
@@ -314,6 +335,29 @@ export function ProposeTransactionModal({
                         </Select>
                     </div>
 
+                    {/* Justification Fields */}
+                    <div className="space-y-3">
+                        <div>
+                            <Label htmlFor="justification-title">Title</Label>
+                            <Input
+                                id="justification-title"
+                                value={currentJustification.title}
+                                onChange={(e) => setCurrentJustification(prev => ({ ...prev, title: e.target.value }))}
+                                placeholder="Brief title explaining the purpose of this transaction"
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="justification-description">Description</Label>
+                            <textarea
+                                id="justification-description"
+                                value={currentJustification.description}
+                                onChange={(e) => setCurrentJustification(prev => ({ ...prev, description: e.target.value }))}
+                                placeholder="Provide a detailed explanation (in Markdown acceptable). You can include links, lists, and other formatting."
+                                className="w-full min-h-[100px] px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                            />
+                        </div>
+                    </div>
+
                     {currentType === 'native' && (
                         <>
                             <div>
@@ -424,6 +468,12 @@ export function ProposeTransactionModal({
                                         <div key={tx.id} className="p-3 border rounded bg-gray-50">
                                             <div className="flex justify-between items-start">
                                                 <div className="space-y-1">
+                                                    <div className="mb-2">
+                                                        <h4 className="font-medium text-sm">{tx.justification.title}</h4>
+                                                        {tx.justification.description && (
+                                                            <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{tx.justification.description}</p>
+                                                        )}
+                                                    </div>
                                                     {tx.type !== 'erc20' && (
                                                         <p className="text-sm font-medium">To: {tx.to}</p>
                                                     )}
@@ -479,9 +529,9 @@ export function ProposeTransactionModal({
                     <Button
                         onClick={addTransaction}
                         disabled={
-                            (currentType === 'native' && (!currentTo || !currentValue)) ||
-                            (currentType === 'erc20' && (!currentRecipient || !currentValue || !currentToken)) ||
-                            (currentType === 'custom' && (!currentTo || !currentData))
+                            (currentType === 'native' && (!currentTo || !currentValue || !currentJustification.title)) ||
+                            (currentType === 'erc20' && (!currentRecipient || !currentValue || !currentToken || !currentJustification.title)) ||
+                            (currentType === 'custom' && (!currentTo || !currentData || !currentJustification.title))
                         }
                     >
                         Add Transaction

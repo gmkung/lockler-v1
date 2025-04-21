@@ -8,7 +8,6 @@ import {
   Signer,
 } from "ethers";
 import {
-  DEFAULT_CHAIN_ID,
   getChainConfig,
   getContractAddresses,
   getRpcUrl,
@@ -32,16 +31,16 @@ export const PROXY_ABI = [
 ];
 
 // Connect to provider
-export const getProvider = () => {
+export const getProvider = (chainId: number) => {
   if (window.ethereum) {
     return new BrowserProvider(window.ethereum);
   }
   // Fallback to read-only provider
-  return new JsonRpcProvider(getRpcUrl());
+  return new JsonRpcProvider(getRpcUrl(chainId));
 };
 
 // Connect wallet and ensure correct chain
-export const connectWallet = async () => {
+export const connectWallet = async (chainId: number) => {
   if (!window.ethereum) {
     throw new Error(
       "Metamask not detected! Please install Metamask extension."
@@ -55,22 +54,22 @@ export const connectWallet = async () => {
 
   // Check if we're on the correct chain
   const network = await provider.getNetwork();
-  if (network.chainId !== BigInt(DEFAULT_CHAIN_ID)) {
+  if (network.chainId !== BigInt(chainId)) {
     try {
       // Try to switch to the correct chain
       await window.ethereum.request({
         method: "wallet_switchEthereumChain",
-        params: [{ chainId: `0x${DEFAULT_CHAIN_ID.toString(16)}` }],
+        params: [{ chainId: `0x${chainId.toString(16)}` }],
       });
     } catch (error) {
       // If the chain is not added to MetaMask, let's add it
       if (error.code === 4902) {
-        const chainConfig = getChainConfig();
+        const chainConfig = getChainConfig(chainId);
         await window.ethereum.request({
           method: "wallet_addEthereumChain",
           params: [
             {
-              chainId: `0x${DEFAULT_CHAIN_ID.toString(16)}`,
+              chainId: `0x${chainId.toString(16)}`,
               chainName: chainConfig.name,
               nativeCurrency: chainConfig.nativeCurrency,
               rpcUrls: [chainConfig.rpcUrl],
@@ -113,9 +112,10 @@ export const deploySafe = async (
   owners: string[],
   threshold: number,
   fallbackHandler: string,
-  saltNonce: string
+  saltNonce: string,
+  chainId: number
 ) => {
-  const contractAddresses = getContractAddresses();
+  const contractAddresses = getContractAddresses(chainId);
   const factory = new Contract(
     contractAddresses.safeProxyFactory,
     SAFE_PROXY_FACTORY_ABI,
@@ -133,6 +133,7 @@ export const deploySafe = async (
     threshold,
     fallbackHandler,
     saltNonce: saltNonce,
+    chainId
   });
 
   const tx = await factory.createProxyWithNonce(
@@ -206,7 +207,30 @@ export async function getRealityModulesForSafe(
     isOnlyEnabledModule: boolean;
   };
 }[]> {
+  console.log("Getting Reality Modules for Safe with chainId:", chainId);
+  
+  // Validate chain ID
+  if (!chainId) {
+    console.error("Invalid chain ID provided:", chainId);
+    throw new Error("Invalid chain ID");
+  }
+
   const contracts = getContractAddresses(chainId);
+  console.log("Using contract addresses for chainId:", chainId, contracts);
+  
+  // First check if the Safe exists
+  console.log("Checking if Safe exists at:", safeAddress);
+  try {
+    const code = await provider.getCode(safeAddress);
+    console.log("Safe code length:", code.length);
+    if (code === '0x' || !code) {
+      console.error("Safe does not exist on this chain");
+      throw new Error("Safe does not exist on chain " + chainId);
+    }
+  } catch (error) {
+    console.error("Failed to check if Safe exists:", error);
+    throw error;
+  }
   
   // First verify that this is a valid Safe proxy
   console.log("Verifying Safe proxy at address:", safeAddress);

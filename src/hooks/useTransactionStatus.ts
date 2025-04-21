@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Question } from "reality-kleros-subgraph";
-import { BrowserProvider, Contract, keccak256, toUtf8Bytes } from "ethers";
+import { BrowserProvider, Contract, keccak256, toUtf8Bytes, JsonRpcProvider } from "ethers";
 import { fetchFromIPFS } from "../lib/ipfs";
 import { REALITY_MODULE_ABI } from "../abis/realityModule";
 import { ProposalTransaction, TransactionStatus } from "../lib/types";
+import { getRpcUrl } from "../lib/constants";
 
 function normalizeIpfsPath(proposalId: string): string {
   // Remove '/ipfs/' prefix if it exists
@@ -18,7 +19,8 @@ function normalizeIpfsPath(proposalId: string): string {
 
 export function useTransactionStatus(
   questions: Question[],
-  moduleAddress: string | null
+  moduleAddress: string | null,
+  chainId?: number | null
 ) {
   const [transactionDetails, setTransactionDetails] = useState<
     Record<string, ProposalTransaction[]>
@@ -31,15 +33,18 @@ export function useTransactionStatus(
   >({});
 
   useEffect(() => {
-    if (!questions.length || !moduleAddress) return;
+    if (!questions.length || !moduleAddress || !chainId) return;
 
     const fetchTransactionDetails = async () => {
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
+      // Use a chain-specific RPC provider to ensure we're querying the correct chain
+      const provider = new JsonRpcProvider(getRpcUrl(chainId));
+      console.log("Created RPC provider for chain:", chainId);
+      
+      // No signer needed for read-only operations
       const realityModule = new Contract(
         moduleAddress,
         REALITY_MODULE_ABI,
-        signer
+        provider
       );
 
       for (const question of questions) {
@@ -172,7 +177,7 @@ export function useTransactionStatus(
     };
 
     fetchTransactionDetails();
-  }, [questions, moduleAddress]);
+  }, [questions, moduleAddress, chainId]);
 
   return {
     transactionDetails,

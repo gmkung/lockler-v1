@@ -1,5 +1,6 @@
 import { BrowserProvider, Contract, keccak256 } from 'ethers';
 import { Question } from 'reality-kleros-subgraph';
+import { CHAIN_CONFIG } from './constants';
 
 interface ProposalTransaction {
   to: string;
@@ -26,13 +27,29 @@ export async function handleExecuteTransaction(
   question: Question,
   transaction: ProposalTransaction,
   txIndex: number,
-  transactionDetails: Record<string, ProposalTransaction[]>
+  transactionDetails: Record<string, ProposalTransaction[]>,
+  expectedChainId: number
 ): Promise<Record<string, TransactionStatus[]>> {
   if (!moduleAddress) return {};
 
   try {
+    // For transaction execution, we need to use the wallet's connected provider and signer
+    // This is because executing transactions requires the user to sign them
     const provider = new BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
+    
+    // Check which chain the wallet is connected to
+    const network = await provider.getNetwork();
+    const walletChainId = network.chainId;
+    console.log("Wallet connected to chain:", walletChainId.toString());
+    console.log("Expected chain for this Safe/Module:", expectedChainId.toString());
+    
+    // Validate that the wallet is connected to the correct chain
+    if (walletChainId.toString() !== expectedChainId.toString()) {
+      const expectedChainName = CHAIN_CONFIG[expectedChainId]?.name || `Chain ID ${expectedChainId}`;
+      throw new Error(`Chain mismatch: Your wallet is connected to chain ID ${walletChainId}, but this Safe/Module is on ${expectedChainName} (Chain ID ${expectedChainId}). Please switch your wallet network.`);
+    }
+    
     const realityModule = new Contract(moduleAddress, REALITY_MODULE_ABI, signer);
 
     const { proposalId } = parseQuestionData(question.data);

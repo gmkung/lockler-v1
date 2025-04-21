@@ -1,17 +1,23 @@
-
-import React, { useState } from "react";
-import { ethers } from "ethers";
-import MetamaskConnect from "@/components/MetamaskConnect";
+import React, { useEffect, useState } from "react";
+import { useAccount, useWalletClient } from "wagmi";
+import { BrowserProvider, Signer } from "ethers";
+import { MetamaskConnect } from "@/components/MetamaskConnect";
 import SafeDeployForm from "@/components/SafeDeployForm";
 
 const Index = () => {
-  const [connectedAddress, setConnectedAddress] = useState<string | null>(null);
-  const [signer, setSigner] = useState<ethers.Signer | null>(null);
-
-  const handleConnect = (address: string, walletSigner: ethers.Signer) => {
-    setConnectedAddress(address);
-    setSigner(walletSigner);
-  };
+  const { address } = useAccount();
+  const { data: walletClient } = useWalletClient();
+  const [signer, setSigner] = useState<Signer | null>(null);
+  
+  useEffect(() => {
+    const initSigner = async () => {
+      if (!walletClient) return;
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      setSigner(signer);
+    };
+    initSigner();
+  }, [walletClient]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -25,13 +31,13 @@ const Index = () => {
         
         <div className="bg-white shadow rounded-lg p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">Connect Wallet</h2>
-          <MetamaskConnect onConnect={handleConnect} />
+          <MetamaskConnect />
         </div>
         
-        {connectedAddress && signer && (
+        {address && signer && (
           <div className="flex justify-center">
             <SafeDeployForm
-              connectedAddress={connectedAddress}
+              connectedAddress={address}
               signer={signer}
             />
           </div>

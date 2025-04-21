@@ -1,62 +1,110 @@
-
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { DEFAULT_CHAIN_ID } from '../lib/constants';
-import { ProposeTransactionModal } from '../components/ProposeTransactionModal';
+import { getBlockExplorer, getChainConfig, CHAIN_CONFIG, getRpcUrl } from '../lib/constants';
+import { ProposeTransactionModal, Transaction } from '../components/ProposeTransactionModal';
 import { useQuestions } from '../hooks/useQuestions';
 import { useRealityModule } from '../hooks/useRealityModule';
 import { Question } from 'reality-kleros-subgraph';
 import { handleExecuteTransaction } from '../lib/transactions';
 import { useTransactionStatus } from '../hooks/useTransactionStatus';
-import { ProposalTransaction } from '../lib/types';
-import { bytes32ToCidV0 } from '../lib/cid';
+import { ProposalTransaction, TransactionStatus } from '../lib/types';
+import ReactMarkdown from 'react-markdown';
+import { ethers } from 'ethers';
+
 import { VouchProposal } from '../components/VouchProposal';
-import { useAccount, useConnect } from 'wagmi';
+import { useAccount, useConnect, usePublicClient } from 'wagmi';
 import { injected } from 'wagmi/connectors';
-import { CircleCheck, ExternalLink, Info, Lock, Shield, Wallet } from 'lucide-react';
+import { CircleCheck, ExternalLink, Info, Lock, Shield, Wallet, XCircle } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 
 export default function Release() {
-  const { address: safeAddress } = useParams<{ address: string }>();
-  const { address: moduleAddress, isLoading, error, modules, templateContent } = useRealityModule(safeAddress || '');
-  const { questions, isLoading: questionsLoading, error: questionsError, progress } =
-    useQuestions(moduleAddress || '');
+  const { chainId: chainIdParam, address: safeAddress } = useParams<{ chainId: string; address: string }>();
+  const navigate = useNavigate();
+  const chainId = chainIdParam ? parseInt(chainIdParam) : null;
+  const blockExplorer = chainId ? getBlockExplorer(chainId) : null;
+  const publicClient = usePublicClient();
+  const [safeExists, setSafeExists] = useState<boolean>(true);
+
+  const { address: moduleAddress, isLoading, error, modules, templateContent } = useRealityModule(
+    safeAddress || '',
+    chainId
+  );
+  const { questions, isLoading: questionsLoading, error: questionsError, progress, refetch: refetchQuestions } =
+    useQuestions(
+      moduleAddress || '', 
+      chainId as number // No fallback, will be null or undefined if no chainId
+    );
   const [isProposeModalOpen, setIsProposeModalOpen] = useState(false);
-  const { transactionDetails, transactionStatuses, loadingStatuses, setTransactionStatuses } = useTransactionStatus(questions, moduleAddress);
+  const { transactionDetails, transactionStatuses, loadingStatuses, setTransactionStatuses } = useTransactionStatus(questions, moduleAddress, chainId);
   const { address } = useAccount();
   const { connect } = useConnect();
+
+  // Check if Safe exists on this chain using ethers directly
+  useEffect(() => {
+    const validateSafe = async () => {
+      if (!chainId || !safeAddress) return;
+      
+      try {
+        // Use direct RPC provider for the specific chain from the URL
+        const rpcUrl = getRpcUrl(chainId);
+        const provider = new ethers.JsonRpcProvider(rpcUrl);
+        
+        // Check if the code exists at this address
+        const code = await provider.getCode(safeAddress);
+        setSafeExists(!!code && code !== '0x');
+      } catch (err) {
+        console.error('Error validating Safe:', err);
+        setSafeExists(false);
+      }
+    };
+    
+    validateSafe();
+  }, [chainId, safeAddress]);
 
   const handleExecuteTransactionWrapper = async (
     question: Question,
     transaction: ProposalTransaction,
     txIndex: number
   ) => {
-    if (!moduleAddress) return;
+    if (!moduleAddress || !chainId) return;
+
+    // Check wallet chain using window.ethereum directly
+    if (window.ethereum) {
+      try {
+        const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
+        const walletChainId = parseInt(chainIdHex, 16);
+        
+        if (walletChainId !== chainId) {
+          alert(`Please switch your wallet to ${CHAIN_CONFIG[chainId].name} to execute this transaction.`);
+          return;
+        }
+      } catch (err) {
+        console.error("Error checking chain ID:", err);
+      }
+    }
 
     const newStatuses = await handleExecuteTransaction(
       moduleAddress,
       question,
       transaction,
       txIndex,
-      transactionDetails
+      transactionDetails,
+      Number(chainId)
     );
 
     setTransactionStatuses(prev => ({ ...prev, ...newStatuses }));
   };
 
-  const getIpfsLink = (proposalId: string): string | null => {
-    try {
-      const cidV0 = bytes32ToCidV0(proposalId);
-      return `https://ipfs.io/ipfs/${cidV0}`;
-    } catch (error) {
-      console.warn('Failed to decode proposalId as CID:', proposalId, error);
-      return null;
-    }
-  };
-
   const getStatusBadge = (phase: string) => {
-    switch(phase) {
+    switch (phase) {
       case "OPEN":
         return <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">Posted</span>;
       case "PENDING":
@@ -71,19 +119,71 @@ export default function Release() {
   };
 
   const getSecurityIcon = (isValid: boolean) => {
-    return isValid ? 
-      <CircleCheck className="h-4 w-4 text-green-600" /> : 
+    return isValid ?
+      <CircleCheck className="h-4 w-4 text-green-600" /> :
       <Info className="h-4 w-4 text-red-600" />;
   };
 
-  if (!safeAddress) {
+  const getStatusIcon = (status: TransactionStatus) => {
+    if (status?.isExecuted) {
+      return (
+        <div className="text-green-600 flex items-center">
+          <CircleCheck className="h-4 w-4 mr-1" />
+          <span className="text-sm font-medium">Executed</span>
+        </div>
+      );
+    } else if (status?.canExecute) {
+      return (
+        <div className="text-blue-600 flex items-center">
+          <Info className="h-4 w-4 mr-1" />
+          <span className="text-sm font-medium">Ready to Execute</span>
+        </div>
+      );
+    }
+    return (
+      <div className="text-gray-400 flex items-center">
+        <Info className="h-4 w-4 mr-1" />
+        <span className="text-sm font-medium">Not Ready</span>
+      </div>
+    );
+  };
+
+  if (!chainId || !CHAIN_CONFIG[chainId]) {
     return (
       <div className="container mx-auto p-8 text-center">
         <Card className="max-w-md mx-auto">
           <CardContent className="p-6">
-            <Lock className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">No Lockler Address</h2>
-            <p className="text-gray-600">Please provide a valid Lockler address to view its control panel.</p>
+            <Info className="h-16 w-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2 text-red-600">Invalid Chain</h2>
+            <p className="text-gray-600">Please select a valid chain from the list below:</p>
+            <div className="mt-4 space-y-2">
+              {Object.entries(CHAIN_CONFIG).map(([id, config]) => (
+                <Button
+                  key={id}
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate(`/release/${id}/${safeAddress}`)}
+                >
+                  {config.name}
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!safeExists) {
+    return (
+      <div className="container mx-auto p-8 text-center">
+        <Card className="max-w-md mx-auto border-red-200">
+          <CardContent className="p-6">
+            <Info className="h-16 w-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2 text-red-600">Safe Not Found</h2>
+            <p className="text-gray-600">
+              This Safe does not exist on {chainId && CHAIN_CONFIG[chainId] ? CHAIN_CONFIG[chainId].name : "the selected network"}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -121,7 +221,7 @@ export default function Release() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6 max-w-7xl">
+    <div className="container mx-auto p-6 space-y-6 max-w-7xl" key={`${chainId}-${safeAddress}`}>
       <Card className="border-0 shadow-lg rounded-xl overflow-hidden bg-gradient-to-r from-blue-50 to-indigo-50">
         <CardHeader className="bg-white border-b border-gray-100 p-6">
           <div className="flex justify-between items-center">
@@ -133,8 +233,26 @@ export default function Release() {
               <p className="text-gray-500 mt-1">Secure fund management with Kleros verification</p>
             </div>
             <div className="flex gap-4 items-center">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Network:</span>
+                <Select
+                  value={chainId.toString()}
+                  onValueChange={(value) => navigate(`/release/${value}/${safeAddress}`)}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select network" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(CHAIN_CONFIG).map(([id, config]) => (
+                      <SelectItem key={id} value={id.toString()}>
+                        {config.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               {!address ? (
-                <Button 
+                <Button
                   onClick={() => connect({ connector: injected() })}
                   variant="outline"
                   className="flex items-center gap-2"
@@ -150,8 +268,8 @@ export default function Release() {
                   </p>
                 </div>
               )}
-              <Button 
-                onClick={() => setIsProposeModalOpen(true)} 
+              <Button
+                onClick={() => setIsProposeModalOpen(true)}
                 className="bg-indigo-600 hover:bg-indigo-700"
               >
                 Propose Fund Release
@@ -168,7 +286,7 @@ export default function Release() {
                   <Shield className="h-5 w-5 text-indigo-600" />
                   Lockler Security Checks
                 </h2>
-                
+
                 <div className="space-y-4">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm text-gray-600">Safe Address:</p>
@@ -176,14 +294,16 @@ export default function Release() {
                       <p className="font-mono text-sm bg-gray-50 p-1.5 rounded border border-gray-200 flex-grow">
                         {safeAddress}
                       </p>
-                      <a 
-                        href={`https://etherscan.io/address/${safeAddress}`}
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 hover:text-indigo-800"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
+                      {blockExplorer && (
+                        <a
+                          href={`${blockExplorer}/address/${safeAddress}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-800"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-col space-y-1">
@@ -192,9 +312,9 @@ export default function Release() {
                       <p className="font-mono text-sm bg-gray-50 p-1.5 rounded border border-gray-200 flex-grow">
                         {moduleAddress}
                       </p>
-                      <a 
+                      <a
                         href={`https://etherscan.io/address/${moduleAddress}`}
-                        target="_blank" 
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-indigo-600 hover:text-indigo-800"
                       >
@@ -214,42 +334,42 @@ export default function Release() {
                           {getSecurityIcon(module.isEnabled)}
                         </span>
                       </div>
-                      
+
                       <div className="flex justify-between items-center p-2 rounded hover:bg-gray-50">
                         <span className="text-sm text-gray-600">Reality Module Verification:</span>
                         <span className={module.isRealityModule ? "text-green-600" : "text-red-600"}>
                           {getSecurityIcon(module.isRealityModule)}
                         </span>
                       </div>
-                      
+
                       <div className="flex justify-between items-center p-2 rounded hover:bg-gray-50">
                         <span className="text-sm text-gray-600">Proxy Implementation:</span>
                         <span className={module.validationChecks.implementationMatches ? "text-green-600" : "text-red-600"}>
                           {getSecurityIcon(module.validationChecks.implementationMatches)}
                         </span>
                       </div>
-                      
+
                       <div className="flex justify-between items-center p-2 rounded hover:bg-gray-50">
                         <span className="text-sm text-gray-600">Safe Owner Status:</span>
                         <span className={module.validationChecks.isOwner ? "text-green-600" : "text-red-600"}>
                           {getSecurityIcon(module.validationChecks.isOwner)}
                         </span>
                       </div>
-                      
+
                       <div className="flex justify-between items-center p-2 rounded hover:bg-gray-50">
                         <span className="text-sm text-gray-600">Threshold Configuration:</span>
                         <span className={module.validationChecks.hasValidThreshold ? "text-green-600" : "text-red-600"}>
                           {getSecurityIcon(module.validationChecks.hasValidThreshold)}
                         </span>
                       </div>
-                      
+
                       <div className="flex justify-between items-center p-2 rounded hover:bg-gray-50">
                         <span className="text-sm text-gray-600">Owner Count Validation:</span>
                         <span className={module.validationChecks.hasValidOwnerCount ? "text-green-600" : "text-red-600"}>
                           {getSecurityIcon(module.validationChecks.hasValidOwnerCount)}
                         </span>
                       </div>
-                      
+
                       <div className="flex justify-between items-center p-2 rounded hover:bg-gray-50">
                         <span className="text-sm text-gray-600">Exclusive Module:</span>
                         <span className={module.validationChecks.isOnlyEnabledModule ? "text-green-600" : "text-red-600"}>
@@ -279,7 +399,7 @@ export default function Release() {
               {/* Proposals Section */}
               <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
                 <h2 className="text-xl font-semibold text-gray-800 mb-4">Fund Release Requests</h2>
-                
+
                 {questionsLoading ? (
                   <div className="p-4 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
@@ -299,36 +419,26 @@ export default function Release() {
                 ) : (
                   <div className="space-y-5">
                     {questions.map((question) => {
-                      const ipfsLink = getIpfsLink(question.id);
-
                       return (
                         <Card key={question.id} className="border border-gray-200 rounded-lg overflow-hidden">
                           <CardContent className="p-0">
                             <div className="bg-gray-50 p-4 border-b border-gray-100">
                               <div className="flex justify-between">
-                                <div>
-                                  <h3 className="font-semibold text-gray-800 mb-1">{question.title}</h3>
+                                <div className="space-y-2">
                                   <div className="flex items-center gap-3">
                                     <div className="text-xs font-mono text-gray-500">ID: {question.id.slice(0, 8)}...{question.id.slice(-6)}</div>
                                     {getStatusBadge(question.phase)}
                                   </div>
                                 </div>
-                                {ipfsLink && (
-                                  <a 
-                                    href={ipfsLink} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="text-indigo-600 hover:text-indigo-800 flex items-center text-sm"
-                                  >
-                                    <ExternalLink className="h-4 w-4 mr-1" />
-                                    IPFS Details
-                                  </a>
-                                )}
                               </div>
                               <div className="mt-2 flex items-center gap-3">
                                 <span className="text-sm text-gray-600">Answer: </span>
-                                <span className={`font-medium ${question.currentAnswer === "0x0000000000000000000000000000000000000000000000000000000000000001" ? "text-green-600" : "text-red-600"}`}>
-                                  {question.currentAnswer === "0x0000000000000000000000000000000000000000000000000000000000000001" ? "Approved" : "Rejected"}
+                                <span className={`font-medium ${
+                                  !question.currentAnswer ? "text-gray-500" :
+                                  question.currentAnswer === "0x0000000000000000000000000000000000000000000000000000000000000001" ? "text-green-600" : "text-red-600"
+                                }`}>
+                                  {!question.currentAnswer ? "Pending" :
+                                   question.currentAnswer === "0x0000000000000000000000000000000000000000000000000000000000000001" ? "Approved" : "Rejected"}
                                 </span>
                               </div>
                             </div>
@@ -347,6 +457,29 @@ export default function Release() {
                                       <p className="text-red-600 text-sm">{tx.error}</p>
                                     ) : (
                                       <>
+                                        {tx.justification && (
+                                          <div className="mb-3">
+                                            <h4 className="font-medium text-gray-800">{tx.justification.title}</h4>
+                                            {tx.justification.description && (
+                                              <div className="prose prose-sm max-w-none mt-1">
+                                                <ReactMarkdown components={{
+                                                  p: ({node, ...props}) => <p className="text-sm text-gray-600" {...props} />,
+                                                  h1: ({node, ...props}) => <h1 className="text-lg font-semibold text-gray-800" {...props} />,
+                                                  h2: ({node, ...props}) => <h2 className="text-base font-semibold text-gray-800" {...props} />,
+                                                  h3: ({node, ...props}) => <h3 className="text-sm font-semibold text-gray-800" {...props} />,
+                                                  ul: ({node, ...props}) => <ul className="list-disc list-inside text-sm text-gray-600" {...props} />,
+                                                  ol: ({node, ...props}) => <ol className="list-decimal list-inside text-sm text-gray-600" {...props} />,
+                                                  li: ({node, ...props}) => <li className="text-sm text-gray-600" {...props} />,
+                                                  a: ({node, ...props}) => <a className="text-indigo-600 hover:text-indigo-800" {...props} />,
+                                                  code: ({node, ...props}) => <code className="bg-gray-100 px-1 py-0.5 rounded text-sm" {...props} />,
+                                                  pre: ({node, ...props}) => <pre className="bg-gray-100 p-2 rounded text-sm overflow-x-auto" {...props} />
+                                                }}>
+                                                  {tx.justification.description}
+                                                </ReactMarkdown>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
                                         <p className="text-sm text-gray-600 mb-1">To: <span className="font-mono">{tx.to.slice(0, 10)}...{tx.to.slice(-8)}</span></p>
                                         <div className="flex gap-4">
                                           <p className="text-sm text-gray-600">Value: {tx.value}</p>
@@ -367,8 +500,8 @@ export default function Release() {
                                           disabled={!transactionStatuses[question.id]?.[index]?.canExecute}
                                           onClick={() => handleExecuteTransactionWrapper(question, tx, index)}
                                           size="sm"
-                                          className={transactionStatuses[question.id]?.[index]?.canExecute 
-                                            ? "bg-indigo-600 hover:bg-indigo-700" 
+                                          className={transactionStatuses[question.id]?.[index]?.canExecute
+                                            ? "bg-indigo-600 hover:bg-indigo-700"
                                             : "bg-gray-300 hover:bg-gray-300 cursor-not-allowed"}
                                         >
                                           Execute Transaction
@@ -384,9 +517,10 @@ export default function Release() {
                               <VouchProposal
                                 questionId={question.id}
                                 moduleAddress={moduleAddress}
+                                chainId={Number(chainId)}
                                 disabled={question.phase !== "OPEN"}
-                                onVouchComplete={() => {
-                                  // Optionally refresh data
+                                onVouchComplete={async () => {
+                                  await refetchQuestions();
                                 }}
                               />
                             </div>
@@ -405,8 +539,11 @@ export default function Release() {
       <ProposeTransactionModal
         isOpen={isProposeModalOpen}
         onClose={() => setIsProposeModalOpen(false)}
-        onPropose={() => { }}
-        chainId={DEFAULT_CHAIN_ID}
+        onPropose={async (transactions) => {
+          await refetchQuestions();
+          setIsProposeModalOpen(false);
+        }}
+        chainId={chainId}
         realityModuleAddress={moduleAddress}
       />
     </div>
