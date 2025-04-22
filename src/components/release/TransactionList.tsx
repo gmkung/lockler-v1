@@ -51,6 +51,7 @@ function findTokenConfig(address: string, chainId: number) {
     
     // Handle native token which has a different structure
     if (tokenName === 'NATIVE' && 
+        typeof tokenConfig === 'object' && 
         'address' in tokenConfig && 
         tokenConfig.address.toLowerCase() === address.toLowerCase()) {
       return tokenConfig;
