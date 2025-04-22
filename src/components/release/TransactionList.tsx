@@ -33,20 +33,42 @@ function isERC20Transfer(data: string): boolean {
   }
 }
 
+// Helper function to find token configuration by address and chain
+function findTokenConfig(address: string, chainId: number) {
+  // Check each token category (NATIVE, USDC, PNK, etc)
+  for (const [tokenName, tokenConfig] of Object.entries(TOKENS)) {
+    // If this is a chain-specific token configuration
+    if (tokenConfig && typeof tokenConfig === 'object' && chainId in tokenConfig) {
+      const chainSpecificToken = tokenConfig[chainId as keyof typeof tokenConfig];
+      
+      // If we have a config for this chain and the addresses match
+      if (chainSpecificToken && 
+          'address' in chainSpecificToken && 
+          chainSpecificToken.address.toLowerCase() === address.toLowerCase()) {
+        return chainSpecificToken;
+      }
+    }
+    
+    // Handle native token which has a different structure
+    if (tokenName === 'NATIVE' && 
+        'address' in tokenConfig && 
+        tokenConfig.address.toLowerCase() === address.toLowerCase()) {
+      return tokenConfig;
+    }
+  }
+  
+  return null;
+}
+
 // Updated to handle wei/minor units properly
 function formatValue(value: string, currency: string, data: string, chainId: number): string {
   if (isERC20Transfer(data) && currency !== "0x0000000000000000000000000000000000000000") {
-    // ERC20 token transfer
-    const tokenConfig = Object.values(TOKENS).find(token => 
-      token[chainId as keyof typeof token]?.address.toLowerCase() === currency.toLowerCase()
-    );
+    // Look for token configuration
+    const tokenInfo = findTokenConfig(currency, chainId);
     
-    if (tokenConfig) {
-      const tokenInfo = tokenConfig[chainId as keyof typeof tokenConfig];
-      if (tokenInfo) {
-        // Format with appropriate decimals from token config
-        return `${ethers.formatUnits(value, tokenInfo.decimals)} ${tokenInfo.symbol}`;
-      }
+    if (tokenInfo && 'decimals' in tokenInfo && 'symbol' in tokenInfo) {
+      // Format with appropriate decimals from token config
+      return `${ethers.formatUnits(value, tokenInfo.decimals)} ${tokenInfo.symbol}`;
     }
     
     // Default handling for unknown tokens (assume 18 decimals)
