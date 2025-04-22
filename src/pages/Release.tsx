@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
@@ -19,6 +18,7 @@ import { SecurityChecks } from '../components/release/SecurityChecks';
 import { TransactionList } from '../components/release/TransactionList';
 import type { Question } from 'reality-kleros-subgraph';
 import { JsonRpcProvider } from 'ethers';
+import { ExternalLink } from '../components/ui/external-link';
 
 export default function Release() {
   const { chainId: chainIdParam, address: safeAddress } = useParams<{ chainId: string; address: string }>();
@@ -26,6 +26,13 @@ export default function Release() {
   const blockExplorer = chainId ? getBlockExplorer(chainId) : null;
   const [safeExists, setSafeExists] = useState<boolean>(true);
   const [isProposeModalOpen, setIsProposeModalOpen] = useState(false);
+  const [formattedTerms, setFormattedTerms] = useState<{
+    title?: string;
+    description?: string;
+    type?: string;
+    payments?: any[];
+    ipfsUrl?: string;
+  } | null>(null);
 
   const { address } = useAccount();
   const { connect } = useConnect();
@@ -67,6 +74,29 @@ export default function Release() {
     };
     validateSafe();
   }, [chainId, safeAddress]);
+
+  useEffect(() => {
+    const parseTemplateContent = () => {
+      if (!templateContent) return;
+      try {
+        const terms = JSON.parse(templateContent);
+        const ipfsMatch = terms?.uri?.match(/\/ipfs\/([^?]+)/);
+        const ipfsUrl = ipfsMatch ? `https://cdn.kleros.link${ipfsMatch[0]}` : null;
+        
+        setFormattedTerms({
+          title: terms.title,
+          description: terms.description,
+          type: terms.type,
+          payments: terms.payments,
+          ipfsUrl
+        });
+      } catch (err) {
+        console.error('Error parsing template content:', err);
+      }
+    };
+    
+    parseTemplateContent();
+  }, [templateContent]);
 
   const handleExecuteTransactionWrapper = async (
     question: Question,
@@ -175,13 +205,56 @@ export default function Release() {
               </div>
 
               <div className="md:col-span-2 space-y-6">
-                {templateContent && (
+                {formattedTerms && (
                   <div className="bg-gray-900 rounded-3xl border border-gray-800 p-5 shadow-2xl">
-                    <h2 className="text-xl font-semibold text-white mb-4">Fund Release Conditions</h2>
-                    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 max-h-60 overflow-auto">
-                      <pre className="text-sm text-gray-200 whitespace-pre-wrap font-mono">
-                        {templateContent}
-                      </pre>
+                    <div className="flex justify-between items-start mb-4">
+                      <h2 className="text-xl font-semibold text-white">Fund Release Conditions</h2>
+                      {formattedTerms.ipfsUrl && (
+                        <a
+                          href={formattedTerms.ipfsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          View Full Terms
+                        </a>
+                      )}
+                    </div>
+                    <div className="bg-gray-800 rounded-lg border border-gray-700 divide-y divide-gray-700">
+                      <div className="p-4">
+                        <h3 className="text-sm font-medium text-gray-400 mb-1">Title</h3>
+                        <p className="text-gray-200">{formattedTerms.title}</p>
+                      </div>
+                      <div className="p-4">
+                        <h3 className="text-sm font-medium text-gray-400 mb-1">Description</h3>
+                        <p className="text-gray-200">{formattedTerms.description}</p>
+                      </div>
+                      <div className="p-4">
+                        <h3 className="text-sm font-medium text-gray-400 mb-1">Type</h3>
+                        <p className="text-gray-200 capitalize">{formattedTerms.type}</p>
+                      </div>
+                      {formattedTerms.payments && formattedTerms.payments.length > 0 && (
+                        <div className="p-4">
+                          <h3 className="text-sm font-medium text-gray-400 mb-2">Participants</h3>
+                          <div className="space-y-3">
+                            {formattedTerms.payments.map((payment, index) => (
+                              <div key={index} className="flex items-center justify-between bg-gray-900/50 p-3 rounded-lg">
+                                <div>
+                                  <span className="text-xs text-gray-400 capitalize">{payment.role}</span>
+                                  <p className="text-sm text-gray-200 font-mono">
+                                    {payment.address.slice(0, 6)}...{payment.address.slice(-4)}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-sm text-gray-200">{payment.amount}</span>
+                                  <p className="text-xs text-gray-400">{payment.currency}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
