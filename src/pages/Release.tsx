@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { StepWrapper } from '../components/StepWrapper';
+import { ProposalTransaction, TransactionStatus } from '../lib/types';
 
 export default function Release() {
   const { chainId: chainIdParam, address: safeAddress } = useParams<{ chainId: string; address: string }>();
