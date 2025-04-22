@@ -1,5 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { JsonRpcProvider } from 'ethers'; // Add this import for JsonRpcProvider
 import { Card, CardHeader, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -7,6 +9,7 @@ import { Logo } from "../components/ui/logo";
 import { ShieldCheck, ExternalLink } from "lucide-react";
 import { SecurityChecksModal } from "../components/release/SecurityChecksModal";
 import { TopBar } from "../components/release/TopBar";
+import { TransactionList } from "../components/release/TransactionList"; // Add this import for TransactionList
 import { getBlockExplorer, CHAIN_CONFIG, getRpcUrl, SUPPORTED_CHAINS, TOKENS } from '../lib/constants';
 import { ProposeTransactionModal } from '../components/ProposeTransactionModal';
 import { useQuestions } from '../hooks/useQuestions';
