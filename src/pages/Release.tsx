@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
@@ -61,6 +62,7 @@ export default function Release() {
   } = useTransactionStatus(questions, moduleAddress, chainId);
 
   const getCurrencyInfo = (address: string, chainId: number | null) => {
+    // Native currency
     if (address === TOKENS.NATIVE.address) {
       return {
         symbol: chainId === SUPPORTED_CHAINS.GNOSIS ? 'xDAI' : TOKENS.NATIVE.symbol,
@@ -68,13 +70,13 @@ export default function Release() {
       };
     }
 
-    if (chainId && TOKENS.USDC[chainId] && TOKENS.USDC[chainId].address.toLowerCase() === address.toLowerCase()) {
+    // USDC for specific chain
+    if (chainId && TOKENS.USDC[chainId]) {
       return TOKENS.USDC[chainId];
     }
 
-    if (chainId === SUPPORTED_CHAINS.MAINNET && 
-        TOKENS.PNK[SUPPORTED_CHAINS.MAINNET] && 
-        TOKENS.PNK[SUPPORTED_CHAINS.MAINNET].address.toLowerCase() === address.toLowerCase()) {
+    // PNK for mainnet
+    if (chainId === SUPPORTED_CHAINS.MAINNET && TOKENS.PNK[SUPPORTED_CHAINS.MAINNET]) {
       return TOKENS.PNK[SUPPORTED_CHAINS.MAINNET];
     }
 
@@ -333,3 +335,4 @@ export default function Release() {
     </div>
   );
 }
+
