@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { getBlockExplorer, CHAIN_CONFIG } from '../lib/constants';
+import { getBlockExplorer, CHAIN_CONFIG, getRpcUrl } from '../lib/constants';
 import { ProposeTransactionModal } from '../components/ProposeTransactionModal';
 import { useQuestions } from '../hooks/useQuestions';
 import { useRealityModule } from '../hooks/useRealityModule';
@@ -19,11 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { ProposalTransaction, TransactionStatus } from '../lib/types';
+import { ProposalTransaction } from '../lib/types';
 import { ErrorState } from '../components/release/ErrorState';
 import { LoadingState } from '../components/release/LoadingState';
 import { SecurityChecks } from '../components/release/SecurityChecks';
 import { TransactionList } from '../components/release/TransactionList';
+import { Question } from 'reality-kleros-subgraph';
+import { JsonRpcProvider } from 'ethers';
 
 export default function Release() {
   const { chainId: chainIdParam, address: safeAddress } = useParams<{ chainId: string; address: string }>();
@@ -63,7 +65,7 @@ export default function Release() {
     const validateSafe = async () => {
       if (!chainId || !safeAddress) return;
       try {
-        const provider = new ethers.JsonRpcProvider(getRpcUrl(chainId));
+        const provider = new JsonRpcProvider(getRpcUrl(chainId));
         const code = await provider.getCode(safeAddress);
         setSafeExists(!!code && code !== '0x');
       } catch (err) {

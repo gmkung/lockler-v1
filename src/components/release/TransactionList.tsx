@@ -5,7 +5,7 @@ import { Button } from "../ui/button";
 import { Question } from "reality-kleros-subgraph";
 import ReactMarkdown from 'react-markdown';
 import { VouchProposal } from '../VouchProposal';
-import { ProposalTransaction, TransactionStatus } from '@/lib/types';
+import { ProposalTransaction, type TransactionStatus } from '@/lib/types';
 
 interface TransactionListProps {
   questions: Question[];
