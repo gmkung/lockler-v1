@@ -22,7 +22,6 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
     const publicClient = usePublicClient();
     const nativeCurrency = CHAIN_CONFIG[chainId]?.nativeCurrency?.symbol || '';
     
-    // Debug logs for publicClient and chain detection
     useEffect(() => {
         console.log("VouchProposal Mounted with chainId prop:", chainId);
         console.log("Initial publicClient.chain:", publicClient.chain);
@@ -37,8 +36,8 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
     const [isLoadingBond, setIsLoadingBond] = useState(false);
     const [chainMismatch, setChainMismatch] = useState(false);
     const [walletChainId, setWalletChainId] = useState<number | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Watch for chain changes using window.ethereum directly
     useEffect(() => {
         if (!isOpen) return;
 
@@ -51,7 +50,6 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
                     setWalletChainId(detectedChainId);
                     setChainMismatch(detectedChainId !== chainId);
                     
-                    // Clear chain mismatch errors when chains match
                     if (detectedChainId === chainId && error && 
                         (error.includes('switch') || error.includes('network') || error.includes('chain'))) {
                         setError(null);
@@ -64,14 +62,12 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
 
         checkChainId();
 
-        // Listen for chain changes
         const handleChainChanged = (chainIdHex: string) => {
             const newChainId = parseInt(chainIdHex, 16);
             console.log("Chain changed to:", newChainId);
             setWalletChainId(newChainId);
             setChainMismatch(newChainId !== chainId);
             
-            // Clear chain mismatch errors when chains match
             if (newChainId === chainId && error && 
                 (error.includes('switch') || error.includes('network') || error.includes('chain'))) {
                 setError(null);
@@ -89,14 +85,12 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
         };
     }, [isOpen, chainId, error]);
 
-    // Fetch minimum bond, current bond, and current answer when dialog opens
     useEffect(() => {
         async function fetchBonds() {
             if (!isOpen || !moduleAddress || !questionId || !chainId) return;
 
             setIsLoadingBond(true);
             try {
-                // Use JsonRpcProvider with the correct chain RPC URL instead of BrowserProvider
                 const rpcUrl = getRpcUrl(chainId);
                 const provider = new ethers.JsonRpcProvider(rpcUrl);
 
@@ -106,7 +100,6 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
                 const oracleAddress = await moduleContract.oracle();
                 const realityContract = new ethers.Contract(oracleAddress, REALITYV3_ABI, provider);
 
-                // Get min bond, current bond, and best answer
                 const [minBondResult, currentBondResult, bestAnswer] = await Promise.all([
                     realityContract.getMinBond(questionId),
                     realityContract.getBond(questionId),
@@ -115,7 +108,6 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
 
                 setMinBond(minBondResult);
                 setCurrentBond(currentBondResult);
-                // Convert bytes32 answer to boolean (1 = true, 0 = false)
                 setCurrentAnswer(bestAnswer === '0x0000000000000000000000000000000000000000000000000000000000000000' ? 'false' :
                     bestAnswer === '0x0000000000000000000000000000000000000000000000000000000000000001' ? 'true' : null);
             } catch (err) {
@@ -129,7 +121,6 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
         fetchBonds();
     }, [isOpen, moduleAddress, questionId, chainId]);
 
-    // Calculate required bond based on Reality.eth rules
     const getRequiredBond = (): bigint | null => {
         if (!minBond) return null;
         if (!currentBond || currentBond === 0n) return minBond;
@@ -138,47 +129,25 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
 
     const handleVouch = async (vouchFor: boolean) => {
         if (!address || !moduleAddress || !questionId) return;
-
-        // Check for chain mismatch right before transaction
-        if (walletChainId !== chainId) {
-            try {
-                // Fix parameter to match the expected type
-                await switchChain(chainId);
-                // Chain switch successful, update state
-                setChainMismatch(false);
-                setError(null);
-            } catch (err: any) {
-                setChainMismatch(true);
-                setError(err.message || 'Failed to switch networks. Please switch manually.');
-                return;
-            }
-        }
-
-        const requiredBond = getRequiredBond();
-        if (!requiredBond) return;
-
-        setIsLoading(true);
+        
+        setIsSubmitting(true);
         setError(null);
 
         try {
-            // For transaction execution, use the provider from a fresh chain switch
-            // This ensures we have the most up-to-date chain state
-            const chainSwitchResult = await switchChain(chainId);
-
-            if (!chainSwitchResult.success) {
-                throw new Error(chainSwitchResult.error);
+            if (walletChainId !== chainId) {
+                try {
+                    await switchChain(chainId);
+                    setChainMismatch(false);
+                    setError(null);
+                } catch (err: any) {
+                    setChainMismatch(true);
+                    setError(err.message || 'Failed to switch networks. Please switch manually.');
+                    return;
+                }
             }
 
-            const provider = chainSwitchResult.provider as ethers.BrowserProvider;
-            const signer = await provider.getSigner();
-
-            // For contract verification, use JsonRpcProvider with the correct chain RPC URL
-            const rpcProvider = new ethers.JsonRpcProvider(getRpcUrl(chainId));
-            const moduleContract = new ethers.Contract(moduleAddress, REALITY_MODULE_ABI, rpcProvider);
-            const oracleAddress = await moduleContract.oracle();
-
-            // For transaction submission, use the signer
-            const realityContract = new ethers.Contract(oracleAddress, REALITYV3_ABI, signer);
+            const requiredBond = getRequiredBond();
+            if (!requiredBond) return;
 
             const tx = await realityContract.submitAnswer(
                 questionId,
@@ -195,14 +164,12 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
             console.error('Error submitting vouch:', err);
             setError(err.message || 'Failed to submit vouch. Please ensure you have enough ETH and try again.');
         } finally {
-            setIsLoading(false);
+            setIsSubmitting(false);
         }
     };
 
-    // Reset state when dialog closes
     useEffect(() => {
         if (!isOpen) {
-            // Reset error state when dialog closes
             setError(null);
         }
     }, [isOpen]);
@@ -275,10 +242,13 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
                                 <Button
                                     variant="outline"
                                     onClick={() => handleVouch(false)}
-                                    disabled={isLoading || !getRequiredBond() || chainMismatch}
+                                    disabled={isLoading || !getRequiredBond() || chainMismatch || isSubmitting}
                                 >
-                                    {isLoading ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                            Submitting...
+                                        </>
                                     ) : (
                                         'Vouch Against'
                                     )}
@@ -286,34 +256,42 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
                             ) : currentAnswer === 'false' ? (
                                 <Button
                                     onClick={() => handleVouch(true)}
-                                    disabled={isLoading || !getRequiredBond() || chainMismatch}
+                                    disabled={isLoading || !getRequiredBond() || chainMismatch || isSubmitting}
                                 >
-                                    {isLoading ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                            Submitting...
+                                        </>
                                     ) : (
                                         'Vouch For'
                                     )}
                                 </Button>
                             ) : (
-                                // If no current answer, show both options
                                 <div className="flex space-x-4">
                                     <Button
                                         variant="outline"
                                         onClick={() => handleVouch(false)}
-                                        disabled={isLoading || !getRequiredBond() || chainMismatch}
+                                        disabled={isLoading || !getRequiredBond() || chainMismatch || isSubmitting}
                                     >
-                                        {isLoading ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        {isSubmitting ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                Submitting...
+                                            </>
                                         ) : (
                                             'Vouch Against'
                                         )}
                                     </Button>
                                     <Button
                                         onClick={() => handleVouch(true)}
-                                        disabled={isLoading || !getRequiredBond() || chainMismatch}
+                                        disabled={isLoading || !getRequiredBond() || chainMismatch || isSubmitting}
                                     >
-                                        {isLoading ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        {isSubmitting ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                Submitting...
+                                            </>
                                         ) : (
                                             'Vouch For'
                                         )}

@@ -13,6 +13,7 @@ import { ERC20_ABI } from '../abis/erc20';
 import { useAccount } from 'wagmi';
 import { switchChain } from '../lib/utils';
 import { ScrollArea } from "./ui/scroll-area";
+import { Loader2 } from 'lucide-react';
 
 export type Transaction = {
     id: string;
@@ -53,6 +54,7 @@ export function ProposeTransactionModal({
     const [currentJustification, setCurrentJustification] = useState({ title: '', description: '' });
     const [minimumBond, setMinimumBond] = useState<string>('0');
     const [isLoadingBond, setIsLoadingBond] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const nativeCurrency = CHAIN_CONFIG[chainId]?.nativeCurrency?.symbol || '';
 
     const availableTokens = [TOKENS.NATIVE];
@@ -163,6 +165,8 @@ export function ProposeTransactionModal({
     const handlePropose = async () => {
         if (transactions.length === 0) return;
 
+        setIsSubmitting(true);
+
         try {
             const chainSwitchResult = await switchChain(chainId);
             
@@ -207,6 +211,8 @@ export function ProposeTransactionModal({
         } catch (error) {
             console.error('Failed to propose transactions:', error);
             alert(error.message || 'Failed to propose transactions. Please try again.');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -534,12 +540,19 @@ export function ProposeTransactionModal({
                 </div>
 
                 <DialogFooter className="mt-6 pt-4 border-t">
-                    <Button variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
                     <Button
                         onClick={handlePropose}
-                        disabled={transactions.length === 0 || isLoadingBond}
+                        disabled={transactions.length === 0 || isLoadingBond || isSubmitting}
                     >
-                        Propose Transactions
+                        {isSubmitting ? (
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                Submitting Proposal...
+                            </>
+                        ) : (
+                            'Propose Transactions'
+                        )}
                     </Button>
                 </DialogFooter>
             </DialogContent>
