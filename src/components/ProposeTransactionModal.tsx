@@ -12,6 +12,7 @@ import { REALITY_MODULE_ABI } from '../abis/realityModule';
 import { ERC20_ABI } from '../abis/erc20';
 import { useAccount } from 'wagmi';
 import { switchChain } from '../lib/utils';
+import { ScrollArea } from "./ui/scroll-area";
 
 export type Transaction = {
     id: string;
@@ -61,10 +62,8 @@ export function ProposeTransactionModal({
         }
     });
 
-    // Filter out native token for ERC20 selection
     const erc20Tokens = availableTokens.filter(token => token.address !== TOKENS.NATIVE.address);
 
-    // Set current token to first available ERC20 token
     const [currentToken, setCurrentToken] = useState(erc20Tokens[0]?.address || TOKENS.NATIVE.address);
 
     useEffect(() => {
@@ -92,7 +91,6 @@ export function ProposeTransactionModal({
     }, [realityModuleAddress]);
 
     const addTransaction = () => {
-        // Validate inputs based on type
         if (currentType === 'native' && (!currentTo || !currentValue || !currentJustification.title)) {
             return;
         }
@@ -117,7 +115,6 @@ export function ProposeTransactionModal({
         };
 
         if (currentType === 'native') {
-            // For native token, we need to convert the amount to wei
             const weiAmount = parseUnits(currentValue, 18);
             console.log('Native token transfer:', {
                 inputValue: currentValue,
@@ -129,7 +126,6 @@ export function ProposeTransactionModal({
         } else if (currentType === 'erc20') {
             const token = erc20Tokens.find(t => t.address === currentToken);
             if (token) {
-                // For ERC20, we need to convert the amount using the token's decimals
                 const amount = parseUnits(currentValue, token.decimals);
                 console.log('ERC20 transfer:', {
                     inputValue: currentValue,
@@ -137,14 +133,13 @@ export function ProposeTransactionModal({
                     rawAmount: amount.toString(),
                     formatted: ethers.formatUnits(amount, token.decimals)
                 });
-                // Encode transfer(address,uint256) call
                 const transferData = new AbiCoder().encode(
                     ['address', 'uint256'],
                     [currentRecipient, amount]
                 );
                 newTransaction.data = '0xa9059cbb' + transferData.slice(2);
                 newTransaction.to = token.address;
-                newTransaction.operation = 0; //use 0 not 1 to move the Safe's assets
+                newTransaction.operation = 0;
             }
         } else if (currentType === 'custom') {
             newTransaction.data = currentData;
@@ -169,36 +164,30 @@ export function ProposeTransactionModal({
         if (transactions.length === 0) return;
 
         try {
-            // Use the new utility function to switch chain if needed
             const chainSwitchResult = await switchChain(chainId);
             
             if (!chainSwitchResult.success) {
                 throw new Error(chainSwitchResult.error);
             }
             
-            // Use the provider from the chain switch result
             const provider = chainSwitchResult.provider as BrowserProvider;
             const signer = await provider.getSigner();
             
-            // Check if user has enough ETH for the bond
             const balance = await provider.getBalance(address);
 
             if (balance < BigInt(minimumBond)) {
                 throw new Error(`Insufficient ${nativeCurrency} for bond. Required: ${ethers.formatEther(minimumBond)} ${nativeCurrency}, you have: ${ethers.formatEther(balance)} ${nativeCurrency}`);
             }
 
-            // Initialize Reality Module contract first
             const realityModule = new Contract(
                 realityModuleAddress,
                 REALITY_MODULE_ABI,
                 signer
             );
 
-            // Upload transactions to IPFS to get proposalId
             const cid = await uploadJSONToIPFS(transactions);
             console.log('original CID:', cid);
 
-            // Calculate EIP-712 hashes for each transaction
             const txHashes = await Promise.all(transactions.map(async (tx, index) => {
                 return await realityModule.getTransactionHash(
                     tx.to,
@@ -209,11 +198,11 @@ export function ProposeTransactionModal({
                 );
             }));
 
-            // Call addProposal with the CID and the array of transaction hashes
             const tx = await realityModule.addProposal(cid, txHashes);
             await tx.wait();
 
             onPropose(transactions);
+            setTransactions([]);
             onClose();
         } catch (error) {
             console.error('Failed to propose transactions:', error);
@@ -221,7 +210,6 @@ export function ProposeTransactionModal({
         }
     };
 
-    // Helper function to format amount for display
     const formatAmount = (amount: string, decimals: number) => {
         try {
             return ethers.formatUnits(amount, decimals);
@@ -230,7 +218,6 @@ export function ProposeTransactionModal({
         }
     };
 
-    // Helper function to parse amount from display
     const parseAmount = (amount: string, decimals: number) => {
         try {
             return parseUnits(amount, decimals).toString();
@@ -248,7 +235,6 @@ export function ProposeTransactionModal({
                 const decoded = iface.parseTransaction({ data });
 
                 if (decoded) {
-                    // Find token by contract address (to)
                     const token = erc20Tokens.find(t => t.address.toLowerCase() === to.toLowerCase());
                     const decimals = token?.decimals || 18;
                     const symbol = token?.symbol || 'tokens';
@@ -310,7 +296,6 @@ export function ProposeTransactionModal({
                 </DialogHeader>
 
                 <div className="space-y-4">
-                    {/* Bond Information */}
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
                         <h3 className="font-semibold text-blue-800">Required Bond</h3>
                         {isLoadingBond ? (
@@ -337,7 +322,6 @@ export function ProposeTransactionModal({
                         </Select>
                     </div>
 
-                    {/* Justification Fields */}
                     <div className="space-y-3">
                         <div>
                             <Label htmlFor="justification-title">Title</Label>
@@ -461,70 +445,72 @@ export function ProposeTransactionModal({
                         {transactions.length === 0 ? (
                             <p className="text-sm text-gray-500">No transactions added yet</p>
                         ) : (
-                            <div className="space-y-2">
-                                {transactions.map((tx, index) => {
-                                    const decoded = decodeCalldata(tx.data, tx.type, tx.to);
-                                    const showRaw = showRawIndices.has(index);
+                            <ScrollArea className="h-[40vh]">
+                                <div className="space-y-2">
+                                    {transactions.map((tx, index) => {
+                                        const decoded = decodeCalldata(tx.data, tx.type, tx.to);
+                                        const showRaw = showRawIndices.has(index);
 
-                                    return (
-                                        <div key={tx.id} className="p-3 border rounded bg-gray-50">
-                                            <div className="flex justify-between items-start">
-                                                <div className="space-y-1">
-                                                    <div className="mb-2">
-                                                        <h4 className="font-medium text-sm">{tx.justification.title}</h4>
-                                                        {tx.justification.description && (
-                                                            <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{tx.justification.description}</p>
+                                        return (
+                                            <div key={tx.id} className="p-3 border rounded bg-gray-50">
+                                                <div className="flex justify-between items-start">
+                                                    <div className="space-y-1">
+                                                        <div className="mb-2">
+                                                            <h4 className="font-medium text-sm">{tx.justification.title}</h4>
+                                                            {tx.justification.description && (
+                                                                <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{tx.justification.description}</p>
+                                                            )}
+                                                        </div>
+                                                        {tx.type !== 'erc20' && (
+                                                            <p className="text-sm font-medium">To: {tx.to}</p>
                                                         )}
-                                                    </div>
-                                                    {tx.type !== 'erc20' && (
-                                                        <p className="text-sm font-medium">To: {tx.to}</p>
-                                                    )}
-                                                    {tx.type !== 'erc20' && (
-                                                        <p className="text-sm">Value: {ethers.formatEther(tx.value)} {nativeCurrency}</p>
-                                                    )}
-                                                    <p className="text-sm break-all">
-                                                        {decoded.readable}
-                                                    </p>
-                                                    <div className="mt-2">
-                                                        <button
-                                                            onClick={() => toggleRawCalldata(index)}
-                                                            className="flex items-center text-xs text-gray-500 hover:text-gray-700"
-                                                        >
-                                                            {showRaw ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
-                                                            {showRaw ? 'Hide' : 'Show'} {tx.type === 'erc20' ? 'contract details and ' : ''}raw calldata
-                                                        </button>
-                                                        {showRaw && (
-                                                            <div className="mt-1 p-2 bg-gray-100 rounded text-xs font-mono space-y-1">
-                                                                {tx.type === 'erc20' && (
-                                                                    <>
-                                                                        <p>Contract Address: {tx.to}</p>
-                                                                        <p>Native Value: {ethers.formatEther(tx.value)} {nativeCurrency}</p>
-                                                                    </>
-                                                                )}
-                                                                <p className="break-all">Calldata: {decoded.raw}</p>
-                                                            </div>
+                                                        {tx.type !== 'erc20' && (
+                                                            <p className="text-sm">Value: {ethers.formatEther(tx.value)} {nativeCurrency}</p>
                                                         )}
+                                                        <p className="text-sm break-all">
+                                                            {decoded.readable}
+                                                        </p>
+                                                        <div className="mt-2">
+                                                            <button
+                                                                onClick={() => toggleRawCalldata(index)}
+                                                                className="flex items-center text-xs text-gray-500 hover:text-gray-700"
+                                                            >
+                                                                {showRaw ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
+                                                                {showRaw ? 'Hide' : 'Show'} {tx.type === 'erc20' ? 'contract details and ' : ''}raw calldata
+                                                            </button>
+                                                            {showRaw && (
+                                                                <div className="mt-1 p-2 bg-gray-100 rounded text-xs font-mono space-y-1">
+                                                                    {tx.type === 'erc20' && (
+                                                                        <>
+                                                                            <p>Contract Address: {tx.to}</p>
+                                                                            <p>Native Value: {ethers.formatEther(tx.value)} {nativeCurrency}</p>
+                                                                        </>
+                                                                    )}
+                                                                    <p className="break-all">Calldata: {decoded.raw}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setTransactions(prev => prev.filter((_, i) => i !== index));
+                                                            setShowRawIndices(prev => {
+                                                                const newSet = new Set(prev);
+                                                                newSet.delete(index);
+                                                                return newSet;
+                                                            });
+                                                        }}
+                                                    >
+                                                        Remove
+                                                    </Button>
                                                 </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        setTransactions(prev => prev.filter((_, i) => i !== index));
-                                                        setShowRawIndices(prev => {
-                                                            const newSet = new Set(prev);
-                                                            newSet.delete(index);
-                                                            return newSet;
-                                                        });
-                                                    }}
-                                                >
-                                                    Remove
-                                                </Button>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </ScrollArea>
                         )}
                     </div>
 
@@ -552,4 +538,4 @@ export function ProposeTransactionModal({
             </DialogContent>
         </Dialog>
     );
-} 
+}
