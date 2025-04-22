@@ -54,10 +54,7 @@ export default function Setup() {
     const [p2pRole, setP2PRole] = useState<P2PRole>('sender');
     const [counterpartyAddress, setCounterpartyAddress] = useState<string>("");
 
-    // Use a separate state for the selected chain (independent of connected wallet)
     const [selectedChainId, setSelectedChainId] = useState<number>(SUPPORTED_CHAINS.GNOSIS); // Default to Gnosis
-
-    // Still track the connected wallet's chain for display purposes
     const [connectedChainId, setConnectedChainId] = useState<number | null>(null);
     const [chainName, setChainName] = useState<string>("");
 
@@ -83,20 +80,17 @@ export default function Setup() {
 
     const { toast } = useToast();
 
-    // Track the connected wallet's chain for display purposes only
     useEffect(() => {
         const handleChainChanged = (newChainId: string) => {
             const parsedChainId = parseInt(newChainId, 16);
             setConnectedChainId(parsedChainId);
 
-            // Update chain name display based on the connected chain
             const chainConfig = CHAIN_CONFIG[parsedChainId];
             setChainName(chainConfig ? chainConfig.name : `Chain ${parsedChainId}`);
         };
 
         if (window.ethereum) {
             window.ethereum.on('chainChanged', handleChainChanged);
-            // Get initial chain ID
             window.ethereum.request({ method: 'eth_chainId' })
                 .then(handleChainChanged);
         }
@@ -108,7 +102,6 @@ export default function Setup() {
         };
     }, []);
 
-    // Get contract addresses based on the selected chain, not the connected one
     const contracts = getContractAddresses(selectedChainId);
     const blockExplorer = getBlockExplorer(selectedChainId);
 
@@ -137,20 +130,17 @@ export default function Setup() {
                 throw new Error('MetaMask is not installed');
             }
 
-            // Validate selectedChainId
             if (!selectedChainId || !CHAIN_CONFIG[selectedChainId]) {
                 throw new Error(`Invalid chain ID: ${selectedChainId}. Please select a supported chain.`);
             }
 
             console.log("Deploying to chain ID:", selectedChainId);
 
-            // First, attempt to switch to the selected chain
             const switchResult = await switchChain(selectedChainId);
             if (!switchResult.success) {
                 throw new Error(`Failed to switch to ${CHAIN_CONFIG[selectedChainId].name}: ${switchResult.error}`);
             }
 
-            // Use the provider from the switch result
             const provider = switchResult.provider as BrowserProvider;
             const safeAddress = await deploySafeWithOwners(
                 provider,
@@ -203,14 +193,12 @@ export default function Setup() {
                 throw new Error('MetaMask is not installed');
             }
 
-            // Validate selectedChainId
             if (!selectedChainId || !CHAIN_CONFIG[selectedChainId]) {
                 throw new Error(`Invalid chain ID: ${selectedChainId}. Please select a supported chain.`);
             }
 
             console.log("Deploying module to chain ID:", selectedChainId);
 
-            // First, ensure we're on the selected chain
             const switchResult = await switchChain(selectedChainId);
             if (!switchResult.success) {
                 throw new Error(`Failed to switch to ${CHAIN_CONFIG[selectedChainId].name}: ${switchResult.error}`);
@@ -218,7 +206,6 @@ export default function Setup() {
 
             const cid = await uploadContractTerms(contractTerms);
 
-            // Use the provider from the switch result
             const provider = switchResult.provider as BrowserProvider;
             const result = await deployRealityModule(
                 provider,
@@ -267,7 +254,7 @@ export default function Setup() {
 
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a1831] to-[#231a2c] items-center justify-center py-7 px-3">
-            <StepWrapper>
+            <StepWrapper wide={step === 2}>
                 <div className="mb-4 text-center">
                     <div className="text-sm text-purple-300 flex flex-col items-center gap-1">
                         <div>
@@ -419,7 +406,7 @@ export default function Setup() {
                 )}
 
                 {step === 2 && (
-                    <div className="w-full max-w-[1200px] mx-auto animate-scale-in">
+                    <div className="w-full animate-scale-in">
                         <div className="mt-3 mb-4 text-center px-1">
                             <div className="text-sm text-purple-300 font-semibold mb-1">
                                 Step 2 of 3
@@ -432,7 +419,7 @@ export default function Setup() {
                             </p>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="grid grid-cols-4 gap-4 mb-6">
                             <div>
                                 <Label className="text-purple-100 text-xs">Question Bond</Label>
                                 <Input

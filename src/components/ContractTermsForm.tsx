@@ -66,9 +66,9 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
 
   return (
     <div className="w-full">
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Input Fields Column */}
-        <div className="space-y-6">
+      <div className="grid gap-8 grid-cols-5">
+        {/* Input Fields Column - Takes up 3/5 of the space */}
+        <div className="col-span-3 space-y-6">
           {/* Basic Info */}
           <div>
             <Label htmlFor="title" className="text-purple-100 font-semibold">Title</Label>
@@ -92,11 +92,11 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
             />
           </div>
 
-          {/* Payments */}
+          {/* Payments Section */}
           <div>
             <Label className="text-purple-100 font-semibold">Payments</Label>
             {contractTerms.payments.map((payment, index) => (
-              <div key={index} className="flex flex-col lg:flex-row lg:gap-3 gap-2 mt-3 bg-[#1a1831] p-3 rounded-xl">
+              <div key={index} className="flex gap-3 mt-3 bg-[#1a1831] p-3 rounded-xl items-center">
                 <Input
                   placeholder="Address"
                   value={payment.address}
@@ -109,12 +109,12 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
                   placeholder="Amount"
                   value={payment.amount}
                   onChange={(e) => updatePayment(index, 'amount', e.target.value)}
-                  className={inputClass + " flex-1"}
+                  className={inputClass + " w-32"}
                 />
                 <select
                   value={payment.currency}
                   onChange={(e) => updatePayment(index, 'currency', e.target.value)}
-                  className={selectClass + " flex-1"}
+                  className={selectClass + " w-24"}
                 >
                   {getAvailableTokens().map((token) => (
                     <option key={token.address} value={token.address}>
@@ -126,8 +126,8 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
                   <Button
                     type="button"
                     variant="destructive"
-                    className="mt-2 lg:mt-0"
                     onClick={() => removePayment(index)}
+                    className="shrink-0"
                   >
                     Remove
                   </Button>
@@ -147,12 +147,12 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
           </div>
         </div>
 
-        {/* JSON Preview Column */}
-        <div className="space-y-3">
+        {/* JSON Preview Column - Takes up 2/5 of the space */}
+        <div className="col-span-2 space-y-3">
           <Label className="text-purple-100 font-semibold">Preview</Label>
           <Card className="h-full bg-[#1a1831] border border-purple-800 rounded-2xl shadow-lg">
             <CardContent className="p-4">
-              <pre className="text-xs text-purple-100 font-mono">
+              <pre className="text-xs text-purple-100 font-mono whitespace-pre-wrap">
                 {JSON.stringify(contractTerms, null, 2)}
               </pre>
             </CardContent>
