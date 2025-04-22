@@ -1,11 +1,12 @@
-
-import { CircleCheck, Info } from "lucide-react";
+import { CircleCheck, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Question } from "reality-kleros-subgraph";
 import ReactMarkdown from 'react-markdown';
 import { VouchProposal } from '../VouchProposal';
 import { ProposalTransaction, type TransactionStatus } from '@/lib/types';
+import { TOKENS, CHAIN_CONFIG } from '@/lib/constants';
+import { ethers } from 'ethers';
 
 interface TransactionListProps {
   questions: Question[];
@@ -18,29 +19,108 @@ interface TransactionListProps {
   onVouchComplete: () => Promise<void>;
 }
 
-export function TransactionList({
-  questions,
-  transactionDetails,
-  transactionStatuses,
-  loadingStatuses,
-  moduleAddress,
-  chainId,
-  onExecuteTransaction,
-  onVouchComplete
-}: TransactionListProps) {
-  const getStatusBadge = (phase: string) => {
-    const badges = {
-      "OPEN": "bg-purple-900/20 text-purple-200",
-      "PENDING": "bg-yellow-900/20 text-yellow-200",
-      "ANSWERED": "bg-green-900/20 text-green-200",
-      "FINALIZED": "bg-blue-900/20 text-blue-200",
-      "DEFAULT": "bg-gray-900/20 text-gray-200"
-    };
+function formatValue(value: string, currency: string, chainId: number): string {
+  if (currency === "0x0000000000000000000000000000000000000000") {
+    return `${ethers.formatEther(value)} ${CHAIN_CONFIG[chainId]?.nativeCurrency.symbol || 'ETH'}`;
+  }
 
-    const badgeClass = badges[phase as keyof typeof badges] || badges.DEFAULT;
-    return <span className={`px-2 py-1 ${badgeClass} rounded-full text-xs font-medium border border-current/20`}>{phase}</span>;
+  if (TOKENS.USDC[chainId as keyof typeof TOKENS.USDC]?.address.toLowerCase() === currency.toLowerCase()) {
+    return `${ethers.formatUnits(value, 6)} USDC`;
+  }
+
+  if (TOKENS.PNK[chainId as keyof typeof TOKENS.PNK]?.address.toLowerCase() === currency.toLowerCase()) {
+    return `${ethers.formatEther(value)} PNK`;
+  }
+
+  return `${value} Unknown Token`;
+}
+
+function getStatusBadge(phase: string) {
+  const badges = {
+    "OPEN": "bg-purple-900/20 text-purple-200",
+    "PENDING": "bg-yellow-900/20 text-yellow-200",
+    "ANSWERED": "bg-green-900/20 text-green-200",
+    "FINALIZED": "bg-blue-900/20 text-blue-200",
+    "DEFAULT": "bg-gray-900/20 text-gray-200"
   };
 
+  const badgeClass = badges[phase as keyof typeof badges] || badges.DEFAULT;
+  return <span className={`px-2 py-1 ${badgeClass} rounded-full text-xs font-medium border border-current/20`}>{phase}</span>;
+}
+
+function TransactionDetails({ tx, chainId }: { tx: ProposalTransaction; chainId: number }) {
+  return (
+    <div className="text-gray-200">
+      {tx.justification && (
+        <div className="mb-4 bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+          <h4 className="font-semibold text-white text-lg mb-2">{tx.justification.title}</h4>
+          {tx.justification.description && (
+            <div className="prose prose-sm max-w-none prose-invert prose-p:text-gray-300 prose-headings:text-gray-200">
+              <ReactMarkdown>{tx.justification.description}</ReactMarkdown>
+            </div>
+          )}
+          <div className="mt-3 flex items-center gap-2">
+            <a
+              href={`https://cdn.kleros.link/ipfs/${tx.justification.ipfsCID}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-purple-400 hover:text-purple-300 text-sm flex items-center gap-1"
+            >
+              View on IPFS
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        </div>
+      )}
+      <div className="space-y-2">
+        <p className="text-sm flex justify-between">
+          <span className="text-gray-400">To:</span>
+          <span className="font-mono">{`${tx.to.slice(0, 6)}...${tx.to.slice(-4)}`}</span>
+        </p>
+        <p className="text-sm flex justify-between">
+          <span className="text-gray-400">Value:</span>
+          <span>{formatValue(tx.value, "0x0000000000000000000000000000000000000000", chainId)}</span>
+        </p>
+        <p className="text-sm flex justify-between">
+          <span className="text-gray-400">Data:</span>
+          <span className="font-mono">{tx.data.slice(0, 10)}...</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function TransactionStatus({ 
+  status, 
+  onExecute 
+}: { 
+  status?: TransactionStatus;
+  onExecute: () => void;
+}) {
+  if (status?.isExecuted) {
+    return (
+      <div className="text-green-400 flex items-center">
+        <CircleCheck className="h-4 w-4 mr-1" />
+        <span className="text-sm font-medium">Executed</span>
+      </div>
+    );
+  }
+  
+  return (
+    <Button
+      disabled={!status?.canExecute}
+      onClick={onExecute}
+      size="sm"
+      className={status?.canExecute
+        ? "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white"
+        : "bg-purple-900/20 text-purple-400 hover:bg-purple-900/20 cursor-not-allowed border-purple-800/20"}
+    >
+      Execute Transaction
+    </Button>
+  );
+}
+
+export function TransactionList({ questions, transactionDetails, transactionStatuses, loadingStatuses, moduleAddress, chainId, onExecuteTransaction, onVouchComplete }: TransactionListProps) {
   return (
     <div className="space-y-5">
       {questions.map((question) => (
@@ -77,13 +157,13 @@ export function TransactionList({
             ) : (
               transactionDetails[question.id]?.map((tx, index) => (
                 <div key={index} className="p-4 border-b border-purple-800/20 last:border-b-0">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-start gap-4">
                     <div className="flex-grow">
-                      <p className="font-medium text-purple-100 mb-1">Transaction {index + 1}</p>
+                      <p className="font-medium text-purple-100 mb-3">Transaction {index + 1}</p>
                       {tx.error ? (
                         <p className="text-red-400 text-sm">{tx.error}</p>
                       ) : (
-                        <TransactionDetails tx={tx} />
+                        <TransactionDetails tx={tx} chainId={chainId} />
                       )}
                     </div>
                     {!tx.error && (
@@ -110,59 +190,5 @@ export function TransactionList({
         </Card>
       ))}
     </div>
-  );
-}
-
-function TransactionDetails({ tx }: { tx: ProposalTransaction }) {
-  return (
-    <div className="text-purple-200">
-      {tx.justification && (
-        <div className="mb-3">
-          <h4 className="font-medium text-purple-100">{tx.justification.title}</h4>
-          {tx.justification.description && (
-            <div className="prose prose-sm max-w-none mt-1 prose-invert prose-p:text-purple-200">
-              <ReactMarkdown>{tx.justification.description}</ReactMarkdown>
-            </div>
-          )}
-        </div>
-      )}
-      <p className="text-sm mb-1">
-        To: <span className="font-mono">{tx.to.slice(0, 10)}...{tx.to.slice(-8)}</span>
-      </p>
-      <div className="flex gap-4">
-        <p className="text-sm">Value: {tx.value}</p>
-        <p className="text-sm">Data: {tx.data.slice(0, 10)}...</p>
-      </div>
-    </div>
-  );
-}
-
-function TransactionStatus({ 
-  status, 
-  onExecute 
-}: { 
-  status?: TransactionStatus;
-  onExecute: () => void;
-}) {
-  if (status?.isExecuted) {
-    return (
-      <div className="text-green-400 flex items-center">
-        <CircleCheck className="h-4 w-4 mr-1" />
-        <span className="text-sm font-medium">Executed</span>
-      </div>
-    );
-  }
-  
-  return (
-    <Button
-      disabled={!status?.canExecute}
-      onClick={onExecute}
-      size="sm"
-      className={status?.canExecute
-        ? "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white"
-        : "bg-purple-900/20 text-purple-400 hover:bg-purple-900/20 cursor-not-allowed border-purple-800/20"}
-    >
-      Execute Transaction
-    </Button>
   );
 }

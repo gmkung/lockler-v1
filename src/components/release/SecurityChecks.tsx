@@ -21,6 +21,10 @@ interface SecurityChecksProps {
   }>;
 }
 
+const shortenAddress = (address: string) => {
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
+
 export function SecurityChecks({ safeAddress, moduleAddress, blockExplorer, modules }: SecurityChecksProps) {
   return (
     <div className="rounded-3xl border border-gray-800 bg-gray-900 p-5 shadow-2xl">
@@ -31,10 +35,10 @@ export function SecurityChecks({ safeAddress, moduleAddress, blockExplorer, modu
 
       <div className="space-y-4">
         <div className="flex flex-col space-y-1">
-          <p className="text-sm text-gray-300">Safe Address:</p>
+          <p className="text-sm text-gray-400">Safe Address:</p>
           <div className="flex items-center gap-2">
-            <p className="font-mono text-sm bg-gray-800 p-1.5 rounded border border-gray-700 flex-grow text-gray-100">
-              {safeAddress}
+            <p className="font-mono text-sm bg-gray-800 p-1.5 rounded border border-gray-700 flex-grow text-gray-300">
+              {shortenAddress(safeAddress)}
             </p>
             {blockExplorer && (
               <a
@@ -50,10 +54,10 @@ export function SecurityChecks({ safeAddress, moduleAddress, blockExplorer, modu
         </div>
 
         <div className="flex flex-col space-y-1">
-          <p className="text-sm text-gray-300">Reality Module:</p>
+          <p className="text-sm text-gray-400">Reality Module:</p>
           <div className="flex items-center gap-2">
-            <p className="font-mono text-sm bg-gray-800 p-1.5 rounded border border-gray-700 flex-grow text-gray-100">
-              {moduleAddress}
+            <p className="font-mono text-sm bg-gray-800 p-1.5 rounded border border-gray-700 flex-grow text-gray-300">
+              {shortenAddress(moduleAddress)}
             </p>
             {blockExplorer && (
               <a
