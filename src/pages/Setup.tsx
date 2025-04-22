@@ -39,6 +39,7 @@ import { RoleSelection } from "../components/setup/RoleSelection";
 import { CounterpartyInput } from "../components/setup/CounterpartyInput";
 import { SuccessStep } from "../components/setup/SuccessStep";
 import { useChainSelection } from "../hooks/useChainSelection";
+import { Footer } from '../components/ui/footer';
 
 type EscrowMode = 'p2p' | 'grant';
 type P2PRole = 'sender' | 'receiver';
@@ -399,6 +400,7 @@ export default function Setup() {
                     />
                 )}
             </StepWrapper>
+            <Footer />
         </div>
     );
 }

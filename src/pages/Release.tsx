@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { JsonRpcProvider } from 'ethers'; // Add this import for JsonRpcProvider
+import { JsonRpcProvider } from 'ethers';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -9,7 +8,7 @@ import { Logo } from "../components/ui/logo";
 import { ShieldCheck, ExternalLink } from "lucide-react";
 import { SecurityChecksModal } from "../components/release/SecurityChecksModal";
 import { TopBar } from "../components/release/TopBar";
-import { TransactionList } from "../components/release/TransactionList"; // Add this import for TransactionList
+import { TransactionList } from "../components/release/TransactionList";
 import { getBlockExplorer, CHAIN_CONFIG, getRpcUrl, SUPPORTED_CHAINS, TOKENS } from '../lib/constants';
 import { ProposeTransactionModal } from '../components/ProposeTransactionModal';
 import { useQuestions } from '../hooks/useQuestions';
@@ -23,6 +22,7 @@ import { LoadingState } from '../components/release/LoadingState';
 import { FundReleaseConditions } from '../components/release/FundReleaseConditions';
 import { Question } from 'reality-kleros-subgraph';
 import { ProposalTransaction } from '../lib/types';
+import { Footer } from '../components/ui/footer';
 
 export default function Release() {
   const { chainId: chainIdParam, address: safeAddress } = useParams<{ chainId: string; address: string }>();
@@ -176,8 +176,8 @@ export default function Release() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#23213A] to-[#2D274B] py-6 px-4">
-      <div className="container mx-auto max-w-7xl">
+    <div className="min-h-screen bg-gradient-to-br from-[#23213A] to-[#2D274B] py-6 px-4 flex flex-col">
+      <div className="container mx-auto max-w-7xl flex-grow">
         <TopBar
           chainId={chainId}
           safeAddress={safeAddress}
@@ -252,6 +252,7 @@ export default function Release() {
           realityModuleAddress={moduleAddress}
         />
       </div>
+      <Footer />
     </div>
   );
 }
