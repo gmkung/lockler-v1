@@ -1,3 +1,4 @@
+
 import { ethers } from 'ethers';
 
 export interface NativeCurrency {
@@ -120,6 +121,8 @@ export interface ProposalTransaction {
   data: string;
   operation: number;
   error?: string;
+  id?: string; // Add ID property to fix the TypeScript errors
+  type?: TransactionType;
   justification?: {
     title: string;
     description: string;

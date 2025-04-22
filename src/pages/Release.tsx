@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
@@ -18,9 +19,12 @@ import { TransactionList } from '../components/release/TransactionList';
 import { JsonRpcProvider } from 'ethers';
 import { FundReleaseConditions } from '../components/release/FundReleaseConditions';
 import { Logo } from "../components/ui/logo";
+import { Question } from 'reality-kleros-subgraph';
+import { ProposalTransaction } from '../lib/types';
 
 export default function Release() {
   const { chainId: chainIdParam, address: safeAddress } = useParams<{ chainId: string; address: string }>();
+  const navigate = useNavigate();
   const chainId = chainIdParam ? parseInt(chainIdParam) : null;
   const blockExplorer = chainId ? getBlockExplorer(chainId) : null;
   const [safeExists, setSafeExists] = useState<boolean>(true);
