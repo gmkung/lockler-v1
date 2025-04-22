@@ -77,7 +77,7 @@ export const deployRealityModule = async (
         timeout: options.timeout ?? 86400, // 24 hours
         cooldown: options.cooldown ?? 3600, // 1 hour
         expiration: options.expiration ?? 604800, // 1 week
-        bond: options.bond ?? parseEther("0.1").toString(),
+        bond: parseEther(options.bond ?? "0.1").toString(),
         templateId: 0,
         arbitrator: contracts.defaultArbitrator
     };

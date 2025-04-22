@@ -182,7 +182,7 @@ export default function Release() {
                   <Logo className="h-7 w-7 text-pink-400" />
                   Lockler Control
                 </h1>
-                <p className="text-gray-300 mt-1">Secure fund management with Kleros verification</p>
+                <p className="text-gray-300 mt-1">Secure fund management, secured by the Kleros Optimistic Oracle</p>
               </div>
               <div className="flex gap-4 items-center flex-wrap">
                 <div className="flex items-center gap-2">

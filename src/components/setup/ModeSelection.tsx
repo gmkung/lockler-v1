@@ -22,7 +22,7 @@ export function ModeSelection({ escrowMode, setEscrowMode }: ModeSelectionProps)
           Transfer Lockler
         </div>
         <div className={`text-xs text-center w-full break-words ${escrowMode === 'p2p' ? "text-purple-100" : "text-purple-300/90"}`}>
-          For one-to-one transfers needing both parties' agreement.
+          For peer-to-peer transfers needing both parties' agreement.
         </div>
       </button>
       <button

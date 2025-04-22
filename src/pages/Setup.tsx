@@ -300,12 +300,12 @@ export default function Setup() {
                                 Create Lockler Safe
                             </h1>
                             <p className="text-sm text-purple-200 mb-2 px-2">
-                                A cheerful, secure smart wallet with multi-sig protection!
+                                Create single-use smart contract escrows addresses, secured by Kleros
                             </p>
                         </div>
                         <div className="rounded-xl bg-purple-900/30 border border-purple-900 px-3 py-2 mb-4">
                             <div className="text-xs text-purple-100 text-center">
-                                <span className="font-semibold">Lockler uses Gnosis Safe under the hood</span> — a highly secure, multi-signature smart contract wallet.
+                                <span className="font-semibold">Lockler uses Safe under the hood</span> — the most trusted smart contract wallet in Web3.
                             </div>
                         </div>
 
@@ -338,7 +338,7 @@ export default function Setup() {
                                 Security System Setup
                             </h1>
                             <p className="text-sm text-purple-200 mb-4 px-2">
-                                Kleros Reality Module secures your Lockler with cheerful verification!
+                                The created Safe will be governed by a Kleros-governed Zodiac Reality module, ensuring only payments that fulfil the contract can be proposed.
                             </p>
                         </div>
 

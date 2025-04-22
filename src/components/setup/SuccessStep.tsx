@@ -20,7 +20,7 @@ export function SuccessStep({
 
   return (
     <div className="flex flex-col items-center text-center animate-fade-in">
-      <div className="text-3xl mb-2 font-extrabold tracking-tight text-gradient-primary">
+      <div className="text-3xl text-white mb-2 font-extrabold tracking-tight text-gradient-primary">
         🎉 Tadaa!
       </div>
       <div className="text-xl text-white font-bold mb-3">
