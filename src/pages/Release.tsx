@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
@@ -11,16 +10,17 @@ import { handleExecuteTransaction } from '../lib/transactions';
 import { useTransactionStatus } from '../hooks/useTransactionStatus';
 import { useAccount, useConnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
-import { Wallet } from 'lucide-react';
+import { Wallet, ExternalLink, ShieldCheck, Info } from 'lucide-react';
 import { ErrorState } from '../components/release/ErrorState';
 import { LoadingState } from '../components/release/LoadingState';
-import { SecurityChecks } from '../components/release/SecurityChecks';
+import { SecurityChecksModal } from '../components/release/SecurityChecksModal';
 import { TransactionList } from '../components/release/TransactionList';
 import { JsonRpcProvider } from 'ethers';
 import { FundReleaseConditions } from '../components/release/FundReleaseConditions';
 import { Logo } from "../components/ui/logo";
 import { Question } from 'reality-kleros-subgraph';
 import { ProposalTransaction } from '../lib/types';
+import { Badge } from "../components/ui/badge";
 
 export default function Release() {
   const { chainId: chainIdParam, address: safeAddress } = useParams<{ chainId: string; address: string }>();
@@ -178,57 +178,99 @@ export default function Release() {
       <div className="container mx-auto max-w-7xl">
         <Card className="bg-[#2D274B] border-gray-800 rounded-3xl shadow-2xl">
           <CardHeader className="border-b border-gray-800 p-6">
-            <div className="flex justify-between items-center flex-wrap gap-4">
-              <div className="flex-grow">
-                <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-                  <Logo className="h-7 w-7 text-pink-400" />
-                  Lockler Control
-                </h1>
-                <p className="text-gray-300 mt-1">Secure fund management, secured by the Kleros Optimistic Oracle</p>
-              </div>
-              <div className="flex gap-4 items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-200">
-                    {CHAIN_CONFIG[chainId]?.name || 'Unknown Network'}
-                  </span>
+            <div className="space-y-6">
+              <div className="flex justify-between items-center flex-wrap gap-4">
+                <div className="flex-grow">
+                  <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+                    <Logo className="h-7 w-7 text-pink-400" />
+                    Lockler Control
+                  </h1>
+                  <p className="text-gray-300 mt-1">Secure fund management, secured by the Kleros Optimistic Oracle</p>
                 </div>
-                {!address ? (
-                  <Button
-                    onClick={() => connect({ connector: injected() })}
-                    variant="outline"
-                    className="flex items-center gap-2 bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700"
-                  >
-                    <Wallet className="h-4 w-4" />
-                    Connect Wallet
-                  </Button>
-                ) : (
-                  <div className="flex items-center gap-3 bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
-                    <div className="h-3 w-3 bg-green-500 rounded-full"></div>
-                    <p className="text-sm font-medium text-gray-200">
-                      {address.slice(0, 6)}...{address.slice(-4)}
-                    </p>
+                <div className="flex gap-4 items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-200">
+                      {CHAIN_CONFIG[chainId]?.name || 'Unknown Network'}
+                    </span>
                   </div>
-                )}
-                <Button
-                  onClick={() => navigate('/setup')}
-                  className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600"
-                >
-                  Setup New Lockler
-                </Button>
+                  {!address ? (
+                    <Button
+                      onClick={() => connect({ connector: injected() })}
+                      variant="outline"
+                      className="flex items-center gap-2 bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700"
+                    >
+                      <Wallet className="h-4 w-4" />
+                      Connect Wallet
+                    </Button>
+                  ) : (
+                    <div className="flex items-center gap-3 bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
+                      <div className="h-3 w-3 bg-green-500 rounded-full"></div>
+                      <p className="text-sm font-medium text-gray-200">
+                        {address.slice(0, 6)}...{address.slice(-4)}
+                      </p>
+                    </div>
+                  )}
+                  <Button
+                    onClick={() => navigate('/setup')}
+                    className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600"
+                  >
+                    Setup New Lockler
+                  </Button>
+                </div>
               </div>
+
+              {moduleAddress && modules.length > 0 && (
+                <div className="flex flex-wrap items-center gap-4 p-4 bg-gray-800/50 rounded-xl border border-gray-700/50">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-green-500" />
+                    <span className="text-sm font-medium text-gray-200">Security Status</span>
+                    <SecurityChecksModal modules={modules} />
+                  </div>
+                  <div className="flex-1 flex flex-wrap items-center gap-4">
+                    <div className="flex-1 min-w-[200px]">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400">Safe:</span>
+                        <code className="text-xs bg-gray-900/50 px-2 py-1 rounded text-gray-300">
+                          {safeAddress?.slice(0, 6)}...{safeAddress?.slice(-4)}
+                        </code>
+                        {blockExplorer && (
+                          <a
+                            href={`${blockExplorer}/address/${safeAddress}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-gray-400 hover:text-gray-300"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-[200px]">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400">Module:</span>
+                        <code className="text-xs bg-gray-900/50 px-2 py-1 rounded text-gray-300">
+                          {moduleAddress?.slice(0, 6)}...{moduleAddress?.slice(-4)}
+                        </code>
+                        {blockExplorer && (
+                          <a
+                            href={`${blockExplorer}/address/${moduleAddress}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-gray-400 hover:text-gray-300"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </CardHeader>
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Left Column - Security Status and Fund Release Conditions */}
-              <div className="space-y-6">
-                <SecurityChecks
-                  safeAddress={safeAddress || ''}
-                  moduleAddress={moduleAddress}
-                  blockExplorer={blockExplorer}
-                  modules={modules}
-                  chainId={chainId}
-                />
+              <div>
                 {formattedTerms && (
                   <FundReleaseConditions
                     formattedTerms={formattedTerms}
@@ -236,8 +278,6 @@ export default function Release() {
                   />
                 )}
               </div>
-
-              {/* Right Column - Fund Release Requests */}
               <div>
                 <div className="bg-gray-900 rounded-3xl border border-gray-800 p-5 shadow-2xl">
                   <div className="flex justify-between items-center mb-4">
