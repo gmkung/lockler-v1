@@ -1,6 +1,7 @@
 
 import { Button } from "../ui/button";
 import { Copy, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface SuccessStepProps {
   deployedSafeAddress: string | null;
@@ -15,6 +16,8 @@ export function SuccessStep({
   transactionData,
   selectedChainId
 }: SuccessStepProps) {
+  const navigate = useNavigate();
+
   return (
     <div className="flex flex-col items-center text-center animate-fade-in">
       <div className="text-3xl mb-2 font-extrabold tracking-tight text-gradient-primary">
@@ -61,7 +64,7 @@ export function SuccessStep({
             </Button>
             <Button
               className="flex-1 rounded-full bg-gradient-to-r from-indigo-400 to-fuchsia-600 text-white"
-              onClick={() => window.open(`/release/${selectedChainId}/${deployedSafeAddress}`, "_blank")}
+              onClick={() => navigate(`/release/${selectedChainId}/${deployedSafeAddress}`)}
             >
               View Lockler
             </Button>

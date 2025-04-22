@@ -204,6 +204,8 @@ export default function Setup() {
                 title: "Security System Deployed!",
                 description: "Kleros Reality Module has been deployed and configured successfully",
             });
+
+            setStep(3);
         } catch (err: any) {
             console.error("Module deployment error:", err);
             setError(err.message);
