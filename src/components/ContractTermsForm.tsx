@@ -4,7 +4,14 @@ import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { EscrowContractTerms, Payment } from "../lib/types";
-import { TOKENS } from "../lib/constants";
+import { TOKENS, CHAIN_CONFIG } from "../lib/constants";
+import { Send, ReceiveIcon, HelpCircle } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
 
 interface ContractTermsFormProps {
   contractTerms: EscrowContractTerms;
@@ -13,7 +20,7 @@ interface ContractTermsFormProps {
   chainId: number;
 }
 
-// Utility style helpers for dark bg and rounded cards
+// Utility style helpers
 const inputClass = "rounded-xl bg-gray-900 mt-1 text-white text-sm border-0 focus:ring-2 focus:ring-pink-400";
 const selectClass = "rounded-xl bg-gray-900 text-white px-2 py-1 text-sm border-0 focus:ring-2 focus:ring-purple-500";
 const cardClass = "rounded-3xl bg-gradient-to-br from-[#23213A] to-[#2D274B] border border-gray-800 shadow-md";
@@ -27,6 +34,10 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
       }
     });
     return availableTokens;
+  };
+
+  const getNativeCurrencySymbol = () => {
+    return CHAIN_CONFIG[chainId]?.nativeCurrency?.symbol || 'ETH';
   };
 
   const addPayment = (role: 'sender' | 'receiver') => {
@@ -92,11 +103,67 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
             />
           </div>
 
-          {/* Payments Section */}
+          {/* Config Section - Compact Layout */}
+          <div className="grid grid-cols-4 gap-4 bg-[#1a1831] p-4 rounded-xl">
+            <div>
+              <Label className="text-purple-100 text-xs">Question Bond ({getNativeCurrencySymbol()})</Label>
+              <Input
+                id="bond"
+                type="number"
+                value={contractTerms.bond || "0"}
+                onChange={(e) => setContractTerms({ ...contractTerms, bond: e.target.value })}
+                className={inputClass + " text-xs"}
+                placeholder="0.1"
+                step="0.000000000000000001"
+              />
+            </div>
+            <div>
+              <Label className="text-purple-100 text-xs">Timeout (s)</Label>
+              <Input
+                id="timeout"
+                type="number"
+                value={contractTerms.timeout || "0"}
+                onChange={(e) => setContractTerms({ ...contractTerms, timeout: parseInt(e.target.value) })}
+                className={inputClass + " text-xs"}
+                placeholder="3600"
+              />
+            </div>
+            <div>
+              <Label className="text-purple-100 text-xs">Cooldown (s)</Label>
+              <Input
+                id="cooldown"
+                type="number"
+                value={contractTerms.cooldown || "0"}
+                onChange={(e) => setContractTerms({ ...contractTerms, cooldown: parseInt(e.target.value) })}
+                className={inputClass + " text-xs"}
+                placeholder="3600"
+              />
+            </div>
+            <div>
+              <Label className="text-purple-100 text-xs">Expiration (s)</Label>
+              <Input
+                id="expiration"
+                type="number"
+                value={contractTerms.expiration || "0"}
+                onChange={(e) => setContractTerms({ ...contractTerms, expiration: parseInt(e.target.value) })}
+                className={inputClass + " text-xs"}
+                placeholder="86400"
+              />
+            </div>
+          </div>
+
+          {/* Participants Section */}
           <div>
-            <Label className="text-purple-100 font-semibold">Payments</Label>
+            <Label className="text-purple-100 font-semibold">Participants</Label>
             {contractTerms.payments.map((payment, index) => (
               <div key={index} className="flex gap-3 mt-3 bg-[#1a1831] p-3 rounded-xl items-center">
+                <div className="flex-none">
+                  {payment.role === 'sender' ? (
+                    <Send className="h-5 w-5 text-indigo-400" />
+                  ) : (
+                    <ReceiveIcon className="h-5 w-5 text-pink-400" />
+                  )}
+                </div>
                 <Input
                   placeholder="Address"
                   value={payment.address}
@@ -137,19 +204,31 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
             {escrowMode === 'grant' && (
               <div className="flex gap-3 mt-4">
                 <Button type="button" onClick={() => addPayment('sender')} className="rounded-full bg-gradient-to-r from-indigo-400 to-purple-500 text-white shadow">
-                  Add Sender
+                  Add Payer
                 </Button>
                 <Button type="button" onClick={() => addPayment('receiver')} className="rounded-full bg-gradient-to-r from-pink-400 to-fuchsia-500 text-white shadow">
-                  Add Receiver
+                  Add Payee
                 </Button>
               </div>
             )}
           </div>
         </div>
 
-        {/* JSON Preview Column - Takes up 2/5 of the space */}
+        {/* JSON Preview Column */}
         <div className="col-span-2 space-y-3">
-          <Label className="text-purple-100 font-semibold">Preview</Label>
+          <div className="flex items-center gap-2">
+            <Label className="text-purple-100 font-semibold">Contract JSON Preview</Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <HelpCircle className="h-4 w-4 text-purple-400" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-sm">This is the actual contract that's stored on IPFS, for any potential dispute resolution.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <Card className="h-full bg-[#1a1831] border border-purple-800 rounded-2xl shadow-lg">
             <CardContent className="p-4">
               <pre className="text-xs text-purple-100 font-mono whitespace-pre-wrap">
