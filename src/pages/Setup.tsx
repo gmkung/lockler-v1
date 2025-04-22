@@ -419,62 +419,6 @@ export default function Setup() {
                             </p>
                         </div>
                         
-                        <div className="grid grid-cols-4 gap-4 mb-6">
-                            <div>
-                                <Label className="text-purple-100 text-xs">Question Bond</Label>
-                                <Input
-                                    id="bond"
-                                    type="number"
-                                    value={moduleConfig.bond}
-                                    onChange={e => setModuleConfig(prev => ({
-                                        ...prev, bond: e.target.value
-                                    }))}
-                                    className="rounded-2xl bg-gray-900 mt-1 text-white text-xs"
-                                    placeholder={DEFAULT_BOND}
-                                    step="0.000000000000000001"
-                                />
-                            </div>
-                            <div>
-                                <Label className="text-purple-100 text-xs">Timeout (s)</Label>
-                                <Input
-                                    id="timeout"
-                                    type="number"
-                                    value={moduleConfig.timeout}
-                                    onChange={e => setModuleConfig(prev => ({
-                                        ...prev, timeout: parseInt(e.target.value)
-                                    }))}
-                                    className="rounded-2xl bg-gray-900 mt-1 text-white text-xs"
-                                    placeholder={DEFAULT_TIMEOUTS.TIMEOUT?.toString()}
-                                />
-                            </div>
-                            <div>
-                                <Label className="text-purple-100 text-xs">Cooldown (s)</Label>
-                                <Input
-                                    id="cooldown"
-                                    type="number"
-                                    value={moduleConfig.cooldown}
-                                    onChange={e => setModuleConfig(prev => ({
-                                        ...prev, cooldown: parseInt(e.target.value)
-                                    }))}
-                                    className="rounded-2xl bg-gray-900 mt-1 text-white text-xs"
-                                    placeholder={DEFAULT_TIMEOUTS.COOLDOWN?.toString()}
-                                />
-                            </div>
-                            <div>
-                                <Label className="text-purple-100 text-xs">Expiration (s)</Label>
-                                <Input
-                                    id="expiration"
-                                    type="number"
-                                    value={moduleConfig.expiration}
-                                    onChange={e => setModuleConfig(prev => ({
-                                        ...prev, expiration: parseInt(e.target.value)
-                                    }))}
-                                    className="rounded-2xl bg-gray-900 mt-1 text-white text-xs"
-                                    placeholder={DEFAULT_TIMEOUTS.EXPIRATION?.toString()}
-                                />
-                            </div>
-                        </div>
-
                         <div className="bg-purple-900/30 border border-purple-700 p-6 rounded-2xl mb-6">
                             <div className="text-lg text-purple-100 font-semibold mb-4">Fund Release Conditions</div>
                             <ContractTermsForm
