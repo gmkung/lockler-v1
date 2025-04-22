@@ -1,3 +1,4 @@
+
 // Import polyfills first
 import "./lib/polyfills";
 
@@ -10,6 +11,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Setup from "./pages/Setup";
 import Release from './pages/Release';
+import SelectSafe from './pages/SelectSafe';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import { CHAIN_CONFIG, SUPPORTED_CHAINS, getRpcUrl } from './lib/constants';
