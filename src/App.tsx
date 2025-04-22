@@ -53,8 +53,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/setup" element={<Setup />} />
+            <Route path="/release" element={<SelectSafe />} />
             <Route path="/release/:chainId/:address" element={<Release />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
