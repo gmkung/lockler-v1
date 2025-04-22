@@ -1,5 +1,7 @@
+
 import { TOKENS } from './constants';
 import type { EscrowContractTerms, Payment } from './types';
+import { DEFAULT_TIMEOUTS, DEFAULT_BOND } from './constants';
 
 type EscrowMode = 'p2p' | 'grant';
 type P2PRole = 'sender' | 'receiver';
@@ -29,6 +31,10 @@ export const getDefaultContractTerms = (
                     role: 'receiver'
                 }
             ],
+            bond: DEFAULT_BOND,
+            timeout: DEFAULT_TIMEOUTS.TIMEOUT,
+            cooldown: DEFAULT_TIMEOUTS.COOLDOWN,
+            expiration: DEFAULT_TIMEOUTS.EXPIRATION,
             createdAt: Date.now()
         };
     } else {
@@ -44,7 +50,11 @@ export const getDefaultContractTerms = (
                     role: 'sender'
                 }
             ],
+            bond: DEFAULT_BOND,
+            timeout: DEFAULT_TIMEOUTS.TIMEOUT,
+            cooldown: DEFAULT_TIMEOUTS.COOLDOWN,
+            expiration: DEFAULT_TIMEOUTS.EXPIRATION,
             createdAt: Date.now()
         };
     }
-}; 
+};

@@ -59,14 +59,14 @@ export const CHAIN_CONFIG: Record<number, Chain> = {
 // Chain-agnostic constants
 export const DEFAULT_THRESHOLD = 1;
 export const DEFAULT_SALT_NONCE = Date.now().toString();
-export const DEFAULT_BOND = "0.1";
-export const DEFAULT_TIMEOUTS = {
-  TIMEOUT: 180, // 3 minutes
-  COOLDOWN: 120, // 2 minutes
-  EXPIRATION: 300, // 5 minutes
-} as const;
 
-//export const DEFAULT_TEMPLATE_CONTENT = "Did the event %s occur ?";
+// Updated defaults with more logical values
+export const DEFAULT_BOND = "0.01"; // 0.01 ETH/xDAI
+export const DEFAULT_TIMEOUTS = {
+  TIMEOUT: 86400,    // 24 hours in seconds
+  COOLDOWN: 43200,   // 12 hours in seconds
+  EXPIRATION: 604800 // 7 days in seconds
+} as const;
 
 // Helper functions to get chain-specific values
 export const getChainConfig = (chainId: number): Chain => {
