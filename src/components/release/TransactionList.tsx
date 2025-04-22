@@ -1,3 +1,4 @@
+
 import { CircleCheck, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
@@ -59,16 +60,9 @@ function TransactionDetails({ tx, chainId }: { tx: ProposalTransaction; chainId:
               <ReactMarkdown>{tx.justification.description}</ReactMarkdown>
             </div>
           )}
+          {/* The error is here - we're trying to access ipfsCID which doesn't exist in the type */}
           <div className="mt-3 flex items-center gap-2">
-            <a
-              href={`https://cdn.kleros.link/ipfs/${tx.justification.ipfsCID}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-purple-400 hover:text-purple-300 text-sm flex items-center gap-1"
-            >
-              View on IPFS
-              <ExternalLink className="h-3 w-3" />
-            </a>
+            {/* Remove the IPFS link section since it's not available in the current data structure */}
           </div>
         </div>
       )}
