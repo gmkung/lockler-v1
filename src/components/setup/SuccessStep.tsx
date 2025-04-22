@@ -34,7 +34,7 @@ export function SuccessStep({
         <div className="flex flex-col items-center gap-1 rounded-3xl border border-purple-700 bg-[rgba(44,36,71,0.98)] px-5 py-3">
           <span className="text-xs uppercase tracking-widest text-purple-400">Lockler Address</span>
           <div className="flex items-center mt-1 gap-2 select-text">
-            <span className="font-mono text-white text-sm truncate max-w-[18ch]">{deployedSafeAddress}</span>
+            <span className="font-mono text-white text-sm break-all">{deployedSafeAddress}</span>
             <button
               aria-label="Copy address"
               onClick={handleCopyAddress}

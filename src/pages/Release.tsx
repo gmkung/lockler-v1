@@ -185,6 +185,12 @@ export default function Release() {
                 <p className="text-gray-300 mt-1">Secure fund management, secured by the Kleros Optimistic Oracle</p>
               </div>
               <div className="flex gap-4 items-center flex-wrap">
+                <Button
+                  onClick={() => navigate('/setup')}
+                  className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600"
+                >
+                  Setup New Lockler
+                </Button>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-200">
                     {CHAIN_CONFIG[chainId]?.name || 'Unknown Network'}
