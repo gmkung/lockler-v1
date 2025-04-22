@@ -223,9 +223,9 @@ export default function Release() {
                   moduleAddress={moduleAddress}
                   blockExplorer={blockExplorer}
                   modules={modules}
+                  chainId={chainId}
                 />
               </div>
-
               <div className="md:col-span-2 space-y-6">
                 {formattedTerms && (
                   <FundReleaseConditions
