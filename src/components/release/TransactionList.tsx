@@ -1,3 +1,4 @@
+
 import { CircleCheck, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
@@ -105,11 +106,36 @@ function TransactionStatus({
     try {
       await onExecute();
     } catch (error: any) {
+      // Extract the reason from the error object
+      let errorMessage = "Failed to execute transaction";
+      
+      if (error.message) {
+        // If we have a specific reason in the error, extract it
+        if (error.reason) {
+          errorMessage = `Error: ${error.reason}`;
+        } else if (error.message.includes("reason=")) {
+          // Try to extract the reason from the error message
+          const reasonMatch = error.message.match(/reason="([^"]+)"/);
+          if (reasonMatch && reasonMatch[1]) {
+            errorMessage = `Error: ${reasonMatch[1]}`;
+          } else {
+            errorMessage = error.message;
+          }
+        } else if (error.shortMessage) {
+          errorMessage = error.shortMessage;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      // Show the error in a toast notification
       toast({
         variant: "destructive",
         title: "Transaction Failed",
-        description: error.message || "Failed to execute transaction",
+        description: errorMessage,
       });
+      
+      console.error("Transaction error details:", error);
     }
   };
 

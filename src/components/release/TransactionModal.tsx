@@ -31,7 +31,7 @@ export function TransactionModal({ transaction }: TransactionModalProps) {
           <DialogTitle className="text-purple-100">Raw Transaction Data</DialogTitle>
         </DialogHeader>
         <div className="bg-gray-800/50 p-4 rounded-lg border border-purple-800/20">
-          <pre className="text-sm text-purple-200 font-mono break-all whitespace-pre-wrap overflow-auto max-h-[60vh]">
+          <pre className="text-sm text-purple-200 font-mono whitespace-pre-wrap overflow-auto max-h-[60vh]">
             {JSON.stringify(transaction, null, 2)}
           </pre>
         </div>

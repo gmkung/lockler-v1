@@ -1,3 +1,4 @@
+
 import { BrowserProvider, Contract, keccak256 } from 'ethers';
 import { Question } from 'reality-kleros-subgraph';
 import { CHAIN_CONFIG } from './constants';
@@ -92,7 +93,8 @@ export async function handleExecuteTransaction(
     return { [question.id]: newStatuses };
   } catch (err) {
     console.error('Error executing transaction:', err);
-    return {};
+    // Make sure to propagate the error to be handled by the caller
+    throw err;
   }
 }
 
