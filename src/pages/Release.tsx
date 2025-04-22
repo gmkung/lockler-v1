@@ -10,7 +10,7 @@ import { handleExecuteTransaction } from '../lib/transactions';
 import { useTransactionStatus } from '../hooks/useTransactionStatus';
 import { useAccount, useConnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
-import { Lock, Wallet } from 'lucide-react';
+import { Lock, Wallet, Shield } from 'lucide-react';
 import { ProposalTransaction } from '../lib/types';
 import { ErrorState } from '../components/release/ErrorState';
 import { LoadingState } from '../components/release/LoadingState';
@@ -125,10 +125,10 @@ export default function Release() {
             <div className="flex justify-between items-center flex-wrap gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-                  <Lock className="h-7 w-7 text-purple-400" />
+                  <Shield className="h-7 w-7 text-purple-400" />
                   Lockler Control
                 </h1>
-                <p className="text-purple-200 mt-1">Secure fund management with Kleros verification</p>
+                <p className="text-purple-300 mt-1">Secure fund management with Kleros verification</p>
               </div>
               <div className="flex gap-4 items-center flex-wrap">
                 <div className="flex items-center gap-2">
