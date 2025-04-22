@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
@@ -291,7 +290,7 @@ export function ProposeTransactionModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col overflow-hidden">
+            <DialogContent className="sm:max-w-[800px] max-h-[80vh] flex flex-col overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>Propose Transaction</DialogTitle>
                 </DialogHeader>
@@ -347,7 +346,7 @@ export function ProposeTransactionModal({
 
                     {/* Form fields for different transaction types */}
                     {currentType === 'native' && (
-                        <>
+                        <div className="space-y-3">
                             <div>
                                 <Label>Recipient Address</Label>
                                 <Input
@@ -366,11 +365,17 @@ export function ProposeTransactionModal({
                                     step="0.000000000000000001"
                                 />
                             </div>
-                        </>
+                            <Button
+                                onClick={addTransaction}
+                                disabled={!currentTo || !currentValue || !currentJustification.title}
+                            >
+                                Add Transaction
+                            </Button>
+                        </div>
                     )}
 
                     {currentType === 'erc20' && (
-                        <>
+                        <div className="space-y-3">
                             <div>
                                 <Label>Token</Label>
                                 <Select value={currentToken} onValueChange={setCurrentToken}>
@@ -409,11 +414,17 @@ export function ProposeTransactionModal({
                                         "0.000000000000000001"}
                                 />
                             </div>
-                        </>
+                            <Button
+                                onClick={addTransaction}
+                                disabled={!currentRecipient || !currentValue || !currentToken || !currentJustification.title}
+                            >
+                                Add Transaction
+                            </Button>
+                        </div>
                     )}
 
                     {currentType === 'custom' && (
-                        <>
+                        <div className="space-y-3">
                             <div>
                                 <Label>Target Address</Label>
                                 <Input
@@ -439,7 +450,13 @@ export function ProposeTransactionModal({
                                     placeholder="0x..."
                                 />
                             </div>
-                        </>
+                            <Button
+                                onClick={addTransaction}
+                                disabled={!currentTo || !currentData || !currentJustification.title}
+                            >
+                                Add Transaction
+                            </Button>
+                        </div>
                     )}
 
                     <div className="mt-4">
@@ -515,17 +532,6 @@ export function ProposeTransactionModal({
                             </ScrollArea>
                         )}
                     </div>
-
-                    <Button
-                        onClick={addTransaction}
-                        disabled={
-                            (currentType === 'native' && (!currentTo || !currentValue || !currentJustification.title)) ||
-                            (currentType === 'erc20' && (!currentRecipient || !currentValue || !currentToken || !currentJustification.title)) ||
-                            (currentType === 'custom' && (!currentTo || !currentData || !currentJustification.title))
-                        }
-                    >
-                        Add Transaction
-                    </Button>
                 </div>
 
                 <DialogFooter className="mt-4 pt-2 border-t">
