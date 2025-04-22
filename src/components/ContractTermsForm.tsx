@@ -1,3 +1,4 @@
+
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent } from "./ui/card";
@@ -5,7 +6,7 @@ import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { EscrowContractTerms, Payment } from "../lib/types";
 import { TOKENS, CHAIN_CONFIG } from "../lib/constants";
-import { Send, ReceiveIcon, HelpCircle } from "lucide-react";
+import { Send, ArrowDownLeft, HelpCircle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -161,7 +162,7 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
                   {payment.role === 'sender' ? (
                     <Send className="h-5 w-5 text-indigo-400" />
                   ) : (
-                    <ReceiveIcon className="h-5 w-5 text-pink-400" />
+                    <ArrowDownLeft className="h-5 w-5 text-pink-400" />
                   )}
                 </div>
                 <Input

@@ -1,3 +1,4 @@
+
 import { ethers } from 'ethers';
 
 export interface NativeCurrency {
@@ -94,6 +95,10 @@ export type EscrowContractTerms = {
   type: 'p2p' | 'grant';
   payments: Payment[];
   createdAt: number;
+  bond?: string;
+  timeout?: number;
+  cooldown?: number;
+  expiration?: number;
 };
 
 export interface TemplateData {
