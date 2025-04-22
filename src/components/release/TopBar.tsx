@@ -1,10 +1,11 @@
+
 import React, { useState } from "react";
 import { Logo } from "../ui/logo";
 import { Button } from "../ui/button";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, CheckCircle2, Info, Copy as CopyIcon } from "lucide-react";
 import { CHAIN_CONFIG, getBlockExplorer } from "../../lib/constants";
 import { SecurityChecksModal } from "./SecurityChecksModal";
-import { CheckCircle2, Info } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface TopBarProps {
   chainId: number;
@@ -39,6 +40,8 @@ export function TopBar({
 }: TopBarProps) {
   const blockExplorer = getBlockExplorer(chainId);
   const [checksOpen, setChecksOpen] = useState(false);
+  const { toast } = useToast();
+  const [copying, setCopying] = useState({ safe: false, module: false });
 
   // Find the module, compute total/passed checks
   const module = modules && modules[0];
@@ -51,25 +54,46 @@ export function TopBar({
     : [];
   const totalChecks = securityChecks.length;
   const passedChecks = securityChecks.filter(Boolean).length;
-
   const allChecksPassed = passedChecks === totalChecks && totalChecks > 0;
+
+  const handleCopy = async (text: string, field: "safe" | "module") => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopying(prev => ({ ...prev, [field]: true }));
+      toast({
+        title: "Copied!",
+        description: `${field === "safe" ? "Safe" : "Module"} address copied to clipboard.`,
+      });
+      setTimeout(() => setCopying(prev => ({ ...prev, [field]: false })), 1200);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to copy address.", variant: "destructive" });
+    }
+  };
 
   return (
     <div className="w-full rounded-2xl bg-[#242132] border border-gray-800 p-3 px-4 flex flex-col md:flex-row items-center justify-between gap-2 shadow-lg mb-3">
-      {/* Left Section: Logo + Lockler Title + Chain/Addresses */}
+      {/* Left Section: Logo + Title + Chain/Addresses */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <Logo className="h-7 w-7 text-pink-400 shrink-0" />
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-white leading-7 truncate">
             Lockler Control
           </h1>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
             <span className="text-xs text-gray-400">{CHAIN_CONFIG[chainId]?.name}</span>
-            <span className="flex items-center gap-2">
+            {/* Safe address */}
+            <span className="flex items-center gap-1">
               <span className="text-xs text-gray-400">Safe:</span>
-              <code className="text-xs bg-[#2D274B] px-2 py-1 rounded text-gray-300 truncate max-w-[90px] sm:max-w-[120px]">
-                {safeAddress ? `${safeAddress.slice(0, 6)}...${safeAddress.slice(-4)}` : '--'}
-              </code>
+              <button
+                onClick={() => safeAddress && handleCopy(safeAddress, "safe")}
+                className="text-xs font-mono bg-[#2D274B] px-2 py-1 rounded text-gray-300 truncate max-w-[116px] border border-transparent hover:border-pink-400/70 transition-colors outline-none"
+                title="Copy Safe address"
+                style={{ cursor: "pointer" }}
+                type="button"
+              >
+                {safeAddress ? `${safeAddress.slice(0, 6)}...${safeAddress.slice(-4)}` : "--"}
+              </button>
+              <CopyIcon className={`h-4 w-4 ml-0.5 text-pink-300 transition ${copying.safe ? "opacity-100" : "opacity-50 hover:opacity-90"}`} />
               {blockExplorer && safeAddress && (
                 <a
                   href={`${blockExplorer}/address/${safeAddress}`}
@@ -82,11 +106,19 @@ export function TopBar({
                 </a>
               )}
             </span>
-            <span className="flex items-center gap-2">
+            {/* Module address & checks */}
+            <span className="flex items-center gap-1">
               <span className="text-xs text-gray-400">Module:</span>
-              <code className="text-xs bg-[#2D274B] px-2 py-1 rounded text-gray-300 truncate max-w-[90px] sm:max-w-[120px]">
-                {moduleAddress ? `${moduleAddress.slice(0, 6)}...${moduleAddress.slice(-4)}` : '--'}
-              </code>
+              <button
+                onClick={() => moduleAddress && handleCopy(moduleAddress, "module")}
+                className="text-xs font-mono bg-[#2D274B] px-2 py-1 rounded text-gray-300 truncate max-w-[116px] border border-transparent hover:border-pink-400/70 transition-colors outline-none"
+                title="Copy Module address"
+                style={{ cursor: "pointer" }}
+                type="button"
+              >
+                {moduleAddress ? `${moduleAddress.slice(0, 6)}...${moduleAddress.slice(-4)}` : "--"}
+              </button>
+              <CopyIcon className={`h-4 w-4 ml-0.5 text-pink-300 transition ${copying.module ? "opacity-100" : "opacity-50 hover:opacity-90"}`} />
               {blockExplorer && moduleAddress && (
                 <a
                   href={`${blockExplorer}/address/${moduleAddress}`}
@@ -98,43 +130,37 @@ export function TopBar({
                   <ExternalLink className="h-4 w-4" />
                 </a>
               )}
+              {/* Checkmark right of module */}
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={() => setChecksOpen(true)}
+                className="cursor-pointer focus:outline-none ml-1"
+                aria-label="Security checks"
+              >
+                {modules && modules[0] && [
+                  modules[0].isEnabled,
+                  modules[0].isRealityModule,
+                  ...Object.values(modules[0].validationChecks)
+                ].filter(Boolean).length === (
+                  [modules[0].isEnabled, modules[0].isRealityModule, ...Object.values(modules[0].validationChecks)].length
+                ) && [modules[0].isEnabled, modules[0].isRealityModule, ...Object.values(modules[0].validationChecks)].length > 0 ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                ) : (
+                  <Info className="h-5 w-5 text-yellow-400" />
+                )}
+                {checksOpen && (
+                  <SecurityChecksModal
+                    modules={modules}
+                  />
+                )}
+              </span>
             </span>
           </div>
         </div>
       </div>
-      {/* Right Section: Security Check, Wallet/Connect button, Setup New */}
+      {/* Right Section: Wallet/Connect button, Setup New */}
       <div className="flex flex-col sm:flex-row items-center gap-2 min-w-0">
-        <div className="flex items-center gap-1 min-w-0">
-          {/* Security Check Icon */}
-          <span className="ml-1 flex items-center">
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={() => setChecksOpen(true)}
-              className="cursor-pointer focus:outline-none"
-              aria-label="Security checks"
-            >
-              {modules && modules[0] && [
-                modules[0].isEnabled,
-                modules[0].isRealityModule,
-                ...Object.values(modules[0].validationChecks)
-              ].filter(Boolean).length === (
-                [modules[0].isEnabled, modules[0].isRealityModule, ...Object.values(modules[0].validationChecks)].length
-              ) && [modules[0].isEnabled, modules[0].isRealityModule, ...Object.values(modules[0].validationChecks)].length > 0 ? (
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-              ) : (
-                <Info className="h-5 w-5 text-yellow-400" />
-              )}
-            </span>
-            {/* Modal shown when checksOpen is true */}
-            {checksOpen && (
-              <SecurityChecksModal
-                modules={modules}
-              />
-            )}
-          </span>
-        </div>
-        {/* Wallet/connect & setup */}
         <div className="flex items-center gap-2 ml-0 sm:ml-3 mt-2 sm:mt-0">
           {!walletAddress && onConnectWallet && (
             <Button

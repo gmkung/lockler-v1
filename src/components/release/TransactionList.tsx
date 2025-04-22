@@ -54,9 +54,9 @@ function TransactionDetails({ tx, chainId }: { tx: ProposalTransaction; chainId:
     <div className="text-gray-200 space-y-4">
       {tx.justification && (
         <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 font-typewriter">
-          <h4 className="font-semibold text-white text-lg mb-2 font-typewriter">{tx.justification.title}</h4>
+          <h4 className="font-semibold text-base mb-2 text-white font-typewriter">{tx.justification.title}</h4>
           {tx.justification.description && (
-            <div className="prose prose-sm max-w-none prose-invert prose-p:text-gray-300 prose-headings:text-gray-200 font-typewriter">
+            <div className="prose prose-xs max-w-none prose-invert prose-p:text-gray-300 prose-headings:text-gray-200 font-typewriter">
               <ReactMarkdown>{tx.justification.description}</ReactMarkdown>
             </div>
           )}
