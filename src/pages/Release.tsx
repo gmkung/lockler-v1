@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { getBlockExplorer, CHAIN_CONFIG, getRpcUrl, TOKENS, SUPPORTED_CHAINS } from '../lib/constants';
+import { getBlockExplorer, CHAIN_CONFIG, getRpcUrl } from '../lib/constants';
 import { ProposeTransactionModal } from '../components/ProposeTransactionModal';
 import { useQuestions } from '../hooks/useQuestions';
 import { useRealityModule } from '../hooks/useRealityModule';
@@ -11,15 +10,13 @@ import { handleExecuteTransaction } from '../lib/transactions';
 import { useTransactionStatus } from '../hooks/useTransactionStatus';
 import { useAccount, useConnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
-import { Wallet, Shield, ExternalLink as ExternalLinkIcon } from 'lucide-react';
-import { ProposalTransaction } from '../lib/types';
+import { Wallet, Shield } from 'lucide-react';
 import { ErrorState } from '../components/release/ErrorState';
 import { LoadingState } from '../components/release/LoadingState';
 import { SecurityChecks } from '../components/release/SecurityChecks';
 import { TransactionList } from '../components/release/TransactionList';
-import type { Question } from 'reality-kleros-subgraph';
 import { JsonRpcProvider } from 'ethers';
-import { ExternalLink } from '../components/ui/external-link';
+import { FundReleaseConditions } from '../components/release/FundReleaseConditions';
 
 export default function Release() {
   const { chainId: chainIdParam, address: safeAddress } = useParams<{ chainId: string; address: string }>();
@@ -232,59 +229,10 @@ export default function Release() {
 
               <div className="md:col-span-2 space-y-6">
                 {formattedTerms && (
-                  <div className="bg-gray-900 rounded-3xl border border-gray-800 p-5 shadow-2xl">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                        Fund Release Conditions
-                        {formattedTerms.ipfsUrl && (
-                          <ExternalLink 
-                            href={formattedTerms.ipfsUrl}
-                            className="text-purple-400 hover:text-purple-300"
-                            iconOnly
-                            title="View Full Terms on IPFS"
-                          />
-                        )}
-                      </h2>
-                    </div>
-                    <div className="bg-gray-800 rounded-lg border border-gray-700 divide-y divide-gray-700">
-                      <div className="p-4">
-                        <h3 className="text-sm font-medium text-gray-400 mb-1">Title</h3>
-                        <p className="text-gray-200">{formattedTerms.title}</p>
-                      </div>
-                      <div className="p-4">
-                        <h3 className="text-sm font-medium text-gray-400 mb-1">Description</h3>
-                        <p className="text-gray-200">{formattedTerms.description}</p>
-                      </div>
-                      <div className="p-4">
-                        <h3 className="text-sm font-medium text-gray-400 mb-1">Type</h3>
-                        <p className="text-gray-200 capitalize">{formattedTerms.type}</p>
-                      </div>
-                      {formattedTerms.payments && formattedTerms.payments.length > 0 && (
-                        <div className="p-4">
-                          <h3 className="text-sm font-medium text-gray-400 mb-2">Participants</h3>
-                          <div className="space-y-3">
-                            {formattedTerms.payments.map((payment, index) => {
-                              const currencyInfo = getCurrencyInfo(payment.currency, chainId);
-                              return (
-                                <div key={index} className="flex items-center justify-between bg-gray-900/50 p-3 rounded-lg">
-                                  <div>
-                                    <span className="text-xs text-gray-400 capitalize">{payment.role}</span>
-                                    <p className="text-sm text-gray-200 font-mono">
-                                      {payment.address.slice(0, 6)}...{payment.address.slice(-4)}
-                                    </p>
-                                  </div>
-                                  <div className="text-right">
-                                    <span className="text-sm text-gray-200">{payment.amount}</span>
-                                    <p className="text-xs text-gray-400">{currencyInfo.symbol}</p>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <FundReleaseConditions
+                    formattedTerms={formattedTerms}
+                    chainId={chainId}
+                  />
                 )}
 
                 <div className="bg-gray-900 rounded-3xl border border-gray-800 p-5 shadow-2xl">
@@ -335,4 +283,3 @@ export default function Release() {
     </div>
   );
 }
-

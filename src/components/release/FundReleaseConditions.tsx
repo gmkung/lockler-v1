@@ -1,0 +1,113 @@
+
+import { Card } from "../ui/card";
+import { ExternalLink } from "../ui/external-link";
+import { Payment } from "@/lib/types";
+import { TOKENS, CHAIN_CONFIG } from "@/lib/constants";
+
+interface FundReleaseConditionsProps {
+  formattedTerms: {
+    title?: string;
+    description?: string;
+    type?: string;
+    payments?: Payment[];
+    ipfsUrl?: string;
+  } | null;
+  chainId: number;
+}
+
+const getCurrencyInfo = (payment: Payment, chainId: number) => {
+  // Native currency
+  if (payment.currency === TOKENS.NATIVE.address) {
+    return {
+      amount: payment.amount,
+      symbol: chainId === 100 ? 'xDAI' : TOKENS.NATIVE.symbol
+    };
+  }
+
+  // USDC for specific chain
+  if (TOKENS.USDC[chainId as keyof typeof TOKENS.USDC]) {
+    const usdc = TOKENS.USDC[chainId as keyof typeof TOKENS.USDC];
+    if (usdc.address.toLowerCase() === payment.currency.toLowerCase()) {
+      return {
+        amount: payment.amount,
+        symbol: usdc.symbol
+      };
+    }
+  }
+
+  // PNK for mainnet
+  if (chainId === 1 && TOKENS.PNK[1]) {
+    const pnk = TOKENS.PNK[1];
+    if (pnk.address.toLowerCase() === payment.currency.toLowerCase()) {
+      return {
+        amount: payment.amount,
+        symbol: pnk.symbol
+      };
+    }
+  }
+
+  return {
+    amount: payment.amount,
+    symbol: 'UNKNOWN'
+  };
+};
+
+export function FundReleaseConditions({ formattedTerms, chainId }: FundReleaseConditionsProps) {
+  if (!formattedTerms) return null;
+
+  return (
+    <div className="bg-gray-900 rounded-3xl border border-gray-800 p-5 shadow-2xl">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+          Fund Release Conditions
+          {formattedTerms.ipfsUrl && (
+            <ExternalLink 
+              href={formattedTerms.ipfsUrl}
+              className="text-purple-400 hover:text-purple-300"
+              iconOnly
+              title="View Full Terms on IPFS"
+            />
+          )}
+        </h2>
+      </div>
+      <div className="bg-gray-800 rounded-lg border border-gray-700 divide-y divide-gray-700">
+        <div className="p-4">
+          <h3 className="text-sm font-medium text-gray-400 mb-1">Title</h3>
+          <p className="text-gray-200">{formattedTerms.title}</p>
+        </div>
+        <div className="p-4">
+          <h3 className="text-sm font-medium text-gray-400 mb-1">Description</h3>
+          <p className="text-gray-200">{formattedTerms.description}</p>
+        </div>
+        <div className="p-4">
+          <h3 className="text-sm font-medium text-gray-400 mb-1">Type</h3>
+          <p className="text-gray-200 capitalize">{formattedTerms.type}</p>
+        </div>
+        {formattedTerms.payments && formattedTerms.payments.length > 0 && (
+          <div className="p-4">
+            <h3 className="text-sm font-medium text-gray-400 mb-2">Participants</h3>
+            <div className="space-y-3">
+              {formattedTerms.payments.map((payment, index) => {
+                const currencyInfo = getCurrencyInfo(payment, chainId);
+                return (
+                  <div key={index} className="flex items-center justify-between bg-gray-900/50 p-3 rounded-lg">
+                    <div>
+                      <span className="text-xs text-gray-400 capitalize">{payment.role}</span>
+                      <p className="text-sm text-gray-200 font-mono">
+                        {payment.address.slice(0, 6)}...{payment.address.slice(-4)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-sm text-gray-200">{currencyInfo.amount}</span>
+                      <p className="text-xs text-gray-400">{currencyInfo.symbol}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
