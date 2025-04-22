@@ -37,27 +37,29 @@ function isERC20Transfer(data: string): boolean {
 function findTokenConfig(address: string, chainId: number) {
   // Check each token category (NATIVE, USDC, PNK, etc)
   for (const [tokenName, tokenConfig] of Object.entries(TOKENS)) {
+    // Handle native token with a different structure
+    if (tokenName === 'NATIVE' && 
+        typeof tokenConfig === 'object' && 
+        tokenConfig !== null &&
+        'address' in tokenConfig && 
+        tokenConfig.address.toLowerCase() === address.toLowerCase()) {
+      return tokenConfig;
+    }
+    
     // If this is a chain-specific token configuration
-    if (tokenConfig && typeof tokenConfig === 'object') {
+    if (tokenConfig && typeof tokenConfig === 'object' && tokenConfig !== null) {
       // Handle chain-specific tokens
       if (chainId in tokenConfig) {
         const chainSpecificToken = tokenConfig[chainId as keyof typeof tokenConfig];
         
         if (chainSpecificToken && 
             typeof chainSpecificToken === 'object' && 
+            chainSpecificToken !== null &&
             'address' in chainSpecificToken && 
             chainSpecificToken.address.toLowerCase() === address.toLowerCase()) {
           return chainSpecificToken;
         }
       }
-    }
-    
-    // Handle native token with a different structure
-    if (tokenName === 'NATIVE' && 
-        typeof tokenConfig === 'object' && 
-        'address' in tokenConfig && 
-        tokenConfig.address.toLowerCase() === address.toLowerCase()) {
-      return tokenConfig;
     }
   }
   
