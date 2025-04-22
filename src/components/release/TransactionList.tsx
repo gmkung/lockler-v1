@@ -1,4 +1,3 @@
-
 import { CircleCheck, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
@@ -33,28 +32,18 @@ function isERC20Transfer(data: string): boolean {
   }
 }
 
-// Helper function to find token configuration by address and chain
 function findTokenConfig(address: string, chainId: number) {
-  // Check each token category (NATIVE, USDC, PNK, etc)
+  if (address.toLowerCase() === TOKENS.NATIVE.address.toLowerCase()) {
+    return TOKENS.NATIVE;
+  }
+
   for (const [tokenName, tokenConfig] of Object.entries(TOKENS)) {
-    // Handle native token with a different structure
-    if (tokenName === 'NATIVE' && 
-        typeof tokenConfig === 'object' && 
-        tokenConfig !== null &&
-        'address' in tokenConfig && 
-        tokenConfig.address.toLowerCase() === address.toLowerCase()) {
-      return tokenConfig;
-    }
-    
-    // If this is a chain-specific token configuration
-    if (tokenConfig && typeof tokenConfig === 'object' && tokenConfig !== null) {
-      // Handle chain-specific tokens
+    if (typeof tokenConfig === 'object' && tokenConfig !== null) {
       if (chainId in tokenConfig) {
         const chainSpecificToken = tokenConfig[chainId as keyof typeof tokenConfig];
         
         if (chainSpecificToken && 
             typeof chainSpecificToken === 'object' && 
-            chainSpecificToken !== null &&
             'address' in chainSpecificToken && 
             chainSpecificToken.address.toLowerCase() === address.toLowerCase()) {
           return chainSpecificToken;
@@ -66,23 +55,19 @@ function findTokenConfig(address: string, chainId: number) {
   return null;
 }
 
-// Updated to handle wei/minor units properly
 function formatValue(value: string, currency: string, data: string, chainId: number): string {
   if (isERC20Transfer(data) && currency !== "0x0000000000000000000000000000000000000000") {
-    // Look for token configuration
     const tokenInfo = findTokenConfig(currency, chainId);
     
     if (tokenInfo && 'decimals' in tokenInfo && 'symbol' in tokenInfo) {
-      // Format with appropriate decimals from token config
       return `${ethers.formatUnits(value, tokenInfo.decimals)} ${tokenInfo.symbol}`;
     }
     
-    // Default handling for unknown tokens (assume 18 decimals)
     return `${ethers.formatEther(value)} tokens`;
   }
   
-  // Native currency (ETH, xDAI, etc.)
-  return `${ethers.formatEther(value)} ${CHAIN_CONFIG[chainId]?.nativeCurrency.symbol || 'ETH'}`;
+  const nativeCurrencySymbol = CHAIN_CONFIG[chainId]?.nativeCurrency.symbol || 'ETH';
+  return `${ethers.formatEther(value)} ${nativeCurrencySymbol}`;
 }
 
 function getStatusBadge(phase: string) {
@@ -145,15 +130,12 @@ function TransactionStatus({
     try {
       await onExecute();
     } catch (error: any) {
-      // Extract the reason from the error object
       let errorMessage = "Failed to execute transaction";
       
       if (error.message) {
-        // If we have a specific reason in the error, extract it
         if (error.reason) {
           errorMessage = `Error: ${error.reason}`;
         } else if (error.message.includes("reason=")) {
-          // Try to extract the reason from the error message
           const reasonMatch = error.message.match(/reason="([^"]+)"/);
           if (reasonMatch && reasonMatch[1]) {
             errorMessage = `Error: ${reasonMatch[1]}`;
@@ -167,7 +149,6 @@ function TransactionStatus({
         }
       }
       
-      // Show the error in a toast notification
       toast({
         variant: "destructive",
         title: "Transaction Failed",
