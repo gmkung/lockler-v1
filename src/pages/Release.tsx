@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { getBlockExplorer, CHAIN_CONFIG, getRpcUrl, SUPPORTED_CHAINS, TOKENS } from '../lib/constants';
@@ -10,15 +10,13 @@ import { handleExecuteTransaction } from '../lib/transactions';
 import { useTransactionStatus } from '../hooks/useTransactionStatus';
 import { useAccount, useConnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
-import { Wallet, Shield } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { ErrorState } from '../components/release/ErrorState';
 import { LoadingState } from '../components/release/LoadingState';
 import { SecurityChecks } from '../components/release/SecurityChecks';
 import { TransactionList } from '../components/release/TransactionList';
 import { JsonRpcProvider } from 'ethers';
 import { FundReleaseConditions } from '../components/release/FundReleaseConditions';
-import { Question } from 'reality-kleros-subgraph';
-import { ProposalTransaction } from '../lib/types';
 import { Logo } from "../components/ui/logo";
 
 export default function Release() {
@@ -177,20 +175,14 @@ export default function Release() {
         <Card className="bg-[#2D274B] border-gray-800 rounded-3xl shadow-2xl">
           <CardHeader className="border-b border-gray-800 p-6">
             <div className="flex justify-between items-center flex-wrap gap-4">
-              <div>
+              <div className="flex-grow">
                 <h1 className="text-3xl font-bold text-white flex items-center gap-2">
                   <Logo className="h-7 w-7 text-pink-400" />
                   Lockler Control
                 </h1>
                 <p className="text-gray-300 mt-1">Secure fund management, secured by the Kleros Optimistic Oracle</p>
               </div>
-              <div className="flex gap-4 items-center flex-wrap">
-                <Button
-                  onClick={() => navigate('/setup')}
-                  className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600"
-                >
-                  Setup New Lockler
-                </Button>
+              <div className="flex gap-4 items-center">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-200">
                     {CHAIN_CONFIG[chainId]?.name || 'Unknown Network'}
@@ -214,10 +206,10 @@ export default function Release() {
                   </div>
                 )}
                 <Button
-                  onClick={() => setIsProposeModalOpen(true)}
-                  className="bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600"
+                  onClick={() => navigate('/setup')}
+                  className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600"
                 >
-                  Propose Fund Release
+                  Setup New Lockler
                 </Button>
               </div>
             </div>
@@ -242,7 +234,15 @@ export default function Release() {
                 )}
 
                 <div className="bg-gray-900 rounded-3xl border border-gray-800 p-5 shadow-2xl">
-                  <h2 className="text-xl font-semibold text-white mb-4">Fund Release Requests</h2>
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-white">Fund Release Requests</h2>
+                    <Button
+                      onClick={() => setIsProposeModalOpen(true)}
+                      className="bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600"
+                    >
+                      Propose Fund Release
+                    </Button>
+                  </div>
 
                   {questionsLoading ? (
                     <div className="p-4 text-center">

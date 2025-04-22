@@ -1,4 +1,3 @@
-
 import { ethers } from 'ethers';
 
 export interface NativeCurrency {
@@ -125,4 +124,6 @@ export interface ProposalTransaction {
     title: string;
     description: string;
   };
-} 
+}
+
+export type TransactionType = 'native' | 'erc20' | 'erc721' | 'custom';
