@@ -219,8 +219,9 @@ export default function Release() {
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="md:col-span-1 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Left Column - Security Status and Fund Release Conditions */}
+              <div className="space-y-6">
                 <SecurityChecks
                   safeAddress={safeAddress || ''}
                   moduleAddress={moduleAddress}
@@ -228,15 +229,16 @@ export default function Release() {
                   modules={modules}
                   chainId={chainId}
                 />
-              </div>
-              <div className="md:col-span-2 space-y-6">
                 {formattedTerms && (
                   <FundReleaseConditions
                     formattedTerms={formattedTerms}
                     chainId={chainId}
                   />
                 )}
+              </div>
 
+              {/* Right Column - Fund Release Requests */}
+              <div>
                 <div className="bg-gray-900 rounded-3xl border border-gray-800 p-5 shadow-2xl">
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-semibold text-white">Fund Release Requests</h2>
