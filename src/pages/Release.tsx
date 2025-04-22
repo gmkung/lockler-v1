@@ -210,12 +210,15 @@ export default function Release() {
                     <div className="flex justify-between items-start mb-4">
                       <h2 className="text-xl font-semibold text-white">Fund Release Conditions</h2>
                       {formattedTerms.ipfsUrl && (
-                        <ExternalLink 
+                        <a
                           href={formattedTerms.ipfsUrl}
-                          className="bg-purple-900/30 hover:bg-purple-900/50 px-3 py-1 rounded-md border border-purple-500/30"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-sm text-purple-400 hover:text-purple-300 transition-colors"
                         >
+                          <ExternalLink className="h-4 w-4" />
                           View Full Terms
-                        </ExternalLink>
+                        </a>
                       )}
                     </div>
                     <div className="bg-gray-800 rounded-lg border border-gray-700 divide-y divide-gray-700">
