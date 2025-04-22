@@ -1,4 +1,3 @@
-
 // Import polyfills first
 import "./lib/polyfills";
 
@@ -6,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Setup from "./pages/Setup";
@@ -53,7 +52,7 @@ const App = () => (
       <BrowserRouter>
         <TooltipProvider>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Navigate to="/setup" replace />} />
             <Route path="/setup" element={<Setup />} />
             <Route path="/release" element={<SelectSafe />} />
             <Route path="/release/:chainId/:address" element={<Release />} />

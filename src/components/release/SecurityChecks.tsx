@@ -1,8 +1,8 @@
-
-import { Shield, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { Button } from "../ui/button";
 import { getSecurityIcon } from "./utils";
 import { SUPPORTED_CHAINS } from "@/lib/constants";
+import { Logo } from "../ui/logo";
 
 interface SecurityChecksProps {
   safeAddress: string;
@@ -33,7 +33,7 @@ export function SecurityChecks({ safeAddress, moduleAddress, blockExplorer, chai
   return (
     <div className="rounded-3xl border border-gray-800 bg-gray-900 p-5 shadow-2xl">
       <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-        <Shield className="h-5 w-5 text-pink-400" />
+        <Logo className="h-5 w-5 text-pink-400" />
         Lockler Security Checks
       </h2>
 
