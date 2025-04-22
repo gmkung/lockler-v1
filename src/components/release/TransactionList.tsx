@@ -37,7 +37,7 @@ function findTokenConfig(address: string, chainId: number) {
     return TOKENS.NATIVE;
   }
 
-  for (const [tokenName, tokenConfig] of Object.entries(TOKENS)) {
+  for (const [_, tokenConfig] of Object.entries(TOKENS)) {
     if (typeof tokenConfig === 'object' && tokenConfig !== null) {
       if (chainId in tokenConfig) {
         const chainSpecificToken = tokenConfig[chainId as keyof typeof tokenConfig];
@@ -56,18 +56,23 @@ function findTokenConfig(address: string, chainId: number) {
 }
 
 function formatValue(value: string, currency: string, data: string, chainId: number): string {
-  if (isERC20Transfer(data) && currency !== "0x0000000000000000000000000000000000000000") {
-    const tokenInfo = findTokenConfig(currency, chainId);
-    
-    if (tokenInfo && 'decimals' in tokenInfo && 'symbol' in tokenInfo) {
-      return `${ethers.formatUnits(value, tokenInfo.decimals)} ${tokenInfo.symbol}`;
+  try {
+    if (isERC20Transfer(data) && currency !== "0x0000000000000000000000000000000000000000") {
+      const tokenInfo = findTokenConfig(currency, chainId);
+      
+      if (tokenInfo && 'decimals' in tokenInfo && 'symbol' in tokenInfo) {
+        return `${ethers.formatUnits(value, tokenInfo.decimals)} ${tokenInfo.symbol}`;
+      }
+      
+      return `${ethers.formatEther(value)} tokens`;
     }
     
-    return `${ethers.formatEther(value)} tokens`;
+    const nativeCurrencySymbol = CHAIN_CONFIG[chainId]?.nativeCurrency.symbol || 'ETH';
+    return `${ethers.formatEther(value)} ${nativeCurrencySymbol}`;
+  } catch (error) {
+    console.error("Error formatting value:", error);
+    return `${value} (format error)`;
   }
-  
-  const nativeCurrencySymbol = CHAIN_CONFIG[chainId]?.nativeCurrency.symbol || 'ETH';
-  return `${ethers.formatEther(value)} ${nativeCurrencySymbol}`;
 }
 
 function getStatusBadge(phase: string) {
