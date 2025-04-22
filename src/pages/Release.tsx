@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
@@ -12,13 +11,6 @@ import { useTransactionStatus } from '../hooks/useTransactionStatus';
 import { useAccount, useConnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { Lock, Wallet } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
 import { ProposalTransaction } from '../lib/types';
 import { ErrorState } from '../components/release/ErrorState';
 import { LoadingState } from '../components/release/LoadingState';
@@ -29,7 +21,6 @@ import { JsonRpcProvider } from 'ethers';
 
 export default function Release() {
   const { chainId: chainIdParam, address: safeAddress } = useParams<{ chainId: string; address: string }>();
-  const navigate = useNavigate();
   const chainId = chainIdParam ? parseInt(chainIdParam) : null;
   const blockExplorer = chainId ? getBlockExplorer(chainId) : null;
   const [safeExists, setSafeExists] = useState<boolean>(true);
@@ -99,10 +90,7 @@ export default function Release() {
     return (
       <ErrorState
         title="Invalid Chain"
-        message="Please select a valid chain from the list below:"
-        chainId={chainId}
-        safeAddress={safeAddress}
-        showChainSelector
+        message="The specified chain is not supported"
       />
     );
   }
@@ -144,22 +132,9 @@ export default function Release() {
               </div>
               <div className="flex gap-4 items-center flex-wrap">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-purple-200">Network:</span>
-                  <Select
-                    value={chainId.toString()}
-                    onValueChange={(value) => navigate(`/release/${value}/${safeAddress}`)}
-                  >
-                    <SelectTrigger className="w-[180px] bg-purple-900/20 border-purple-700 text-white">
-                      <SelectValue placeholder="Select network" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(CHAIN_CONFIG).map(([id, config]) => (
-                        <SelectItem key={id} value={id.toString()}>
-                          {config.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <span className="text-sm text-purple-200">
+                    {CHAIN_CONFIG[chainId]?.name || 'Unknown Network'}
+                  </span>
                 </div>
                 {!address ? (
                   <Button
