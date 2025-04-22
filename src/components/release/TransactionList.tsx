@@ -33,16 +33,27 @@ function isERC20Transfer(data: string): boolean {
   }
 }
 
+// Updated to handle wei/minor units properly
 function formatValue(value: string, currency: string, data: string, chainId: number): string {
   if (isERC20Transfer(data) && currency !== "0x0000000000000000000000000000000000000000") {
-    if (TOKENS.USDC[chainId as keyof typeof TOKENS.USDC]?.address.toLowerCase() === currency.toLowerCase()) {
-      return `${ethers.formatUnits(value, 6)} USDC`;
+    // ERC20 token transfer
+    const tokenConfig = Object.values(TOKENS).find(token => 
+      token[chainId as keyof typeof token]?.address.toLowerCase() === currency.toLowerCase()
+    );
+    
+    if (tokenConfig) {
+      const tokenInfo = tokenConfig[chainId as keyof typeof tokenConfig];
+      if (tokenInfo) {
+        // Format with appropriate decimals from token config
+        return `${ethers.formatUnits(value, tokenInfo.decimals)} ${tokenInfo.symbol}`;
+      }
     }
-    if (TOKENS.PNK[chainId as keyof typeof TOKENS.PNK]?.address.toLowerCase() === currency.toLowerCase()) {
-      return `${ethers.formatEther(value)} PNK`;
-    }
-    return `${value} tokens`;
+    
+    // Default handling for unknown tokens (assume 18 decimals)
+    return `${ethers.formatEther(value)} tokens`;
   }
+  
+  // Native currency (ETH, xDAI, etc.)
   return `${ethers.formatEther(value)} ${CHAIN_CONFIG[chainId]?.nativeCurrency.symbol || 'ETH'}`;
 }
 

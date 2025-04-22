@@ -84,12 +84,21 @@ export default function Setup() {
             window.ethereum.request({ method: 'eth_requestAccounts' })
                 .then((accounts: string[]) => {
                     if (accounts[0]) {
-                        setContractTerms(getDefaultContractTerms(
+                        const terms = getDefaultContractTerms(
                             escrowMode,
                             accounts[0],
                             counterpartyAddress,
                             p2pRole
-                        ));
+                        );
+                        
+                        terms.payments = terms.payments.map(payment => ({
+                            ...payment,
+                            amount: typeof payment.amount === 'string' && 
+                                    payment.amount.startsWith('0x') ? 
+                                    payment.amount : parseEther(payment.amount.toString()).toString()
+                        }));
+                        
+                        setContractTerms(terms);
                     }
                 });
         }
@@ -181,7 +190,15 @@ export default function Setup() {
                 throw new Error(`Failed to switch to ${CHAIN_CONFIG[selectedChainId].name}: ${switchResult.error}`);
             }
 
-            const cid = await uploadContractTerms(contractTerms);
+            const termsToUpload = {
+                ...contractTerms,
+                bond: moduleConfig.bond,
+                timeout: moduleConfig.timeout,
+                cooldown: moduleConfig.cooldown,
+                expiration: moduleConfig.expiration,
+            };
+            
+            const cid = await uploadContractTerms(termsToUpload);
 
             const provider = switchResult.provider as BrowserProvider;
             const result = await deployRealityModule(
@@ -193,7 +210,7 @@ export default function Setup() {
                     timeout: moduleConfig.timeout,
                     cooldown: moduleConfig.cooldown,
                     expiration: moduleConfig.expiration,
-                    bond: parseEther(moduleConfig.bond).toString()
+                    bond: moduleConfig.bond
                 }
             );
 

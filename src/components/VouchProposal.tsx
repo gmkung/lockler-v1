@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { useAccount, usePublicClient } from 'wagmi';
@@ -160,7 +159,6 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
                 return;
             }
 
-            // Connect to provider with signer for transaction
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const connectedContract = new ethers.Contract(oracleAddress, REALITYV3_ABI, signer);
