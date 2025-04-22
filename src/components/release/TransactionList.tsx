@@ -9,6 +9,7 @@ import { TOKENS, CHAIN_CONFIG } from '@/lib/constants';
 import { ethers } from 'ethers';
 import { TransactionModal } from './TransactionModal';
 import { ERC20_ABI } from '@/abis/erc20';
+import { useToast } from "@/hooks/use-toast";
 
 interface TransactionListProps {
   questions: Question[];
@@ -98,6 +99,20 @@ function TransactionStatus({
   status?: TransactionStatus;
   onExecute: () => void;
 }) {
+  const { toast } = useToast();
+  
+  const handleExecute = async () => {
+    try {
+      await onExecute();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Transaction Failed",
+        description: error.message || "Failed to execute transaction",
+      });
+    }
+  };
+
   if (status?.isExecuted) {
     return (
       <div className="text-green-400 flex items-center">
@@ -110,7 +125,7 @@ function TransactionStatus({
   return (
     <Button
       disabled={!status?.canExecute}
-      onClick={onExecute}
+      onClick={handleExecute}
       size="sm"
       className={status?.canExecute
         ? "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white"
