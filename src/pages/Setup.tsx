@@ -55,7 +55,7 @@ export default function Setup() {
     const [p2pRole, setP2PRole] = useState<P2PRole>('sender');
     const [counterpartyAddress, setCounterpartyAddress] = useState<string>("");
 
-    const { selectedChainId, setSelectedChainId, connectedChainId, chainName } = useChainSelection();
+    const { selectedChainId, setSelectedChainId } = useChainSelection();
 
     const [saltNonce, setSaltNonce] = useState(DEFAULT_SALT_NONCE);
     const [deployedSafeAddress, setDeployedSafeAddress] = useState<string | null>(null);
@@ -235,39 +235,32 @@ export default function Setup() {
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a1831] to-[#231a2c] items-center justify-center py-7 px-3">
             <StepWrapper wide={step === 2}>
                 <div className="mb-4 text-center">
-                    <div className="text-sm text-purple-300 flex flex-col items-center gap-1">
+                    <div className="flex items-center mt-1 justify-center">
+                        <span className="font-semibold mr-2">Deploying on:</span>
                         <div>
-                            Connected: {chainName || 'Not connected'}
-                            {connectedChainId && ` (Chain ID: ${connectedChainId})`}
-                        </div>
-
-                        <div className="flex items-center mt-1">
-                            <span className="font-semibold mr-2">Deploying on:</span>
-                            <div>
-                                <Select
-                                    value={selectedChainId ? selectedChainId.toString() : Object.keys(CHAIN_CONFIG)[0]}
-                                    onValueChange={(value) => {
-                                        const chainId = parseInt(value);
-                                        console.log("Setting chain ID to:", chainId);
-                                        setSelectedChainId(chainId);
-                                    }}
-                                >
-                                    <SelectTrigger className="h-7 w-[140px] text-xs bg-purple-800/30 border-purple-600">
-                                        <SelectValue>
-                                            {selectedChainId && CHAIN_CONFIG[selectedChainId]?.name
-                                                ? CHAIN_CONFIG[selectedChainId].name
-                                                : "Select Chain"}
-                                        </SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {Object.entries(CHAIN_CONFIG).map(([id, config]) => (
-                                            <SelectItem key={id} value={id}>
-                                                {config.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            <Select
+                                value={selectedChainId ? selectedChainId.toString() : Object.keys(CHAIN_CONFIG)[0]}
+                                onValueChange={(value) => {
+                                    const chainId = parseInt(value);
+                                    console.log("Setting chain ID to:", chainId);
+                                    setSelectedChainId(chainId);
+                                }}
+                            >
+                                <SelectTrigger className="h-7 w-[140px] text-xs bg-purple-800/30 border-purple-600">
+                                    <SelectValue>
+                                        {selectedChainId && CHAIN_CONFIG[selectedChainId]?.name
+                                            ? CHAIN_CONFIG[selectedChainId].name
+                                            : "Select Chain"}
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {Object.entries(CHAIN_CONFIG).map(([id, config]) => (
+                                        <SelectItem key={id} value={id}>
+                                            {config.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                 </div>
