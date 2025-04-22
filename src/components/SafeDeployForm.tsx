@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { ethers, isAddress } from "ethers";
 import { Button } from "@/components/ui/button";
@@ -7,16 +8,18 @@ import { deploySafe } from "@/lib/web3";
 import { 
   DEFAULT_THRESHOLD,
   DEFAULT_SALT_NONCE,
-  getContractAddresses
+  getContractAddresses,
+  SUPPORTED_CHAINS
 } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 
 type SafeDeployFormProps = {
   connectedAddress: string;
   signer: ethers.Signer;
+  chainId?: number; // Make chainId optional but available
 };
 
-const SafeDeployForm: React.FC<SafeDeployFormProps> = ({ connectedAddress, signer }) => {
+const SafeDeployForm: React.FC<SafeDeployFormProps> = ({ connectedAddress, signer, chainId }) => {
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD.toString());
   const [saltNonce, setSaltNonce] = useState(DEFAULT_SALT_NONCE);
   const [additionalOwners, setAdditionalOwners] = useState<string[]>([]);
@@ -25,7 +28,9 @@ const SafeDeployForm: React.FC<SafeDeployFormProps> = ({ connectedAddress, signe
   const [deployedSafeAddress, setDeployedSafeAddress] = useState<string | null>(null);
   
   const { toast } = useToast();
-  const { fallbackHandler } = getContractAddresses();
+  // Use GNOSIS as default chain ID if not provided
+  const effectiveChainId = chainId || SUPPORTED_CHAINS.GNOSIS;
+  const { fallbackHandler } = getContractAddresses(effectiveChainId);
 
   const addOwner = () => {
     if (isAddress(newOwnerAddress) && !additionalOwners.includes(newOwnerAddress)) {
@@ -70,7 +75,8 @@ const SafeDeployForm: React.FC<SafeDeployFormProps> = ({ connectedAddress, signe
         allOwners,
         thresholdValue,
         fallbackHandler,
-        saltNonce
+        saltNonce,
+        effectiveChainId // Pass the chain ID here
       );
       
       setDeployedSafeAddress(safeAddress);
