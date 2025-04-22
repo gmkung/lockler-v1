@@ -19,6 +19,7 @@ import { JsonRpcProvider } from 'ethers';
 import { FundReleaseConditions } from '../components/release/FundReleaseConditions';
 import { Question } from 'reality-kleros-subgraph';
 import { ProposalTransaction } from '../lib/types';
+import { Logo } from "../components/ui/logo";
 
 export default function Release() {
   const { chainId: chainIdParam, address: safeAddress } = useParams<{ chainId: string; address: string }>();
@@ -178,7 +179,7 @@ export default function Release() {
             <div className="flex justify-between items-center flex-wrap gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-                  <Shield className="h-7 w-7 text-pink-400" />
+                  <Logo className="h-7 w-7 text-pink-400" />
                   Lockler Control
                 </h1>
                 <p className="text-gray-300 mt-1">Secure fund management with Kleros verification</p>
