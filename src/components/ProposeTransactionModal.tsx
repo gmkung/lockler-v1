@@ -290,12 +290,12 @@ export function ProposeTransactionModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[800px] max-h-[80vh] flex flex-col overflow-hidden">
+            <DialogContent className="sm:max-w-[700px] max-h-[80vh] flex flex-col overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>Propose Transaction</DialogTitle>
                 </DialogHeader>
 
-                <div className="space-y-4 flex-1 overflow-y-auto">
+                <div className="space-y-6 flex-1 overflow-y-auto px-1">
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
                         <h3 className="font-semibold text-blue-800">Required Bond</h3>
                         {isLoadingBond ? (
@@ -308,7 +308,7 @@ export function ProposeTransactionModal({
                         )}
                     </div>
 
-                    <div>
+                    <div className="space-y-4">
                         <Label>Transaction Type</Label>
                         <Select value={currentType} onValueChange={(value: TransactionType) => setCurrentType(value)}>
                             <SelectTrigger>
@@ -322,7 +322,7 @@ export function ProposeTransactionModal({
                         </Select>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         <div>
                             <Label htmlFor="justification-title">Title</Label>
                             <Input
@@ -344,9 +344,8 @@ export function ProposeTransactionModal({
                         </div>
                     </div>
 
-                    {/* Form fields for different transaction types */}
                     {currentType === 'native' && (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             <div>
                                 <Label>Recipient Address</Label>
                                 <Input
@@ -375,7 +374,7 @@ export function ProposeTransactionModal({
                     )}
 
                     {currentType === 'erc20' && (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             <div>
                                 <Label>Token</Label>
                                 <Select value={currentToken} onValueChange={setCurrentToken}>
@@ -424,7 +423,7 @@ export function ProposeTransactionModal({
                     )}
 
                     {currentType === 'custom' && (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             <div>
                                 <Label>Target Address</Label>
                                 <Input
@@ -459,7 +458,7 @@ export function ProposeTransactionModal({
                         </div>
                     )}
 
-                    <div className="mt-4">
+                    <div className="mt-6">
                         <h3 className="font-semibold mb-2">Current Transactions</h3>
                         {transactions.length === 0 ? (
                             <p className="text-sm text-gray-500">No transactions added yet</p>
@@ -534,7 +533,7 @@ export function ProposeTransactionModal({
                     </div>
                 </div>
 
-                <DialogFooter className="mt-4 pt-2 border-t">
+                <DialogFooter className="mt-6 pt-4 border-t">
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
                     <Button
                         onClick={handlePropose}
