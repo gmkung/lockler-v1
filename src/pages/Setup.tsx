@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { parseEther, formatEther, BrowserProvider } from "ethers";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -263,7 +263,7 @@ export default function Setup() {
                                     setSelectedChainId(chainId);
                                 }}
                             >
-                                <SelectTrigger className="h-7 w-[140px] text-xs bg-purple-800/30 border-purple-600">
+                                <SelectTrigger className="h-7 w-[140px] text-xs bg-purple-800/30 border-purple-600 text-soft-purple">
                                     <SelectValue>
                                         {selectedChainId && CHAIN_CONFIG[selectedChainId]?.name
                                             ? CHAIN_CONFIG[selectedChainId].name
@@ -272,7 +272,11 @@ export default function Setup() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {Object.entries(CHAIN_CONFIG).map(([id, config]) => (
-                                        <SelectItem key={id} value={id}>
+                                        <SelectItem 
+                                            key={id} 
+                                            value={id} 
+                                            className="text-soft-purple hover:bg-purple-900/30"
+                                        >
                                             {config.name}
                                         </SelectItem>
                                     ))}
