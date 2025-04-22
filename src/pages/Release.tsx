@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
@@ -177,17 +178,20 @@ export default function Release() {
     <div className="min-h-screen bg-gradient-to-br from-[#23213A] to-[#2D274B] py-6 px-4">
       <div className="container mx-auto max-w-7xl">
         <Card className="bg-[#2D274B] border-gray-800 rounded-3xl shadow-2xl">
-          <CardHeader className="border-b border-gray-800 p-6">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center flex-wrap gap-4">
-                <div className="flex-grow">
-                  <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-                    <Logo className="h-7 w-7 text-pink-400" />
-                    Lockler Control
-                  </h1>
-                  <p className="text-gray-300 mt-1">Secure fund management, secured by the Kleros Optimistic Oracle</p>
+          <CardHeader className="border-b border-gray-800">
+            <div className="space-y-4">
+              {/* Top Section */}
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+                      <Logo className="h-7 w-7 text-pink-400" />
+                      Lockler Control
+                    </h1>
+                    <p className="text-gray-300 mt-1">Secure fund management, secured by the Kleros Optimistic Oracle</p>
+                  </div>
                 </div>
-                <div className="flex gap-4 items-center">
+                <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-200">
                       {CHAIN_CONFIG[chainId]?.name || 'Unknown Network'}
@@ -219,47 +223,46 @@ export default function Release() {
                 </div>
               </div>
 
+              {/* Security Status Bar */}
               {moduleAddress && modules.length > 0 && (
-                <div className="flex flex-wrap items-center gap-4 p-4 bg-gray-800/50 rounded-xl border border-gray-700/50">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-green-500" />
-                    <span className="text-sm font-medium text-gray-200">Security Status</span>
-                    <SecurityChecksModal modules={modules} />
-                  </div>
-                  <div className="flex-1 flex flex-wrap items-center gap-4">
-                    <div className="flex-1 min-w-[200px]">
+                <div className="flex items-center justify-between p-3 bg-[#1A1F2C] rounded-xl">
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-5 w-5 text-green-500" />
+                      <span className="text-sm font-medium text-gray-200">Security Status</span>
+                      <Badge variant="secondary" className="bg-[#2D274B] text-gray-200">
+                        {modules[0]?.validationChecks ? 
+                          Object.values(modules[0].validationChecks).filter(Boolean).length : 0} of 8 checks passed
+                      </Badge>
+                      <SecurityChecksModal modules={modules} />
+                    </div>
+                    <div className="flex items-center gap-6">
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-400">Safe:</span>
-                        <code className="text-xs bg-gray-900/50 px-2 py-1 rounded text-gray-300">
+                        <code className="text-xs bg-[#2D274B] px-2 py-1 rounded text-gray-300">
                           {safeAddress?.slice(0, 6)}...{safeAddress?.slice(-4)}
                         </code>
                         {blockExplorer && (
-                          <a
+                          <ExternalLink
                             href={`${blockExplorer}/address/${safeAddress}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
                             className="text-gray-400 hover:text-gray-300"
                           >
                             <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
+                          </ExternalLink>
                         )}
                       </div>
-                    </div>
-                    <div className="flex-1 min-w-[200px]">
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-400">Module:</span>
-                        <code className="text-xs bg-gray-900/50 px-2 py-1 rounded text-gray-300">
+                        <code className="text-xs bg-[#2D274B] px-2 py-1 rounded text-gray-300">
                           {moduleAddress?.slice(0, 6)}...{moduleAddress?.slice(-4)}
                         </code>
                         {blockExplorer && (
-                          <a
+                          <ExternalLink
                             href={`${blockExplorer}/address/${moduleAddress}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
                             className="text-gray-400 hover:text-gray-300"
                           >
                             <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
+                          </ExternalLink>
                         )}
                       </div>
                     </div>
@@ -268,6 +271,7 @@ export default function Release() {
               )}
             </div>
           </CardHeader>
+
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
