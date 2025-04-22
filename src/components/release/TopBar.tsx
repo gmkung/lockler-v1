@@ -1,12 +1,11 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Logo } from "../ui/logo";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
-import { ShieldCheck, Info } from "lucide-react";
-import { SecurityChecksModal } from "./SecurityChecksModal";
 import { ExternalLink } from "lucide-react";
 import { CHAIN_CONFIG, getBlockExplorer } from "../../lib/constants";
+import { SecurityChecksModal } from "./SecurityChecksModal";
+import { CheckCircle2, Info } from "lucide-react";
 
 interface TopBarProps {
   chainId: number;
@@ -40,8 +39,9 @@ export function TopBar({
   onSetupNew
 }: TopBarProps) {
   const blockExplorer = getBlockExplorer(chainId);
+  const [checksOpen, setChecksOpen] = useState(false);
 
-  // Security status data
+  // Find the module, compute total/passed checks
   const module = modules && modules[0];
   const securityChecks = module
     ? [
@@ -53,36 +53,25 @@ export function TopBar({
   const totalChecks = securityChecks.length;
   const passedChecks = securityChecks.filter(Boolean).length;
 
+  const allChecksPassed = passedChecks === totalChecks && totalChecks > 0;
+
   return (
-    <div className="w-full rounded-2xl bg-[#242132] border border-gray-800 p-4 px-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg mb-3">
-      {/* Left: Logo/Title */}
-      <div className="flex items-center gap-4 flex-1 min-w-0">
+    <div className="w-full rounded-2xl bg-[#242132] border border-gray-800 p-3 px-4 flex flex-col md:flex-row items-center justify-between gap-2 shadow-lg mb-3">
+      {/* Left Section: Logo + Lockler Title */}
+      <div className="flex items-center gap-3 flex-1 min-w-0">
         <Logo className="h-7 w-7 text-pink-400 shrink-0" />
         <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white leading-7 truncate">
+          <h1 className="text-xl sm:text-2xl font-bold text-white leading-7 truncate">
             Lockler Control
           </h1>
-          <div className="flex items-center gap-2 mt-1 text-sm text-gray-300">
-            <span>Secured by Kleros Optimistic Oracle</span>
-            <span className="hidden sm:inline text-gray-400">|</span>
-            <span className="text-xs text-gray-400">{CHAIN_CONFIG[chainId]?.name}</span>
-          </div>
+          <span className="text-xs text-gray-400">{CHAIN_CONFIG[chainId]?.name}</span>
         </div>
       </div>
-      {/* Middle: Security Status */}
-      <div className="flex items-center gap-3 bg-[#2D274B] rounded-xl px-4 py-2 border border-gray-700 min-w-[210px]">
-        <ShieldCheck className="h-5 w-5 text-green-500 shrink-0" />
-        <span className="text-sm text-gray-100 font-medium">Security:</span>
-        <Badge variant="secondary" className="bg-[#25214A] text-gray-200 px-2 min-w-[82px] text-center">
-          {passedChecks} / {totalChecks} checks
-        </Badge>
-        <SecurityChecksModal modules={modules} />
-      </div>
-      {/* Right: Addresses & Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 min-w-0">
+      {/* Right Section: Addresses + Security Icon + Actions */}
+      <div className="flex flex-col sm:flex-row items-center gap-2 min-w-0">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-xs text-gray-400">Safe:</span>
-          <code className="text-xs bg-[#2D274B] px-2 py-1 rounded text-gray-300 truncate max-w-[100px] sm:max-w-[130px]">
+          <code className="text-xs bg-[#2D274B] px-2 py-1 rounded text-gray-300 truncate max-w-[90px] sm:max-w-[120px]">
             {safeAddress ? `${safeAddress.slice(0, 6)}...${safeAddress.slice(-4)}` : '--'}
           </code>
           {blockExplorer && safeAddress && (
@@ -93,13 +82,13 @@ export function TopBar({
               className="text-gray-400 hover:text-gray-300"
               aria-label="Safe on block explorer"
             >
-              <ExternalLink className="h-3.5 w-3.5" />
+              <ExternalLink className="h-4 w-4" />
             </a>
           )}
         </div>
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1 min-w-0">
           <span className="text-xs text-gray-400">Module:</span>
-          <code className="text-xs bg-[#2D274B] px-2 py-1 rounded text-gray-300 truncate max-w-[100px] sm:max-w-[130px]">
+          <code className="text-xs bg-[#2D274B] px-2 py-1 rounded text-gray-300 truncate max-w-[90px] sm:max-w-[120px]">
             {moduleAddress ? `${moduleAddress.slice(0, 6)}...${moduleAddress.slice(-4)}` : '--'}
           </code>
           {blockExplorer && moduleAddress && (
@@ -110,19 +99,40 @@ export function TopBar({
               className="text-gray-400 hover:text-gray-300"
               aria-label="Module on block explorer"
             >
-              <ExternalLink className="h-3.5 w-3.5" />
+              <ExternalLink className="h-4 w-4" />
             </a>
           )}
+          {/* Security Check Icon */}
+          <span className="ml-1 flex items-center">
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={() => setChecksOpen(true)}
+              className="cursor-pointer focus:outline-none"
+              aria-label="Security checks"
+            >
+              {allChecksPassed ? (
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+              ) : (
+                <Info className="h-5 w-5 text-yellow-400" />
+              )}
+            </span>
+            {/* Modal shown when checksOpen is true */}
+            {checksOpen && (
+              <SecurityChecksModal
+                modules={modules}
+              />
+            )}
+          </span>
         </div>
-        {/* Wallet/connect & setup (shown only if handlers provided) */}
-        <div className="flex items-center gap-3 ml-0 sm:ml-3 mt-2 sm:mt-0">
+        {/* Wallet/connect & setup */}
+        <div className="flex items-center gap-2 ml-0 sm:ml-3 mt-2 sm:mt-0">
           {!walletAddress && onConnectWallet && (
             <Button
               onClick={onConnectWallet}
               variant="outline"
               className="flex items-center gap-2 bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700"
             >
-              <Info className="h-4 w-4 mr-1" />
               Connect Wallet
             </Button>
           )}
@@ -144,6 +154,12 @@ export function TopBar({
           )}
         </div>
       </div>
+      {/* SecurityChecksModal as a dialog */}
+      <SecurityChecksModal
+        modules={modules}
+        open={checksOpen}
+        onOpenChange={setChecksOpen}
+      />
     </div>
   );
 }
