@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { getBlockExplorer, CHAIN_CONFIG, getRpcUrl, TOKENS } from '../lib/constants';
+import { getBlockExplorer, CHAIN_CONFIG, getRpcUrl, TOKENS, SUPPORTED_CHAINS } from '../lib/constants';
 import { ProposeTransactionModal } from '../components/ProposeTransactionModal';
 import { useQuestions } from '../hooks/useQuestions';
 import { useRealityModule } from '../hooks/useRealityModule';
