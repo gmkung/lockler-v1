@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Logo } from "../ui/logo";
 import { Button } from "../ui/button";
@@ -57,51 +56,55 @@ export function TopBar({
 
   return (
     <div className="w-full rounded-2xl bg-[#242132] border border-gray-800 p-3 px-4 flex flex-col md:flex-row items-center justify-between gap-2 shadow-lg mb-3">
-      {/* Left Section: Logo + Lockler Title */}
+      {/* Left Section: Logo + Lockler Title + Chain/Addresses */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <Logo className="h-7 w-7 text-pink-400 shrink-0" />
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-white leading-7 truncate">
             Lockler Control
           </h1>
-          <span className="text-xs text-gray-400">{CHAIN_CONFIG[chainId]?.name}</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+            <span className="text-xs text-gray-400">{CHAIN_CONFIG[chainId]?.name}</span>
+            <span className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">Safe:</span>
+              <code className="text-xs bg-[#2D274B] px-2 py-1 rounded text-gray-300 truncate max-w-[90px] sm:max-w-[120px]">
+                {safeAddress ? `${safeAddress.slice(0, 6)}...${safeAddress.slice(-4)}` : '--'}
+              </code>
+              {blockExplorer && safeAddress && (
+                <a
+                  href={`${blockExplorer}/address/${safeAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-gray-300"
+                  aria-label="Safe on block explorer"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              )}
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">Module:</span>
+              <code className="text-xs bg-[#2D274B] px-2 py-1 rounded text-gray-300 truncate max-w-[90px] sm:max-w-[120px]">
+                {moduleAddress ? `${moduleAddress.slice(0, 6)}...${moduleAddress.slice(-4)}` : '--'}
+              </code>
+              {blockExplorer && moduleAddress && (
+                <a
+                  href={`${blockExplorer}/address/${moduleAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-gray-300"
+                  aria-label="Module on block explorer"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              )}
+            </span>
+          </div>
         </div>
       </div>
-      {/* Right Section: Addresses + Security Icon + Actions */}
+      {/* Right Section: Security Check, Wallet/Connect button, Setup New */}
       <div className="flex flex-col sm:flex-row items-center gap-2 min-w-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xs text-gray-400">Safe:</span>
-          <code className="text-xs bg-[#2D274B] px-2 py-1 rounded text-gray-300 truncate max-w-[90px] sm:max-w-[120px]">
-            {safeAddress ? `${safeAddress.slice(0, 6)}...${safeAddress.slice(-4)}` : '--'}
-          </code>
-          {blockExplorer && safeAddress && (
-            <a
-              href={`${blockExplorer}/address/${safeAddress}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-gray-300"
-              aria-label="Safe on block explorer"
-            >
-              <ExternalLink className="h-4 w-4" />
-            </a>
-          )}
-        </div>
         <div className="flex items-center gap-1 min-w-0">
-          <span className="text-xs text-gray-400">Module:</span>
-          <code className="text-xs bg-[#2D274B] px-2 py-1 rounded text-gray-300 truncate max-w-[90px] sm:max-w-[120px]">
-            {moduleAddress ? `${moduleAddress.slice(0, 6)}...${moduleAddress.slice(-4)}` : '--'}
-          </code>
-          {blockExplorer && moduleAddress && (
-            <a
-              href={`${blockExplorer}/address/${moduleAddress}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-gray-300"
-              aria-label="Module on block explorer"
-            >
-              <ExternalLink className="h-4 w-4" />
-            </a>
-          )}
           {/* Security Check Icon */}
           <span className="ml-1 flex items-center">
             <span
@@ -111,7 +114,13 @@ export function TopBar({
               className="cursor-pointer focus:outline-none"
               aria-label="Security checks"
             >
-              {allChecksPassed ? (
+              {modules && modules[0] && [
+                modules[0].isEnabled,
+                modules[0].isRealityModule,
+                ...Object.values(modules[0].validationChecks)
+              ].filter(Boolean).length === (
+                [modules[0].isEnabled, modules[0].isRealityModule, ...Object.values(modules[0].validationChecks)].length
+              ) && [modules[0].isEnabled, modules[0].isRealityModule, ...Object.values(modules[0].validationChecks)].length > 0 ? (
                 <CheckCircle2 className="h-5 w-5 text-green-500" />
               ) : (
                 <Info className="h-5 w-5 text-yellow-400" />
