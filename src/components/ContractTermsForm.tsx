@@ -1,4 +1,3 @@
-
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent } from "./ui/card";
@@ -17,7 +16,6 @@ interface ContractTermsFormProps {
 const inputClass = "rounded-xl bg-gray-900 mt-1 text-white text-sm border-0 focus:ring-2 focus:ring-pink-400";
 const selectClass = "rounded-xl bg-gray-900 text-white px-2 py-1 text-sm border-0 focus:ring-2 focus:ring-purple-500";
 const cardClass = "rounded-3xl bg-gradient-to-br from-[#23213A] to-[#2D274B] border border-gray-800 shadow-md";
-// Animations and pastel lines for extra cutesy-ness
 
 export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode, chainId }: ContractTermsFormProps) {
   const getAvailableTokens = () => {
@@ -66,13 +64,13 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
   };
 
   return (
-    <div className={`${cardClass} p-4`}>
+    <div className={`${cardClass} p-6 w-full max-w-[1200px] mx-auto`}>
       <h3 className="text-xl font-extrabold mb-6 text-gradient-primary text-white tracking-tight">
         Contract Terms
       </h3>
-      <div className="grid gap-7 sm:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2">
         {/* Input Fields Column */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Basic Info */}
           <div>
             <Label htmlFor="title" className="text-purple-100 font-semibold">Title</Label>
@@ -87,12 +85,11 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
 
           <div>
             <Label htmlFor="description" className="text-purple-100 font-semibold">Description</Label>
-            <Input
-              as="textarea"
+            <textarea
               id="description"
               value={contractTerms.description}
               onChange={(e) => setContractTerms({ ...contractTerms, description: e.target.value })}
-              className={inputClass + " min-h-[40px]"}
+              className={inputClass + " min-h-[80px] w-full"}
               placeholder="Describe what triggers release (e.g. Design delivery, bug bounty, etc)"
             />
           </div>
@@ -101,7 +98,7 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
           <div>
             <Label className="text-purple-100 font-semibold">Payments</Label>
             {contractTerms.payments.map((payment, index) => (
-              <div key={index} className="flex flex-col sm:flex-row sm:gap-2 gap-1 mt-2 bg-[#1a1831] p-2 rounded-xl">
+              <div key={index} className="flex flex-col lg:flex-row lg:gap-3 gap-2 mt-3 bg-[#1a1831] p-3 rounded-xl">
                 <Input
                   placeholder="Address"
                   value={payment.address}
@@ -131,7 +128,7 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
                   <Button
                     type="button"
                     variant="destructive"
-                    className="mt-2 sm:mt-0"
+                    className="mt-2 lg:mt-0"
                     onClick={() => removePayment(index)}
                   >
                     Remove
@@ -140,7 +137,7 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
               </div>
             ))}
             {escrowMode === 'grant' && (
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-3 mt-4">
                 <Button type="button" onClick={() => addPayment('sender')} className="rounded-full bg-gradient-to-r from-indigo-400 to-purple-500 text-white shadow">
                   Add Sender
                 </Button>
@@ -151,12 +148,13 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
             )}
           </div>
         </div>
+
         {/* JSON Preview Column */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           <Label className="text-purple-100 font-semibold">Preview</Label>
           <Card className="h-full bg-[#1a1831] border border-purple-800 rounded-2xl shadow-lg">
             <CardContent className="p-4">
-              <pre className="text-xs text-purple-100 overflow-auto max-h-[250px] font-mono">
+              <pre className="text-xs text-purple-100 overflow-auto max-h-[350px] font-mono">
                 {JSON.stringify(contractTerms, null, 2)}
               </pre>
             </CardContent>
