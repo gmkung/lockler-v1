@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
@@ -290,12 +291,12 @@ export function ProposeTransactionModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>Propose Transaction</DialogTitle>
                 </DialogHeader>
 
-                <div className="space-y-4">
+                <div className="space-y-4 flex-1 overflow-y-auto">
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
                         <h3 className="font-semibold text-blue-800">Required Bond</h3>
                         {isLoadingBond ? (
@@ -344,6 +345,7 @@ export function ProposeTransactionModal({
                         </div>
                     </div>
 
+                    {/* Form fields for different transaction types */}
                     {currentType === 'native' && (
                         <>
                             <div>
@@ -445,7 +447,7 @@ export function ProposeTransactionModal({
                         {transactions.length === 0 ? (
                             <p className="text-sm text-gray-500">No transactions added yet</p>
                         ) : (
-                            <ScrollArea className="h-[40vh]">
+                            <ScrollArea className="h-[200px]">
                                 <div className="space-y-2">
                                     {transactions.map((tx, index) => {
                                         const decoded = decodeCalldata(tx.data, tx.type, tx.to);
@@ -526,7 +528,7 @@ export function ProposeTransactionModal({
                     </Button>
                 </div>
 
-                <DialogFooter>
+                <DialogFooter className="mt-4 pt-2 border-t">
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
                     <Button
                         onClick={handlePropose}
