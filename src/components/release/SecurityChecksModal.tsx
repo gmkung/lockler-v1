@@ -1,8 +1,8 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "../ui/button";
 import { getSecurityIcon } from "./utils";
 import { CircleCheck, Info } from "lucide-react";
+import { Dispatch, SetStateAction } from "react";
 
 interface SecurityChecksModalProps {
   modules: Array<{
@@ -18,9 +18,11 @@ interface SecurityChecksModalProps {
       isOnlyEnabledModule: boolean;
     };
   }>;
+  open?: boolean;
+  onOpenChange?: Dispatch<SetStateAction<boolean>>;
 }
 
-export function SecurityChecksModal({ modules }: SecurityChecksModalProps) {
+export function SecurityChecksModal({ modules, open, onOpenChange }: SecurityChecksModalProps) {
   const module = modules[0];
   if (!module) return null;
 
@@ -31,7 +33,43 @@ export function SecurityChecksModal({ modules }: SecurityChecksModalProps) {
     ...Object.values(module.validationChecks)
   ].filter(Boolean).length;
 
-  return (
+  // If open and onOpenChange are provided, use them for controlled dialog
+  // Otherwise, use the dialog in uncontrolled mode
+  return open !== undefined && onOpenChange ? (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-gray-900 border-gray-800">
+        <DialogHeader>
+          <DialogTitle className="text-white">Security Verification Details</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 mt-4">
+          <div className="grid grid-cols-1 gap-2">
+            <div className="flex justify-between items-center p-2 rounded hover:bg-gray-800/50">
+              <span className="text-sm text-gray-200">Module Enabled:</span>
+              <span className={module.isEnabled ? "text-green-400" : "text-red-400"}>
+                {getSecurityIcon(module.isEnabled)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center p-2 rounded hover:bg-gray-800/50">
+              <span className="text-sm text-gray-200">Reality Module Verification:</span>
+              <span className={module.isRealityModule ? "text-green-400" : "text-red-400"}>
+                {getSecurityIcon(module.isRealityModule)}
+              </span>
+            </div>
+            {Object.entries(module.validationChecks).map(([key, value]) => (
+              <div key={key} className="flex justify-between items-center p-2 rounded hover:bg-gray-800/50">
+                <span className="text-sm text-gray-200">
+                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
+                </span>
+                <span className={value ? "text-green-400" : "text-red-400"}>
+                  {getSecurityIcon(value)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  ) : (
     <Dialog>
       <DialogTrigger asChild>
         <Button 
