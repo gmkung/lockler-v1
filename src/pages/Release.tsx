@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { getBlockExplorer, CHAIN_CONFIG, getRpcUrl } from '../lib/constants';
+import { getBlockExplorer, CHAIN_CONFIG, getRpcUrl, TOKENS } from '../lib/constants';
 import { ProposeTransactionModal } from '../components/ProposeTransactionModal';
 import { useQuestions } from '../hooks/useQuestions';
 import { useRealityModule } from '../hooks/useRealityModule';
@@ -10,7 +10,7 @@ import { handleExecuteTransaction } from '../lib/transactions';
 import { useTransactionStatus } from '../hooks/useTransactionStatus';
 import { useAccount, useConnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
-import { Wallet, Shield } from 'lucide-react';
+import { Wallet, Shield, ExternalLink as ExternalLinkIcon } from 'lucide-react';
 import { ProposalTransaction } from '../lib/types';
 import { ErrorState } from '../components/release/ErrorState';
 import { LoadingState } from '../components/release/LoadingState';
@@ -60,6 +60,49 @@ export default function Release() {
     setTransactionStatuses 
   } = useTransactionStatus(questions, moduleAddress, chainId);
 
+  const getCurrencyInfo = (address: string, chainId: number | null) => {
+    if (address === TOKENS.NATIVE.address) {
+      return {
+        symbol: chainId === SUPPORTED_CHAINS.GNOSIS ? 'xDAI' : TOKENS.NATIVE.symbol,
+        decimals: TOKENS.NATIVE.decimals
+      };
+    }
+
+    if (chainId && TOKENS.USDC[chainId] && TOKENS.USDC[chainId].address.toLowerCase() === address.toLowerCase()) {
+      return TOKENS.USDC[chainId];
+    }
+
+    if (chainId === SUPPORTED_CHAINS.MAINNET && 
+        TOKENS.PNK[SUPPORTED_CHAINS.MAINNET] && 
+        TOKENS.PNK[SUPPORTED_CHAINS.MAINNET].address.toLowerCase() === address.toLowerCase()) {
+      return TOKENS.PNK[SUPPORTED_CHAINS.MAINNET];
+    }
+
+    return {
+      symbol: 'UNKNOWN',
+      decimals: 18
+    };
+  };
+
+  const handleExecuteTransactionWrapper = async (
+    question: Question,
+    transaction: ProposalTransaction,
+    txIndex: number
+  ) => {
+    if (!moduleAddress || !chainId) return;
+
+    const newStatuses = await handleExecuteTransaction(
+      moduleAddress,
+      question,
+      transaction,
+      txIndex,
+      transactionDetails,
+      Number(chainId)
+    );
+
+    setTransactionStatuses(prev => ({ ...prev, ...newStatuses }));
+  };
+
   useEffect(() => {
     const validateSafe = async () => {
       if (!chainId || !safeAddress) return;
@@ -97,25 +140,6 @@ export default function Release() {
     
     parseTemplateContent();
   }, [templateContent]);
-
-  const handleExecuteTransactionWrapper = async (
-    question: Question,
-    transaction: ProposalTransaction,
-    txIndex: number
-  ) => {
-    if (!moduleAddress || !chainId) return;
-
-    const newStatuses = await handleExecuteTransaction(
-      moduleAddress,
-      question,
-      transaction,
-      txIndex,
-      transactionDetails,
-      Number(chainId)
-    );
-
-    setTransactionStatuses(prev => ({ ...prev, ...newStatuses }));
-  };
 
   if (!chainId || !CHAIN_CONFIG[chainId]) {
     return (
@@ -207,16 +231,18 @@ export default function Release() {
               <div className="md:col-span-2 space-y-6">
                 {formattedTerms && (
                   <div className="bg-gray-900 rounded-3xl border border-gray-800 p-5 shadow-2xl">
-                    <div className="flex justify-between items-start mb-4">
-                      <h2 className="text-xl font-semibold text-white">Fund Release Conditions</h2>
-                      {formattedTerms.ipfsUrl && (
-                        <ExternalLink 
-                          href={formattedTerms.ipfsUrl}
-                          className="bg-purple-900/30 hover:bg-purple-900/50 px-3 py-1 rounded-md border border-purple-500/30"
-                        >
-                          View Full Terms
-                        </ExternalLink>
-                      )}
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                        Fund Release Conditions
+                        {formattedTerms.ipfsUrl && (
+                          <ExternalLink 
+                            href={formattedTerms.ipfsUrl}
+                            className="text-purple-400 hover:text-purple-300"
+                            iconOnly
+                            title="View Full Terms on IPFS"
+                          />
+                        )}
+                      </h2>
                     </div>
                     <div className="bg-gray-800 rounded-lg border border-gray-700 divide-y divide-gray-700">
                       <div className="p-4">
@@ -235,20 +261,23 @@ export default function Release() {
                         <div className="p-4">
                           <h3 className="text-sm font-medium text-gray-400 mb-2">Participants</h3>
                           <div className="space-y-3">
-                            {formattedTerms.payments.map((payment, index) => (
-                              <div key={index} className="flex items-center justify-between bg-gray-900/50 p-3 rounded-lg">
-                                <div>
-                                  <span className="text-xs text-gray-400 capitalize">{payment.role}</span>
-                                  <p className="text-sm text-gray-200 font-mono">
-                                    {payment.address.slice(0, 6)}...{payment.address.slice(-4)}
-                                  </p>
+                            {formattedTerms.payments.map((payment, index) => {
+                              const currencyInfo = getCurrencyInfo(payment.currency, chainId);
+                              return (
+                                <div key={index} className="flex items-center justify-between bg-gray-900/50 p-3 rounded-lg">
+                                  <div>
+                                    <span className="text-xs text-gray-400 capitalize">{payment.role}</span>
+                                    <p className="text-sm text-gray-200 font-mono">
+                                      {payment.address.slice(0, 6)}...{payment.address.slice(-4)}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="text-sm text-gray-200">{payment.amount}</span>
+                                    <p className="text-xs text-gray-400">{currencyInfo.symbol}</p>
+                                  </div>
                                 </div>
-                                <div className="text-right">
-                                  <span className="text-sm text-gray-200">{payment.amount}</span>
-                                  <p className="text-xs text-gray-400">{payment.currency}</p>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       )}
