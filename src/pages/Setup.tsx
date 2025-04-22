@@ -419,7 +419,7 @@ export default function Setup() {
                 )}
 
                 {step === 2 && (
-                    <>
+                    <div className="w-full max-w-[1200px] mx-auto animate-scale-in">
                         <div className="mt-3 mb-4 text-center px-1">
                             <div className="text-sm text-purple-300 font-semibold mb-1">
                                 Step 2 of 3
@@ -431,7 +431,8 @@ export default function Setup() {
                                 Kleros Reality Module secures your Lockler with cheerful verification!
                             </p>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 mb-3 px-1">
+                        
+                        <div className="grid grid-cols-2 gap-4 mb-6">
                             <div>
                                 <Label className="text-purple-100 text-xs">Question Bond</Label>
                                 <Input
@@ -486,8 +487,9 @@ export default function Setup() {
                                 />
                             </div>
                         </div>
-                        <div className="rounded-lg bg-purple-900/30 border border-purple-700 px-2 py-2 mb-2 max-h-52 overflow-y-auto">
-                            <div className="text-xs text-purple-200 mb-1 font-semibold">Fund Release Conditions</div>
+
+                        <div className="bg-purple-900/30 border border-purple-700 p-6 rounded-2xl mb-6">
+                            <div className="text-lg text-purple-100 font-semibold mb-4">Fund Release Conditions</div>
                             <ContractTermsForm
                                 contractTerms={contractTerms}
                                 setContractTerms={setContractTerms}
@@ -495,16 +497,15 @@ export default function Setup() {
                                 chainId={selectedChainId}
                             />
                         </div>
+
                         <Button
                             onClick={handleModuleDeploy}
                             disabled={!(deployedSafeAddress || existingSafeAddress) || loading}
-                            className="w-full py-3 rounded-3xl bg-gradient-to-br from-pink-500 to-purple-500 mt-2 text-lg"
+                            className="w-full py-3 rounded-3xl text-lg bg-gradient-to-br from-pink-500 to-purple-500"
                         >
-                            {loading ? "Deploying…"
-                                : moduleDeploymentHash
-                                    ? "Security System Ready!"
-                                    : "Create Security System"}
+                            {loading ? "Deploying…" : moduleDeploymentHash ? "Security System Ready!" : "Create Security System"}
                         </Button>
+
                         {moduleDeploymentHash && (
                             <div className="rounded-xl bg-gradient-to-r from-purple-600/20 to-fuchsia-500/10 mt-4 py-3 px-4 border border-purple-800 text-white text-sm text-center shadow">
                                 <div className="mb-1">
@@ -521,7 +522,7 @@ export default function Setup() {
                                 </Button>
                             </div>
                         )}
-                    </>
+                    </div>
                 )}
 
                 {step === 3 && (

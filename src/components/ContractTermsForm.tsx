@@ -2,6 +2,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
+import { Textarea } from "./ui/textarea";
 import { EscrowContractTerms, Payment } from "../lib/types";
 import { TOKENS } from "../lib/constants";
 
@@ -64,10 +65,7 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
   };
 
   return (
-    <div className={`${cardClass} p-6 w-full max-w-[1200px] mx-auto`}>
-      <h3 className="text-xl font-extrabold mb-6 text-gradient-primary text-white tracking-tight">
-        Contract Terms
-      </h3>
+    <div className="w-full">
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Input Fields Column */}
         <div className="space-y-6">
@@ -85,11 +83,11 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
 
           <div>
             <Label htmlFor="description" className="text-purple-100 font-semibold">Description</Label>
-            <textarea
+            <Textarea
               id="description"
               value={contractTerms.description}
               onChange={(e) => setContractTerms({ ...contractTerms, description: e.target.value })}
-              className={inputClass + " min-h-[80px] w-full"}
+              className={`${inputClass} min-h-[120px] w-full`}
               placeholder="Describe what triggers release (e.g. Design delivery, bug bounty, etc)"
             />
           </div>
@@ -154,7 +152,7 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
           <Label className="text-purple-100 font-semibold">Preview</Label>
           <Card className="h-full bg-[#1a1831] border border-purple-800 rounded-2xl shadow-lg">
             <CardContent className="p-4">
-              <pre className="text-xs text-purple-100 overflow-auto max-h-[350px] font-mono">
+              <pre className="text-xs text-purple-100 font-mono">
                 {JSON.stringify(contractTerms, null, 2)}
               </pre>
             </CardContent>
