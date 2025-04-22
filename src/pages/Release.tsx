@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { getBlockExplorer, CHAIN_CONFIG, getRpcUrl } from '../lib/constants';
+import { getBlockExplorer, CHAIN_CONFIG, getRpcUrl, SUPPORTED_CHAINS, TOKENS } from '../lib/constants';
 import { ProposeTransactionModal } from '../components/ProposeTransactionModal';
 import { useQuestions } from '../hooks/useQuestions';
 import { useRealityModule } from '../hooks/useRealityModule';
@@ -17,6 +17,8 @@ import { SecurityChecks } from '../components/release/SecurityChecks';
 import { TransactionList } from '../components/release/TransactionList';
 import { JsonRpcProvider } from 'ethers';
 import { FundReleaseConditions } from '../components/release/FundReleaseConditions';
+import { Question } from 'reality-kleros-subgraph';
+import { ProposalTransaction } from '../lib/types';
 
 export default function Release() {
   const { chainId: chainIdParam, address: safeAddress } = useParams<{ chainId: string; address: string }>();
@@ -59,7 +61,6 @@ export default function Release() {
   } = useTransactionStatus(questions, moduleAddress, chainId);
 
   const getCurrencyInfo = (address: string, chainId: number | null) => {
-    // Native currency
     if (address === TOKENS.NATIVE.address) {
       return {
         symbol: chainId === SUPPORTED_CHAINS.GNOSIS ? 'xDAI' : TOKENS.NATIVE.symbol,
@@ -67,14 +68,12 @@ export default function Release() {
       };
     }
 
-    // USDC for specific chain
-    if (chainId && TOKENS.USDC[chainId]) {
-      return TOKENS.USDC[chainId];
+    if (chainId && TOKENS.USDC[chainId as keyof typeof TOKENS.USDC]) {
+      return TOKENS.USDC[chainId as keyof typeof TOKENS.USDC];
     }
 
-    // PNK for mainnet
-    if (chainId === SUPPORTED_CHAINS.MAINNET && TOKENS.PNK[SUPPORTED_CHAINS.MAINNET]) {
-      return TOKENS.PNK[SUPPORTED_CHAINS.MAINNET];
+    if (chainId === SUPPORTED_CHAINS.MAINNET && TOKENS.PNK[SUPPORTED_CHAINS.MAINNET as keyof typeof TOKENS.PNK]) {
+      return TOKENS.PNK[SUPPORTED_CHAINS.MAINNET as keyof typeof TOKENS.PNK];
     }
 
     return {
