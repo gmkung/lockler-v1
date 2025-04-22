@@ -1,9 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-    BrowserProvider,
-    parseEther,
-    formatEther,
-} from "ethers";
+import { parseEther, formatEther } from "ethers";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -37,6 +33,11 @@ import { uploadContractTerms } from '../lib/ipfs';
 import { StepProgressBar } from "../components/StepProgressBar";
 import { StepWrapper } from "../components/StepWrapper";
 import { useNavigate } from "react-router-dom";
+import { ModeSelection } from "../components/setup/ModeSelection";
+import { RoleSelection } from "../components/setup/RoleSelection";
+import { CounterpartyInput } from "../components/setup/CounterpartyInput";
+import { SuccessStep } from "../components/setup/SuccessStep";
+import { useChainSelection } from "../hooks/useChainSelection";
 
 type EscrowMode = 'p2p' | 'grant';
 type P2PRole = 'sender' | 'receiver';
@@ -54,9 +55,7 @@ export default function Setup() {
     const [p2pRole, setP2PRole] = useState<P2PRole>('sender');
     const [counterpartyAddress, setCounterpartyAddress] = useState<string>("");
 
-    const [selectedChainId, setSelectedChainId] = useState<number>(SUPPORTED_CHAINS.GNOSIS); // Default to Gnosis
-    const [connectedChainId, setConnectedChainId] = useState<number | null>(null);
-    const [chainName, setChainName] = useState<string>("");
+    const { selectedChainId, setSelectedChainId, connectedChainId, chainName } = useChainSelection();
 
     const [saltNonce, setSaltNonce] = useState(DEFAULT_SALT_NONCE);
     const [deployedSafeAddress, setDeployedSafeAddress] = useState<string | null>(null);
@@ -81,31 +80,6 @@ export default function Setup() {
     const { toast } = useToast();
 
     useEffect(() => {
-        const handleChainChanged = (newChainId: string) => {
-            const parsedChainId = parseInt(newChainId, 16);
-            setConnectedChainId(parsedChainId);
-
-            const chainConfig = CHAIN_CONFIG[parsedChainId];
-            setChainName(chainConfig ? chainConfig.name : `Chain ${parsedChainId}`);
-        };
-
-        if (window.ethereum) {
-            window.ethereum.on('chainChanged', handleChainChanged);
-            window.ethereum.request({ method: 'eth_chainId' })
-                .then(handleChainChanged);
-        }
-
-        return () => {
-            if (window.ethereum) {
-                window.ethereum.removeListener('chainChanged', handleChainChanged);
-            }
-        };
-    }, []);
-
-    const contracts = getContractAddresses(selectedChainId);
-    const blockExplorer = getBlockExplorer(selectedChainId);
-
-    useEffect(() => {
         if (window.ethereum) {
             window.ethereum.request({ method: 'eth_requestAccounts' })
                 .then((accounts: string[]) => {
@@ -120,6 +94,9 @@ export default function Setup() {
                 });
         }
     }, [escrowMode, counterpartyAddress, p2pRole]);
+
+    const contracts = getContractAddresses(selectedChainId);
+    const blockExplorer = getBlockExplorer(selectedChainId);
 
     const handleSafeDeploy = async () => {
         setLoading(true);
@@ -316,84 +293,14 @@ export default function Setup() {
                             </div>
                         </div>
 
-                        <div className="flex gap-4 mb-5 px-1 flex-col xs:flex-row sm:flex-row justify-center">
-                            <button
-                                type="button"
-                                onClick={() => setEscrowMode('p2p')}
-                                className={`w-full xs:w-1/2 aspect-square max-w-[180px] transition-all rounded-2xl flex flex-col items-center justify-center px-4 py-5 shadow-lg border-2
-                                    ${escrowMode === 'p2p'
-                                        ? "bg-gradient-to-br from-purple-600 via-purple-600/90 to-indigo-600 ring-2 ring-fuchsia-400 border-transparent scale-105 text-white"
-                                        : "bg-[#242038] border border-purple-700 hover:bg-purple-800/30 text-white/85"
-                                    }
-                                    outline-none focus:outline-none`}
-                                style={{ minWidth: 0, wordBreak: 'break-word' }}
-                            >
-                                <div className="font-bold text-base mb-2 w-full text-center text-white">
-                                    Transfer Lockler
-                                </div>
-                                <div className={`text-xs text-center w-full break-words ${escrowMode === 'p2p' ? "text-purple-100" : "text-purple-300/90"}`}>
-                                    For one-to-one transfers needing both parties' agreement.
-                                </div>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setEscrowMode('grant')}
-                                className={`w-full xs:w-1/2 aspect-square max-w-[180px] transition-all rounded-2xl flex flex-col items-center justify-center px-4 py-5 shadow-lg border-2
-                                    ${escrowMode === 'grant'
-                                        ? "bg-gradient-to-br from-pink-500 via-fuchsia-500 to-pink-400 ring-2 ring-pink-300 border-transparent scale-105 text-white"
-                                        : "bg-[#242038] border border-purple-700 hover:bg-pink-900/20 text-white/85"
-                                    }
-                                    outline-none focus:outline-none`}
-                                style={{ minWidth: 0, wordBreak: 'break-word' }}
-                            >
-                                <div className="font-bold text-base mb-2 w-full text-center text-white">
-                                    Grant Lockler
-                                </div>
-                                <div className={`text-xs text-center w-full break-words ${escrowMode === 'grant' ? "text-pink-50" : "text-pink-100/80"}`}>
-                                    Distribute funds to recipients with security checks.
-                                </div>
-                            </button>
-                        </div>
-
-                        {escrowMode === 'p2p' && (
-                            <div className="mb-4 px-1 text-center">
-                                <label className="block text-purple-200 font-bold mb-2">
-                                    Your Role
-                                </label>
-                                <div className="flex gap-3 justify-center">
-                                    <Button
-                                        variant={p2pRole === 'sender' ? 'default' : 'outline'}
-                                        onClick={() => setP2PRole('sender')}
-                                        className={`rounded-full flex-1 min-w-[110px] text-sm transition-all ${p2pRole === 'sender' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' : 'bg-gray-800 text-gray-300'
-                                            }`}
-                                    >
-                                        I am the Sender
-                                    </Button>
-                                    <Button
-                                        variant={p2pRole === 'receiver' ? 'default' : 'outline'}
-                                        onClick={() => setP2PRole('receiver')}
-                                        className={`rounded-full flex-1 min-w-[110px] text-sm transition-all ${p2pRole === 'receiver' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white' : 'bg-gray-800 text-gray-300'
-                                            }`}
-                                    >
-                                        I am the Receiver
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-
-                        {escrowMode === 'p2p' && (
-                            <div className="mb-4 px-1">
-                                <Label className="text-purple-100 text-left block mb-1 text-sm">
-                                    {p2pRole === 'sender' ? 'Receiver' : 'Sender'} Address
-                                </Label>
-                                <Input
-                                    className="rounded-xl bg-gray-900 mt-1 text-white text-sm"
-                                    value={counterpartyAddress}
-                                    onChange={(e) => setCounterpartyAddress(e.target.value)}
-                                    placeholder={`Enter ${p2pRole === 'sender' ? 'receiver' : 'sender'} Ethereum address`}
-                                />
-                            </div>
-                        )}
+                        <ModeSelection escrowMode={escrowMode} setEscrowMode={setEscrowMode} />
+                        <RoleSelection escrowMode={escrowMode} p2pRole={p2pRole} setP2PRole={setP2PRole} />
+                        <CounterpartyInput
+                            escrowMode={escrowMode}
+                            p2pRole={p2pRole}
+                            counterpartyAddress={counterpartyAddress}
+                            setCounterpartyAddress={setCounterpartyAddress}
+                        />
 
                         <Button
                             className="w-full py-3 rounded-3xl text-lg bg-gradient-to-br from-pink-500 to-purple-500 mt-4 font-bold transition-colors shadow-lg"
@@ -418,7 +325,7 @@ export default function Setup() {
                                 Kleros Reality Module secures your Lockler with cheerful verification!
                             </p>
                         </div>
-                        
+
                         <div className="bg-purple-900/30 border border-purple-700 p-6 rounded-2xl mb-6">
                             <div className="text-lg text-purple-100 font-semibold mb-4">Fund Release Conditions</div>
                             <ContractTermsForm
@@ -457,62 +364,12 @@ export default function Setup() {
                 )}
 
                 {step === 3 && (
-                    <div className="flex flex-col items-center text-center animate-fade-in">
-                        <div className="text-3xl mb-2 font-extrabold tracking-tight text-gradient-primary">
-                            🎉 Tadaa!
-                        </div>
-                        <div className="text-xl text-white font-bold mb-3">
-                            Your single-purpose Lockler is ready 🚀
-                        </div>
-                        <div className="mb-4 text-purple-200 max-w-xs">
-                            Share your Lockler address below to receive deposits, or view & release funds anytime.
-                        </div>
-                        <div className="w-full flex flex-col gap-2 mb-4">
-                            <div className="flex flex-col items-center gap-1 rounded-3xl border border-purple-700 bg-[rgba(44,36,71,0.98)] px-5 py-3">
-                                <span className="text-xs uppercase tracking-widest text-purple-400">Lockler Address</span>
-                                <div className="flex items-center mt-1 gap-2 select-text">
-                                    <span className="font-mono text-white text-sm truncate max-w-[18ch]">{deployedSafeAddress}</span>
-                                    <button
-                                        aria-label="Copy address"
-                                        onClick={handleCopyAddress}
-                                        className="p-1 hover:bg-fuchsia-700/30 rounded transition"
-                                    >
-                                        <Copy size={18} className="text-pink-300" />
-                                    </button>
-                                    <a
-                                        href={`/release/${selectedChainId}/${deployedSafeAddress}`}
-                                        className="p-1 hover:bg-indigo-700/30 rounded transition"
-                                        target="_blank" rel="noopener noreferrer"
-                                        aria-label="View Lockler"
-                                    >
-                                        <ExternalLink size={18} className="text-indigo-300" />
-                                    </a>
-                                </div>
-                                {transactionData?.contractAddress && (
-                                    <div className="mt-2 text-xs text-purple-300">
-                                        <span className="font-semibold">Security Module:</span> {transactionData.contractAddress}
-                                    </div>
-                                )}
-                                <div className="flex gap-2 mt-2 w-full">
-                                    <Button
-                                        className="flex-1 rounded-full bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white"
-                                        onClick={handleCopyAddress}
-                                    >
-                                        Copy Address
-                                    </Button>
-                                    <Button
-                                        className="flex-1 rounded-full bg-gradient-to-r from-indigo-400 to-fuchsia-600 text-white"
-                                        onClick={() => window.open(`/release/${selectedChainId}/${deployedSafeAddress}`, "_blank")}
-                                    >
-                                        View Lockler
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="text-purple-200 text-xs mt-2">
-                            You can now use your Lockler to securely store and release funds!
-                        </div>
-                    </div>
+                    <SuccessStep
+                        deployedSafeAddress={deployedSafeAddress}
+                        handleCopyAddress={handleCopyAddress}
+                        transactionData={transactionData}
+                        selectedChainId={selectedChainId}
+                    />
                 )}
             </StepWrapper>
         </div>
