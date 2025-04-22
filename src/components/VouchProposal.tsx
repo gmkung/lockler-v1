@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { useAccount, usePublicClient } from 'wagmi';
@@ -37,6 +38,8 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
     const [chainMismatch, setChainMismatch] = useState(false);
     const [walletChainId, setWalletChainId] = useState<number | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [realityContract, setRealityContract] = useState<ethers.Contract | null>(null);
+    const [oracleAddress, setOracleAddress] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -97,13 +100,16 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
                 console.log(`Using RPC URL for chain ${chainId}: ${rpcUrl}`);
 
                 const moduleContract = new ethers.Contract(moduleAddress, REALITY_MODULE_ABI, provider);
-                const oracleAddress = await moduleContract.oracle();
-                const realityContract = new ethers.Contract(oracleAddress, REALITYV3_ABI, provider);
+                const oracle = await moduleContract.oracle();
+                setOracleAddress(oracle);
+                
+                const reality = new ethers.Contract(oracle, REALITYV3_ABI, provider);
+                setRealityContract(reality);
 
                 const [minBondResult, currentBondResult, bestAnswer] = await Promise.all([
-                    realityContract.getMinBond(questionId),
-                    realityContract.getBond(questionId),
-                    realityContract.getBestAnswer(questionId)
+                    reality.getMinBond(questionId),
+                    reality.getBond(questionId),
+                    reality.getBestAnswer(questionId)
                 ]);
 
                 setMinBond(minBondResult);
@@ -128,7 +134,7 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
     };
 
     const handleVouch = async (vouchFor: boolean) => {
-        if (!address || !moduleAddress || !questionId) return;
+        if (!address || !moduleAddress || !questionId || !realityContract || !oracleAddress) return;
         
         setIsSubmitting(true);
         setError(null);
@@ -142,14 +148,24 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
                 } catch (err: any) {
                     setChainMismatch(true);
                     setError(err.message || 'Failed to switch networks. Please switch manually.');
+                    setIsSubmitting(false);
                     return;
                 }
             }
 
             const requiredBond = getRequiredBond();
-            if (!requiredBond) return;
+            if (!requiredBond) {
+                setError('Could not determine required bond amount');
+                setIsSubmitting(false);
+                return;
+            }
 
-            const tx = await realityContract.submitAnswer(
+            // Connect to provider with signer for transaction
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const connectedContract = new ethers.Contract(oracleAddress, REALITYV3_ABI, signer);
+
+            const tx = await connectedContract.submitAnswer(
                 questionId,
                 vouchFor ? '0x0000000000000000000000000000000000000000000000000000000000000001'
                     : '0x0000000000000000000000000000000000000000000000000000000000000000',
@@ -160,7 +176,7 @@ export function VouchProposal({ questionId, moduleAddress, chainId, disabled, on
             await tx.wait();
             setIsOpen(false);
             onVouchComplete?.();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error submitting vouch:', err);
             setError(err.message || 'Failed to submit vouch. Please ensure you have enough ETH and try again.');
         } finally {
