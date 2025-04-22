@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { parseEther, formatEther } from "ethers";
+import { parseEther, formatEther, BrowserProvider } from "ethers";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
