@@ -59,9 +59,9 @@ function getStatusBadge(phase: string) {
 
 function TransactionDetails({ tx, chainId }: { tx: ProposalTransaction; chainId: number }) {
   return (
-    <div className="text-gray-200">
+    <div className="text-gray-200 space-y-4">
       {tx.justification && (
-        <div className="mb-4 bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+        <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
           <h4 className="font-semibold text-white text-lg mb-2">{tx.justification.title}</h4>
           {tx.justification.description && (
             <div className="prose prose-sm max-w-none prose-invert prose-p:text-gray-300 prose-headings:text-gray-200">
@@ -70,22 +70,22 @@ function TransactionDetails({ tx, chainId }: { tx: ProposalTransaction; chainId:
           )}
         </div>
       )}
-      <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <p className="text-sm flex gap-4 items-center">
-            <span className="text-gray-400">To:</span>
-            <span className="font-mono">{`${tx.to.slice(0, 6)}...${tx.to.slice(-4)}`}</span>
-          </p>
-          <TransactionModal transaction={tx} />
+      <div className="space-y-2 w-full">
+        <div className="flex items-center">
+          <span className="text-sm text-gray-400 w-16">To:</span>
+          <span className="font-mono text-sm truncate">{`${tx.to.slice(0, 6)}...${tx.to.slice(-4)}`}</span>
+          <div className="ml-auto">
+            <TransactionModal transaction={tx} />
+          </div>
         </div>
-        <p className="text-sm flex justify-between">
-          <span className="text-gray-400">Value:</span>
-          <span>{formatValue(tx.value, tx.to, tx.data, chainId)}</span>
-        </p>
-        <p className="text-sm flex justify-between">
-          <span className="text-gray-400">Data:</span>
-          <span className="font-mono">{tx.data.slice(0, 10)}...</span>
-        </p>
+        <div className="flex items-center">
+          <span className="text-sm text-gray-400 w-16">Value:</span>
+          <span className="text-sm text-right">{formatValue(tx.value, tx.to, tx.data, chainId)}</span>
+        </div>
+        <div className="flex items-center">
+          <span className="text-sm text-gray-400 w-16">Data:</span>
+          <span className="font-mono text-sm truncate">{tx.data.slice(0, 10)}...</span>
+        </div>
       </div>
     </div>
   );
@@ -158,20 +158,20 @@ export function TransactionList({ questions, transactionDetails, transactionStat
             ) : (
               transactionDetails[question.id]?.map((tx, index) => (
                 <div key={index} className="p-4 border-b border-purple-800/20 last:border-b-0">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-grow">
-                      <p className="font-medium text-purple-100 mb-3">Transaction {index + 1}</p>
-                      {tx.error ? (
-                        <p className="text-red-400 text-sm">{tx.error}</p>
-                      ) : (
-                        <TransactionDetails tx={tx} chainId={chainId} />
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-purple-100">Transaction {index + 1}</p>
+                      {!tx.error && (
+                        <TransactionStatus
+                          status={transactionStatuses[question.id]?.[index]}
+                          onExecute={() => onExecuteTransaction(question, tx, index)}
+                        />
                       )}
                     </div>
-                    {!tx.error && (
-                      <TransactionStatus
-                        status={transactionStatuses[question.id]?.[index]}
-                        onExecute={() => onExecuteTransaction(question, tx, index)}
-                      />
+                    {tx.error ? (
+                      <p className="text-red-400 text-sm">{tx.error}</p>
+                    ) : (
+                      <TransactionDetails tx={tx} chainId={chainId} />
                     )}
                   </div>
                 </div>
