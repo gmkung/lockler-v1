@@ -1,4 +1,3 @@
-
 import { CircleCheck, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
@@ -8,6 +7,8 @@ import { VouchProposal } from '../VouchProposal';
 import { ProposalTransaction, type TransactionStatus } from '@/lib/types';
 import { TOKENS, CHAIN_CONFIG } from '@/lib/constants';
 import { ethers } from 'ethers';
+import { TransactionModal } from './TransactionModal';
+import { ERC20_ABI } from '@/abis/erc20';
 
 interface TransactionListProps {
   questions: Question[];
@@ -20,20 +21,27 @@ interface TransactionListProps {
   onVouchComplete: () => Promise<void>;
 }
 
-function formatValue(value: string, currency: string, chainId: number): string {
-  if (currency === "0x0000000000000000000000000000000000000000") {
-    return `${ethers.formatEther(value)} ${CHAIN_CONFIG[chainId]?.nativeCurrency.symbol || 'ETH'}`;
+function isERC20Transfer(data: string): boolean {
+  try {
+    const iface = new ethers.Interface(ERC20_ABI);
+    const functionSig = data.slice(0, 10).toLowerCase();
+    return functionSig === iface.getFunction("transfer")?.selector.toLowerCase();
+  } catch {
+    return false;
   }
+}
 
-  if (TOKENS.USDC[chainId as keyof typeof TOKENS.USDC]?.address.toLowerCase() === currency.toLowerCase()) {
-    return `${ethers.formatUnits(value, 6)} USDC`;
+function formatValue(value: string, currency: string, data: string, chainId: number): string {
+  if (isERC20Transfer(data) && currency !== "0x0000000000000000000000000000000000000000") {
+    if (TOKENS.USDC[chainId as keyof typeof TOKENS.USDC]?.address.toLowerCase() === currency.toLowerCase()) {
+      return `${ethers.formatUnits(value, 6)} USDC`;
+    }
+    if (TOKENS.PNK[chainId as keyof typeof TOKENS.PNK]?.address.toLowerCase() === currency.toLowerCase()) {
+      return `${ethers.formatEther(value)} PNK`;
+    }
+    return `${value} tokens`;
   }
-
-  if (TOKENS.PNK[chainId as keyof typeof TOKENS.PNK]?.address.toLowerCase() === currency.toLowerCase()) {
-    return `${ethers.formatEther(value)} PNK`;
-  }
-
-  return `${value} Unknown Token`;
+  return `${ethers.formatEther(value)} ${CHAIN_CONFIG[chainId]?.nativeCurrency.symbol || 'ETH'}`;
 }
 
 function getStatusBadge(phase: string) {
@@ -60,20 +68,19 @@ function TransactionDetails({ tx, chainId }: { tx: ProposalTransaction; chainId:
               <ReactMarkdown>{tx.justification.description}</ReactMarkdown>
             </div>
           )}
-          {/* The error is here - we're trying to access ipfsCID which doesn't exist in the type */}
-          <div className="mt-3 flex items-center gap-2">
-            {/* Remove the IPFS link section since it's not available in the current data structure */}
-          </div>
         </div>
       )}
       <div className="space-y-2">
-        <p className="text-sm flex justify-between">
-          <span className="text-gray-400">To:</span>
-          <span className="font-mono">{`${tx.to.slice(0, 6)}...${tx.to.slice(-4)}`}</span>
-        </p>
+        <div className="flex justify-between items-center">
+          <p className="text-sm flex gap-4 items-center">
+            <span className="text-gray-400">To:</span>
+            <span className="font-mono">{`${tx.to.slice(0, 6)}...${tx.to.slice(-4)}`}</span>
+          </p>
+          <TransactionModal transaction={tx} />
+        </div>
         <p className="text-sm flex justify-between">
           <span className="text-gray-400">Value:</span>
-          <span>{formatValue(tx.value, "0x0000000000000000000000000000000000000000", chainId)}</span>
+          <span>{formatValue(tx.value, tx.to, tx.data, chainId)}</span>
         </p>
         <p className="text-sm flex justify-between">
           <span className="text-gray-400">Data:</span>
