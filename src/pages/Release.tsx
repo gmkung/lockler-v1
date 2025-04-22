@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
@@ -10,13 +11,13 @@ import { handleExecuteTransaction } from '../lib/transactions';
 import { useTransactionStatus } from '../hooks/useTransactionStatus';
 import { useAccount, useConnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
-import { Lock, Wallet, Shield } from 'lucide-react';
+import { Wallet, Shield } from 'lucide-react';
 import { ProposalTransaction } from '../lib/types';
 import { ErrorState } from '../components/release/ErrorState';
 import { LoadingState } from '../components/release/LoadingState';
 import { SecurityChecks } from '../components/release/SecurityChecks';
 import { TransactionList } from '../components/release/TransactionList';
-import { Question } from 'reality-kleros-subgraph';
+import type { Question } from 'reality-kleros-subgraph';
 import { JsonRpcProvider } from 'ethers';
 
 export default function Release() {
@@ -118,21 +119,21 @@ export default function Release() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a1831] to-[#231a2c] py-6 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#23213A] to-[#2D274B] py-6 px-4">
       <div className="container mx-auto max-w-7xl">
-        <Card className="border-purple-800/20 bg-white/5 backdrop-blur">
-          <CardHeader className="border-b border-purple-800/20 p-6">
+        <Card className="bg-[#2D274B] border-gray-800 rounded-3xl shadow-2xl">
+          <CardHeader className="border-b border-gray-800 p-6">
             <div className="flex justify-between items-center flex-wrap gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-                  <Shield className="h-7 w-7 text-purple-400" />
+                  <Shield className="h-7 w-7 text-pink-400" />
                   Lockler Control
                 </h1>
-                <p className="text-purple-300 mt-1">Secure fund management with Kleros verification</p>
+                <p className="text-gray-300 mt-1">Secure fund management with Kleros verification</p>
               </div>
               <div className="flex gap-4 items-center flex-wrap">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-purple-200">
+                  <span className="text-sm text-gray-200">
                     {CHAIN_CONFIG[chainId]?.name || 'Unknown Network'}
                   </span>
                 </div>
@@ -140,15 +141,15 @@ export default function Release() {
                   <Button
                     onClick={() => connect({ connector: injected() })}
                     variant="outline"
-                    className="flex items-center gap-2 bg-purple-900/20 border-purple-700 text-white hover:bg-purple-800/30"
+                    className="flex items-center gap-2 bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700"
                   >
                     <Wallet className="h-4 w-4" />
                     Connect Wallet
                   </Button>
                 ) : (
-                  <div className="flex items-center gap-3 bg-purple-900/20 px-4 py-2 rounded-lg border border-purple-700">
+                  <div className="flex items-center gap-3 bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
                     <div className="h-3 w-3 bg-green-500 rounded-full"></div>
-                    <p className="text-sm font-medium text-purple-200">
+                    <p className="text-sm font-medium text-gray-200">
                       {address.slice(0, 6)}...{address.slice(-4)}
                     </p>
                   </div>
@@ -175,31 +176,31 @@ export default function Release() {
 
               <div className="md:col-span-2 space-y-6">
                 {templateContent && (
-                  <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-4">Fund Release Conditions</h2>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 max-h-60 overflow-auto">
-                      <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
+                  <div className="bg-gray-900 rounded-3xl border border-gray-800 p-5 shadow-2xl">
+                    <h2 className="text-xl font-semibold text-white mb-4">Fund Release Conditions</h2>
+                    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 max-h-60 overflow-auto">
+                      <pre className="text-sm text-gray-200 whitespace-pre-wrap font-mono">
                         {templateContent}
                       </pre>
                     </div>
                   </div>
                 )}
 
-                <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                  <h2 className="text-xl font-semibold text-gray-800 mb-4">Fund Release Requests</h2>
+                <div className="bg-gray-900 rounded-3xl border border-gray-800 p-5 shadow-2xl">
+                  <h2 className="text-xl font-semibold text-white mb-4">Fund Release Requests</h2>
 
                   {questionsLoading ? (
                     <div className="p-4 text-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                      <p className="text-gray-600">Loading requests...</p>
-                      <p className="text-sm text-gray-500 mt-2">Processed: {progress.processed} of {progress.total}</p>
+                      <p className="text-gray-300">Loading requests...</p>
+                      <p className="text-sm text-gray-400 mt-2">Processed: {progress.processed} of {progress.total}</p>
                     </div>
                   ) : questionsError ? (
                     <ErrorState title="Error" message={questionsError} />
                   ) : questions.length === 0 ? (
-                    <div className="p-8 text-center border border-dashed border-gray-200 rounded-lg">
-                      <p className="text-gray-500">No fund release requests found</p>
-                      <p className="text-sm text-gray-400 mt-2">Create a new request by clicking "Propose Fund Release"</p>
+                    <div className="p-8 text-center border border-dashed border-gray-700 rounded-lg">
+                      <p className="text-gray-400">No fund release requests found</p>
+                      <p className="text-sm text-gray-500 mt-2">Create a new request by clicking "Propose Fund Release"</p>
                     </div>
                   ) : (
                     <TransactionList
