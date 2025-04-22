@@ -1,8 +1,12 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Logo } from "../components/ui/logo";
+import { ShieldCheck, ExternalLink } from "lucide-react";
+import { SecurityChecksModal } from "../components/release/SecurityChecksModal";
+import { TopBar } from "../components/release/TopBar";
 import { getBlockExplorer, CHAIN_CONFIG, getRpcUrl, SUPPORTED_CHAINS, TOKENS } from '../lib/constants';
 import { ProposeTransactionModal } from '../components/ProposeTransactionModal';
 import { useQuestions } from '../hooks/useQuestions';
@@ -11,17 +15,11 @@ import { handleExecuteTransaction } from '../lib/transactions';
 import { useTransactionStatus } from '../hooks/useTransactionStatus';
 import { useAccount, useConnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
-import { Wallet, ExternalLink, ShieldCheck, Info } from 'lucide-react';
 import { ErrorState } from '../components/release/ErrorState';
 import { LoadingState } from '../components/release/LoadingState';
-import { SecurityChecksModal } from '../components/release/SecurityChecksModal';
-import { TransactionList } from '../components/release/TransactionList';
-import { JsonRpcProvider } from 'ethers';
 import { FundReleaseConditions } from '../components/release/FundReleaseConditions';
-import { Logo } from "../components/ui/logo";
 import { Question } from 'reality-kleros-subgraph';
 import { ProposalTransaction } from '../lib/types';
-import { Badge } from "../components/ui/badge";
 
 export default function Release() {
   const { chainId: chainIdParam, address: safeAddress } = useParams<{ chainId: string; address: string }>();
@@ -177,101 +175,16 @@ export default function Release() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#23213A] to-[#2D274B] py-6 px-4">
       <div className="container mx-auto max-w-7xl">
+        <TopBar
+          chainId={chainId}
+          safeAddress={safeAddress}
+          moduleAddress={moduleAddress}
+          modules={modules}
+          walletAddress={address}
+          onConnectWallet={() => connect({ connector: injected() })}
+          onSetupNew={() => navigate('/setup')}
+        />
         <Card className="bg-[#2D274B] border-gray-800 rounded-3xl shadow-2xl">
-          <CardHeader className="border-b border-gray-800">
-            <div className="space-y-4">
-              {/* Top Section */}
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                  <div>
-                    <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-                      <Logo className="h-7 w-7 text-pink-400" />
-                      Lockler Control
-                    </h1>
-                    <p className="text-gray-300 mt-1">Secure fund management, secured by the Kleros Optimistic Oracle</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-200">
-                      {CHAIN_CONFIG[chainId]?.name || 'Unknown Network'}
-                    </span>
-                  </div>
-                  {!address ? (
-                    <Button
-                      onClick={() => connect({ connector: injected() })}
-                      variant="outline"
-                      className="flex items-center gap-2 bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700"
-                    >
-                      <Wallet className="h-4 w-4" />
-                      Connect Wallet
-                    </Button>
-                  ) : (
-                    <div className="flex items-center gap-3 bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
-                      <div className="h-3 w-3 bg-green-500 rounded-full"></div>
-                      <p className="text-sm font-medium text-gray-200">
-                        {address.slice(0, 6)}...{address.slice(-4)}
-                      </p>
-                    </div>
-                  )}
-                  <Button
-                    onClick={() => navigate('/setup')}
-                    className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600"
-                  >
-                    Setup New Lockler
-                  </Button>
-                </div>
-              </div>
-
-              {/* Security Status Bar */}
-              {moduleAddress && modules.length > 0 && (
-                <div className="flex items-center justify-between p-3 bg-[#1A1F2C] rounded-xl">
-                  <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="h-5 w-5 text-green-500" />
-                      <span className="text-sm font-medium text-gray-200">Security Status</span>
-                      <Badge variant="secondary" className="bg-[#2D274B] text-gray-200">
-                        {modules[0]?.validationChecks ? 
-                          Object.values(modules[0].validationChecks).filter(Boolean).length : 0} of 8 checks passed
-                      </Badge>
-                      <SecurityChecksModal modules={modules} />
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">Safe:</span>
-                        <code className="text-xs bg-[#2D274B] px-2 py-1 rounded text-gray-300">
-                          {safeAddress?.slice(0, 6)}...{safeAddress?.slice(-4)}
-                        </code>
-                        {blockExplorer && (
-                          <ExternalLink
-                            href={`${blockExplorer}/address/${safeAddress}`}
-                            className="text-gray-400 hover:text-gray-300"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </ExternalLink>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">Module:</span>
-                        <code className="text-xs bg-[#2D274B] px-2 py-1 rounded text-gray-300">
-                          {moduleAddress?.slice(0, 6)}...{moduleAddress?.slice(-4)}
-                        </code>
-                        {blockExplorer && (
-                          <ExternalLink
-                            href={`${blockExplorer}/address/${moduleAddress}`}
-                            className="text-gray-400 hover:text-gray-300"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </ExternalLink>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardHeader>
-
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
