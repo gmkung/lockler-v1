@@ -253,7 +253,7 @@ export default function Setup() {
             <StepWrapper wide={step === 2}>
                 <div className="mb-4 text-center">
                     <div className="flex items-center mt-1 justify-center">
-                        <span className="font-semibold mr-2">Deploying on:</span>
+                        <span className="font-semibold mr-2 text-soft-purple">Deploying on:</span>
                         <div>
                             <Select
                                 value={selectedChainId ? selectedChainId.toString() : Object.keys(CHAIN_CONFIG)[0]}

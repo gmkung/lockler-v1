@@ -38,18 +38,21 @@ function findTokenConfig(address: string, chainId: number) {
   // Check each token category (NATIVE, USDC, PNK, etc)
   for (const [tokenName, tokenConfig] of Object.entries(TOKENS)) {
     // If this is a chain-specific token configuration
-    if (tokenConfig && typeof tokenConfig === 'object' && chainId in tokenConfig) {
-      const chainSpecificToken = tokenConfig[chainId as keyof typeof tokenConfig];
-      
-      // If we have a config for this chain and the addresses match
-      if (chainSpecificToken && 
-          'address' in chainSpecificToken && 
-          chainSpecificToken.address.toLowerCase() === address.toLowerCase()) {
-        return chainSpecificToken;
+    if (tokenConfig && typeof tokenConfig === 'object') {
+      // Handle chain-specific tokens
+      if (chainId in tokenConfig) {
+        const chainSpecificToken = tokenConfig[chainId as keyof typeof tokenConfig];
+        
+        if (chainSpecificToken && 
+            typeof chainSpecificToken === 'object' && 
+            'address' in chainSpecificToken && 
+            chainSpecificToken.address.toLowerCase() === address.toLowerCase()) {
+          return chainSpecificToken;
+        }
       }
     }
     
-    // Handle native token which has a different structure
+    // Handle native token with a different structure
     if (tokenName === 'NATIVE' && 
         typeof tokenConfig === 'object' && 
         'address' in tokenConfig && 
