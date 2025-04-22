@@ -3,6 +3,7 @@ import { ExternalLink } from "../ui/external-link";
 import { Payment } from "@/lib/types";
 import { TOKENS, CHAIN_CONFIG } from "@/lib/constants";
 import ReactMarkdown from 'react-markdown';
+import { getTokenInfo, formatAmount } from '../../lib/currency';
 
 interface FundReleaseConditionsProps {
   formattedTerms: {
@@ -16,39 +17,10 @@ interface FundReleaseConditionsProps {
 }
 
 const getCurrencyInfo = (payment: Payment, chainId: number) => {
-  // Native currency
-  if (payment.currency === TOKENS.NATIVE.address) {
-    return {
-      amount: payment.amount,
-      symbol: chainId === 100 ? 'xDAI' : TOKENS.NATIVE.symbol
-    };
-  }
-
-  // USDC for specific chain
-  if (TOKENS.USDC[chainId as keyof typeof TOKENS.USDC]) {
-    const usdc = TOKENS.USDC[chainId as keyof typeof TOKENS.USDC];
-    if (usdc.address.toLowerCase() === payment.currency.toLowerCase()) {
-      return {
-        amount: payment.amount,
-        symbol: usdc.symbol
-      };
-    }
-  }
-
-  // PNK for mainnet
-  if (chainId === 1 && TOKENS.PNK[1]) {
-    const pnk = TOKENS.PNK[1];
-    if (pnk.address.toLowerCase() === payment.currency.toLowerCase()) {
-      return {
-        amount: payment.amount,
-        symbol: pnk.symbol
-      };
-    }
-  }
-
+  const { symbol } = getTokenInfo(payment.currency, chainId);
   return {
-    amount: payment.amount,
-    symbol: 'UNKNOWN'
+    amount: formatAmount(payment.amount, payment.currency, chainId),
+    symbol
   };
 };
 

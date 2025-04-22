@@ -1,4 +1,3 @@
-
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent } from "./ui/card";
@@ -13,6 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip";
+import { getAvailableTokens as getAvailableTokensUtil, getTokenInfo, getInputStep } from '../lib/currency';
 
 interface ContractTermsFormProps {
   contractTerms: EscrowContractTerms;
@@ -27,19 +27,8 @@ const selectClass = "rounded-xl bg-gray-900 text-white px-2 py-1 text-sm border-
 const cardClass = "rounded-3xl bg-gradient-to-br from-[#23213A] to-[#2D274B] border border-gray-800 shadow-md";
 
 export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode, chainId }: ContractTermsFormProps) {
-  const getAvailableTokens = () => {
-    const availableTokens = [TOKENS.NATIVE];
-    Object.entries(TOKENS).forEach(([key, tokenConfig]) => {
-      if (key !== 'NATIVE' && tokenConfig[chainId]) {
-        availableTokens.push(tokenConfig[chainId]);
-      }
-    });
-    return availableTokens;
-  };
-
-  const getNativeCurrencySymbol = () => {
-    return CHAIN_CONFIG[chainId]?.nativeCurrency?.symbol || 'ETH';
-  };
+  const getAvailableTokens = () => getAvailableTokensUtil(chainId);
+  const getNativeCurrencySymbol = () => getTokenInfo(TOKENS.NATIVE.address, chainId).symbol;
 
   const addPayment = (role: 'sender' | 'receiver') => {
     if (escrowMode === 'grant') {
@@ -115,7 +104,7 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
                 onChange={(e) => setContractTerms({ ...contractTerms, bond: e.target.value })}
                 className={inputClass + " text-xs"}
                 placeholder="0.1"
-                step="0.000000000000000001"
+                step={getInputStep(TOKENS.NATIVE.address, chainId)}
               />
             </div>
             <div>

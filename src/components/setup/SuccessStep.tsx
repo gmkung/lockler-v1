@@ -27,7 +27,8 @@ export function SuccessStep({
         Your single-purpose Lockler is ready 🚀
       </div>
       <div className="mb-4 text-purple-200 max-w-xs">
-        Share your Lockler address below to receive deposits, or view & release funds anytime.
+        Simply send the tokens any token you want to escrow directly to this Lockler address.
+        After that, recipients can go to the Release page to propose the release of the funds.
       </div>
       <div className="w-full flex flex-col gap-2 mb-4">
         <div className="flex flex-col items-center gap-1 rounded-3xl border border-purple-700 bg-[rgba(44,36,71,0.98)] px-5 py-3">

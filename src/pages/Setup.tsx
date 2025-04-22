@@ -7,8 +7,9 @@ import { useToast } from "../hooks/use-toast";
 import { deploySafeWithOwners, deployRealityModule } from '../lib/deployment';
 import { getDefaultContractTerms } from '../lib/templates';
 import { ContractTermsForm } from "../components/ContractTermsForm";
-import { Copy, ExternalLink } from "lucide-react";
+import { Copy, ExternalLink, Lock } from "lucide-react";
 import { switchChain } from '../lib/utils';
+import { toMinorUnits } from '../lib/currency';
 
 import {
     DEFAULT_SALT_NONCE,
@@ -95,7 +96,7 @@ export default function Setup() {
                             ...payment,
                             amount: typeof payment.amount === 'string' && 
                                     payment.amount.startsWith('0x') ? 
-                                    payment.amount : parseEther(payment.amount.toString()).toString()
+                                    payment.amount : toMinorUnits(payment.amount.toString(), payment.currency, selectedChainId)
                         }));
                         
                         setContractTerms(terms);
@@ -248,42 +249,52 @@ export default function Setup() {
         }
     };
 
+    const ChainSelector = () => (
+        <div className="flex items-center mt-1 justify-center">
+            <span className="font-semibold mr-2 text-soft-purple">Deploying on:</span>
+            <div className="relative">
+                <Select
+                    value={selectedChainId ? selectedChainId.toString() : Object.keys(CHAIN_CONFIG)[0]}
+                    onValueChange={(value) => {
+                        if (step === 1) {
+                            const chainId = parseInt(value);
+                            console.log("Setting chain ID to:", chainId);
+                            setSelectedChainId(chainId);
+                        }
+                    }}
+                    disabled={step > 1}
+                >
+                    <SelectTrigger className={`h-7 w-[140px] text-xs bg-purple-800/30 border-purple-600 text-soft-purple ${step > 1 ? 'cursor-not-allowed opacity-80' : ''}`}>
+                        <SelectValue>
+                            {selectedChainId && CHAIN_CONFIG[selectedChainId]?.name
+                                ? CHAIN_CONFIG[selectedChainId].name
+                                : "Select Chain"}
+                        </SelectValue>
+                        {step > 1 && (
+                            <Lock className="h-3 w-3 ml-1 text-purple-400" />
+                        )}
+                    </SelectTrigger>
+                    <SelectContent>
+                        {Object.entries(CHAIN_CONFIG).map(([id, config]) => (
+                            <SelectItem 
+                                key={id} 
+                                value={id} 
+                                className="text-soft-purple hover:bg-purple-900/30"
+                            >
+                                {config.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
+    );
+
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a1831] to-[#231a2c] items-center justify-center py-7 px-3">
             <StepWrapper wide={step === 2}>
                 <div className="mb-4 text-center">
-                    <div className="flex items-center mt-1 justify-center">
-                        <span className="font-semibold mr-2 text-soft-purple">Deploying on:</span>
-                        <div>
-                            <Select
-                                value={selectedChainId ? selectedChainId.toString() : Object.keys(CHAIN_CONFIG)[0]}
-                                onValueChange={(value) => {
-                                    const chainId = parseInt(value);
-                                    console.log("Setting chain ID to:", chainId);
-                                    setSelectedChainId(chainId);
-                                }}
-                            >
-                                <SelectTrigger className="h-7 w-[140px] text-xs bg-purple-800/30 border-purple-600 text-soft-purple">
-                                    <SelectValue>
-                                        {selectedChainId && CHAIN_CONFIG[selectedChainId]?.name
-                                            ? CHAIN_CONFIG[selectedChainId].name
-                                            : "Select Chain"}
-                                    </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {Object.entries(CHAIN_CONFIG).map(([id, config]) => (
-                                        <SelectItem 
-                                            key={id} 
-                                            value={id} 
-                                            className="text-soft-purple hover:bg-purple-900/30"
-                                        >
-                                            {config.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
+                    <ChainSelector />
                 </div>
 
                 <div className="mb-4">

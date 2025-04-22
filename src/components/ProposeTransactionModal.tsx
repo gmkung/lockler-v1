@@ -7,28 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { TOKENS, CHAIN_CONFIG } from '../lib/constants';
 import { uploadJSONToIPFS } from 'light-curate-data-service';
-import { BrowserProvider, Contract, AbiCoder, parseUnits, keccak256, ethers } from 'ethers';
+import { BrowserProvider, Contract, AbiCoder, ethers } from 'ethers';
 import { REALITY_MODULE_ABI } from '../abis/realityModule';
 import { ERC20_ABI } from '../abis/erc20';
 import { useAccount } from 'wagmi';
 import { switchChain } from '../lib/utils';
 import { ScrollArea } from "./ui/scroll-area";
 import { Loader2 } from 'lucide-react';
-
-export type Transaction = {
-    id: string;
-    to: string;
-    value: string;
-    data: string;
-    operation: number;
-    type: TransactionType;
-    justification: {
-        title: string;
-        description: string;
-    };
-};
-
-type TransactionType = 'native' | 'erc20' | 'custom';
+import { getAvailableTokens, toMinorUnits, fromMinorUnits, formatAmount, getInputStep, TokenInfo } from '../lib/currency';
+import { analyzeTransaction } from '@/lib/transactionUtils';
+import { ProposalTransaction, TransactionType } from '@/lib/types';
 
 export function ProposeTransactionModal({
     isOpen,
@@ -39,12 +27,12 @@ export function ProposeTransactionModal({
 }: {
     isOpen: boolean;
     onClose: () => void;
-    onPropose: (transactions: Transaction[]) => void;
+    onPropose: (transactions: ProposalTransaction[]) => void;
     chainId: number;
     realityModuleAddress: string;
 }) {
     const { address } = useAccount();
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [transactions, setTransactions] = useState<ProposalTransaction[]>([]);
     const [showRawIndices, setShowRawIndices] = useState<Set<number>>(new Set());
     const [currentType, setCurrentType] = useState<TransactionType>('native');
     const [currentTo, setCurrentTo] = useState('');
@@ -57,15 +45,8 @@ export function ProposeTransactionModal({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const nativeCurrency = CHAIN_CONFIG[chainId]?.nativeCurrency?.symbol || '';
 
-    const availableTokens = [TOKENS.NATIVE];
-    Object.entries(TOKENS).forEach(([key, tokenConfig]) => {
-        if (key !== 'NATIVE' && tokenConfig[chainId]) {
-            availableTokens.push(tokenConfig[chainId]);
-        }
-    });
-
+    const availableTokens = getAvailableTokens(chainId);
     const erc20Tokens = availableTokens.filter(token => token.address !== TOKENS.NATIVE.address);
-
     const [currentToken, setCurrentToken] = useState(erc20Tokens[0]?.address || TOKENS.NATIVE.address);
 
     useEffect(() => {
@@ -99,11 +80,14 @@ export function ProposeTransactionModal({
         if (currentType === 'erc20' && (!currentRecipient || !currentValue || !currentToken || !currentJustification.title)) {
             return;
         }
+        if (currentType === 'erc721' && (!currentTo || !currentValue || !currentRecipient || !currentJustification.title)) {
+            return;
+        }
         if (currentType === 'custom' && (!currentTo || !currentData || !currentJustification.title)) {
             return;
         }
 
-        let newTransaction: Transaction = {
+        let newTransaction: ProposalTransaction = {
             id: crypto.randomUUID(),
             to: currentTo,
             value: '0',
@@ -117,23 +101,23 @@ export function ProposeTransactionModal({
         };
 
         if (currentType === 'native') {
-            const weiAmount = parseUnits(currentValue, 18);
+            const weiAmount = toMinorUnits(currentValue, TOKENS.NATIVE.address, chainId);
             console.log('Native token transfer:', {
                 inputValue: currentValue,
-                weiAmount: weiAmount.toString(),
-                formatted: ethers.formatEther(weiAmount)
+                weiAmount,
+                formatted: formatAmount(weiAmount, TOKENS.NATIVE.address, chainId)
             });
-            newTransaction.value = weiAmount.toString();
+            newTransaction.value = weiAmount;
             newTransaction.to = currentTo;
         } else if (currentType === 'erc20') {
             const token = erc20Tokens.find(t => t.address === currentToken);
             if (token) {
-                const amount = parseUnits(currentValue, token.decimals);
+                const amount = toMinorUnits(currentValue, token.address, chainId);
                 console.log('ERC20 transfer:', {
                     inputValue: currentValue,
                     tokenDecimals: token.decimals,
-                    rawAmount: amount.toString(),
-                    formatted: ethers.formatUnits(amount, token.decimals)
+                    rawAmount: amount,
+                    formatted: formatAmount(amount, token.address, chainId)
                 });
                 const transferData = new AbiCoder().encode(
                     ['address', 'uint256'],
@@ -143,9 +127,17 @@ export function ProposeTransactionModal({
                 newTransaction.to = token.address;
                 newTransaction.operation = 0;
             }
+        } else if (currentType === 'erc721') {
+            const transferData = new AbiCoder().encode(
+                ['address', 'address', 'uint256'],
+                [address, currentRecipient, currentValue]
+            );
+            newTransaction.data = '0x23b872dd' + transferData.slice(2);
+            newTransaction.to = currentTo;
+            newTransaction.operation = 0;
         } else if (currentType === 'custom') {
             newTransaction.data = currentData;
-            newTransaction.value = parseUnits(currentValue || '0', 18).toString();
+            newTransaction.value = toMinorUnits(currentValue || '0', TOKENS.NATIVE.address, chainId);
             newTransaction.to = currentTo;
         }
 
@@ -169,18 +161,18 @@ export function ProposeTransactionModal({
 
         try {
             const chainSwitchResult = await switchChain(chainId);
-            
+
             if (!chainSwitchResult.success) {
                 throw new Error(chainSwitchResult.error);
             }
-            
+
             const provider = chainSwitchResult.provider as BrowserProvider;
             const signer = await provider.getSigner();
-            
+
             const balance = await provider.getBalance(address);
 
             if (balance < BigInt(minimumBond)) {
-                throw new Error(`Insufficient ${nativeCurrency} for bond. Required: ${ethers.formatEther(minimumBond)} ${nativeCurrency}, you have: ${ethers.formatEther(balance)} ${nativeCurrency}`);
+                throw new Error(`Insufficient ${nativeCurrency} for bond. Required: ${formatAmount(minimumBond.toString(), TOKENS.NATIVE.address, chainId)}, you have: ${formatAmount(balance.toString(), TOKENS.NATIVE.address, chainId)}`);
             }
 
             const realityModule = new Contract(
@@ -216,7 +208,7 @@ export function ProposeTransactionModal({
         }
     };
 
-    const formatAmount = (amount: string, decimals: number) => {
+    const formatValue = (amount: string, decimals: string, chainId: number) => {
         try {
             return ethers.formatUnits(amount, decimals);
         } catch (e) {
@@ -226,7 +218,7 @@ export function ProposeTransactionModal({
 
     const parseAmount = (amount: string, decimals: number) => {
         try {
-            return parseUnits(amount, decimals).toString();
+            return toMinorUnits(amount, TOKENS.NATIVE.address, chainId);
         } catch (e) {
             return '0';
         }
@@ -248,17 +240,17 @@ export function ProposeTransactionModal({
                     switch (decoded.name) {
                         case 'transfer':
                             return {
-                                readable: `Transfer ${ethers.formatUnits(decoded.args[1], decimals)} ${symbol} to ${decoded.args[0]}`,
+                                readable: `Transfer ${formatAmount(decoded.args[1].toString(), token?.address || '', chainId)} ${symbol} to ${decoded.args[0]}`,
                                 raw: data
                             };
                         case 'transferFrom':
                             return {
-                                readable: `Transfer ${ethers.formatUnits(decoded.args[2], decimals)} ${symbol} from ${decoded.args[0]} to ${decoded.args[1]}`,
+                                readable: `Transfer ${formatAmount(decoded.args[2].toString(), token?.address || '', chainId)} ${symbol} from ${decoded.args[0]} to ${decoded.args[1]}`,
                                 raw: data
                             };
                         case 'approve':
                             return {
-                                readable: `Approve ${ethers.formatUnits(decoded.args[1], decimals)} ${symbol} for ${decoded.args[0]}`,
+                                readable: `Approve ${formatAmount(decoded.args[1].toString(), token?.address || '', chainId)} ${symbol} for ${decoded.args[0]}`,
                                 raw: data
                             };
                         default:
@@ -308,7 +300,7 @@ export function ProposeTransactionModal({
                             <p className="text-sm mt-1">Loading minimum bond amount...</p>
                         ) : (
                             <p className="text-sm mt-1">
-                                You need to have at least {ethers.formatEther(minimumBond)} {nativeCurrency} to propose this transaction.
+                                You need to have at least {formatAmount(minimumBond, TOKENS.NATIVE.address, chainId)} to propose this transaction.
                                 The bond will be returned if your proposal is approved.
                             </p>
                         )}
@@ -323,6 +315,7 @@ export function ProposeTransactionModal({
                             <SelectContent>
                                 <SelectItem value="native">Native Token Transfer</SelectItem>
                                 <SelectItem value="erc20">ERC20 Transfer</SelectItem>
+                                <SelectItem value="erc721">ERC721 Transfer</SelectItem>
                                 <SelectItem value="custom">Custom Transaction</SelectItem>
                             </SelectContent>
                         </Select>
@@ -367,7 +360,7 @@ export function ProposeTransactionModal({
                                     value={currentValue}
                                     onChange={(e) => setCurrentValue(e.target.value)}
                                     placeholder="0.0"
-                                    step="0.000000000000000001"
+                                    step={getInputStep(TOKENS.NATIVE.address, chainId)}
                                 />
                             </div>
                             <Button
@@ -414,14 +407,50 @@ export function ProposeTransactionModal({
                                     value={currentValue}
                                     onChange={(e) => setCurrentValue(e.target.value)}
                                     placeholder="0.0"
-                                    step={erc20Tokens.find(t => t.address === currentToken)?.decimals ?
-                                        `0.${'0'.repeat(erc20Tokens.find(t => t.address === currentToken)!.decimals - 1)}1` :
-                                        "0.000000000000000001"}
+                                    step={getInputStep(currentToken, chainId)}
                                 />
                             </div>
                             <Button
                                 onClick={addTransaction}
                                 disabled={!currentRecipient || !currentValue || !currentToken || !currentJustification.title}
+                            >
+                                Add Transaction
+                            </Button>
+                        </div>
+                    )}
+
+                    {currentType === 'erc721' && (
+                        <div className="space-y-4">
+                            <div>
+                                <Label>NFT Contract Address</Label>
+                                <Input
+                                    value={currentTo}
+                                    onChange={(e) => setCurrentTo(e.target.value)}
+                                    placeholder="0x..."
+                                />
+                            </div>
+                            <div>
+                                <Label>Recipient Address</Label>
+                                <Input
+                                    value={currentRecipient}
+                                    onChange={(e) => setCurrentRecipient(e.target.value)}
+                                    placeholder="0x..."
+                                />
+                            </div>
+                            <div>
+                                <Label>Token ID</Label>
+                                <Input
+                                    type="number"
+                                    value={currentValue}
+                                    onChange={(e) => setCurrentValue(e.target.value)}
+                                    placeholder="Token ID"
+                                    min="0"
+                                    step="1"
+                                />
+                            </div>
+                            <Button
+                                onClick={addTransaction}
+                                disabled={!currentTo || !currentValue || !currentRecipient || !currentJustification.title}
                             >
                                 Add Transaction
                             </Button>
@@ -472,7 +501,7 @@ export function ProposeTransactionModal({
                             <ScrollArea className="h-[200px]">
                                 <div className="space-y-2">
                                     {transactions.map((tx, index) => {
-                                        const decoded = decodeCalldata(tx.data, tx.type, tx.to);
+                                        const details = analyzeTransaction(tx, chainId);
                                         const showRaw = showRawIndices.has(index);
 
                                         return (
@@ -485,32 +514,45 @@ export function ProposeTransactionModal({
                                                                 <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{tx.justification.description}</p>
                                                             )}
                                                         </div>
-                                                        {tx.type !== 'erc20' && (
-                                                            <p className="text-sm font-medium">To: {tx.to}</p>
-                                                        )}
-                                                        {tx.type !== 'erc20' && (
-                                                            <p className="text-sm">Value: {ethers.formatEther(tx.value)} {nativeCurrency}</p>
-                                                        )}
-                                                        <p className="text-sm break-all">
-                                                            {decoded.readable}
+                                                        <p className="text-sm font-medium">
+                                                            To: {`${tx.to.slice(0, 6)}...${tx.to.slice(-4)}`}
                                                         </p>
+                                                        <p className="text-sm">
+                                                            Value: {formatAmount(details.value, TOKENS.NATIVE.address, chainId)}
+                                                        </p>
+                                                        {details.type === 'erc20' && (
+                                                            <p className="text-sm">
+                                                                Transfer: {formatAmount(details.amount, details.to, chainId)} to {`${details.recipient.slice(0, 6)}...${details.recipient.slice(-4)}`}
+                                                            </p>
+                                                        )}
+                                                        {details.type === 'erc721' && (
+                                                            <p className="text-sm">
+                                                                Transfer: NFT #{details.tokenId} to {`${details.recipient.slice(0, 6)}...${details.recipient.slice(-4)}`}
+                                                            </p>
+                                                        )}
+                                                        {details.type === 'custom' && details.decodedCalldata && (
+                                                            <p className="text-sm break-all">
+                                                                Function: {details.decodedCalldata.functionName}
+                                                            </p>
+                                                        )}
                                                         <div className="mt-2">
                                                             <button
                                                                 onClick={() => toggleRawCalldata(index)}
                                                                 className="flex items-center text-xs text-gray-500 hover:text-gray-700"
                                                             >
                                                                 {showRaw ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
-                                                                {showRaw ? 'Hide' : 'Show'} {tx.type === 'erc20' ? 'contract details and ' : ''}raw calldata
+                                                                {showRaw ? 'Hide' : 'Show'} raw details
                                                             </button>
                                                             {showRaw && (
                                                                 <div className="mt-1 p-2 bg-gray-100 rounded text-xs font-mono space-y-1">
-                                                                    {tx.type === 'erc20' && (
-                                                                        <>
-                                                                            <p>Contract Address: {tx.to}</p>
-                                                                            <p>Native Value: {ethers.formatEther(tx.value)} {nativeCurrency}</p>
-                                                                        </>
+                                                                    <p>Contract Address: {tx.to}</p>
+                                                                    <p>Native Value: {formatAmount(details.value, TOKENS.NATIVE.address, chainId)}</p>
+                                                                    <p className="break-all">Calldata: {tx.data}</p>
+                                                                    {details.type === 'custom' && details.decodedCalldata && (
+                                                                        <p className="break-all">
+                                                                            Decoded: {details.decodedCalldata.functionName}({details.decodedCalldata.params.join(', ')})
+                                                                        </p>
                                                                     )}
-                                                                    <p className="break-all">Calldata: {decoded.raw}</p>
                                                                 </div>
                                                             )}
                                                         </div>

@@ -10,6 +10,8 @@ import { ethers } from 'ethers';
 import { TransactionModal } from './TransactionModal';
 import { ERC20_ABI } from '@/abis/erc20';
 import { useToast } from "@/hooks/use-toast";
+import { formatAmount } from '../../lib/currency';
+import { analyzeTransaction } from '@/lib/transactionUtils';
 
 interface TransactionListProps {
   questions: Question[];
@@ -32,49 +34,6 @@ function isERC20Transfer(data: string): boolean {
   }
 }
 
-function findTokenConfig(address: string, chainId: number) {
-  if (address.toLowerCase() === TOKENS.NATIVE.address.toLowerCase()) {
-    return TOKENS.NATIVE;
-  }
-
-  for (const [_, tokenConfig] of Object.entries(TOKENS)) {
-    if (typeof tokenConfig === 'object' && tokenConfig !== null) {
-      if (chainId in tokenConfig) {
-        const chainSpecificToken = tokenConfig[chainId as keyof typeof tokenConfig];
-        
-        if (chainSpecificToken && 
-            typeof chainSpecificToken === 'object' && 
-            'address' in chainSpecificToken && 
-            chainSpecificToken.address.toLowerCase() === address.toLowerCase()) {
-          return chainSpecificToken;
-        }
-      }
-    }
-  }
-  
-  return null;
-}
-
-function formatValue(value: string, currency: string, data: string, chainId: number): string {
-  try {
-    if (isERC20Transfer(data) && currency !== "0x0000000000000000000000000000000000000000") {
-      const tokenInfo = findTokenConfig(currency, chainId);
-      
-      if (tokenInfo && 'decimals' in tokenInfo && 'symbol' in tokenInfo) {
-        return `${ethers.formatUnits(value, tokenInfo.decimals)} ${tokenInfo.symbol}`;
-      }
-      
-      return `${ethers.formatEther(value)} tokens`;
-    }
-    
-    const nativeCurrencySymbol = CHAIN_CONFIG[chainId]?.nativeCurrency.symbol || 'ETH';
-    return `${ethers.formatEther(value)} ${nativeCurrencySymbol}`;
-  } catch (error) {
-    console.error("Error formatting value:", error);
-    return `${value} (format error)`;
-  }
-}
-
 function getStatusBadge(phase: string) {
   const badges = {
     "OPEN": "bg-purple-900/20 text-purple-200",
@@ -89,6 +48,8 @@ function getStatusBadge(phase: string) {
 }
 
 function TransactionDetails({ tx, chainId }: { tx: ProposalTransaction; chainId: number }) {
+  const details = analyzeTransaction(tx, chainId);
+
   return (
     <div className="text-gray-200 space-y-4">
       {tx.justification && (
@@ -111,11 +72,33 @@ function TransactionDetails({ tx, chainId }: { tx: ProposalTransaction; chainId:
         </div>
         <div className="flex items-center">
           <span className="text-sm text-gray-400 w-16">Value:</span>
-          <span className="text-sm text-right">{formatValue(tx.value, tx.to, tx.data, chainId)}</span>
+          <span className="text-sm text-right">
+            {formatAmount(details.value, TOKENS.NATIVE.address, chainId)}
+          </span>
         </div>
+        {details.type === 'erc20' && (
+          <div className="flex items-center">
+            <span className="text-sm text-gray-400 w-16">Transfer:</span>
+            <span className="text-sm text-right">
+              {formatAmount(details.amount, details.to, chainId)} to {`${details.recipient.slice(0, 6)}...${details.recipient.slice(-4)}`}
+            </span>
+          </div>
+        )}
+        {details.type === 'erc721' && (
+          <div className="flex items-center">
+            <span className="text-sm text-gray-400 w-16">Transfer:</span>
+            <span className="text-sm text-right">
+              NFT #{details.tokenId} to {`${details.recipient.slice(0, 6)}...${details.recipient.slice(-4)}`}
+            </span>
+          </div>
+        )}
         <div className="flex items-center">
           <span className="text-sm text-gray-400 w-16">Data:</span>
-          <span className="font-mono text-sm truncate">{tx.data.slice(0, 10)}...</span>
+          <span className="font-mono text-sm truncate">
+            {details.type === 'custom' && details.decodedCalldata 
+              ? `${details.decodedCalldata.functionName}(${details.decodedCalldata.params.join(', ')})`
+              : tx.data.slice(0, 10) + '...'}
+          </span>
         </div>
       </div>
     </div>
@@ -258,4 +241,16 @@ export function TransactionList({ questions, transactionDetails, transactionStat
       ))}
     </div>
   );
+}
+
+function formatValue(value: string, currency: string, data: string, chainId: number): string {
+  try {
+    if (isERC20Transfer(data) && currency !== "0x0000000000000000000000000000000000000000") {
+      return formatAmount(value, currency, chainId);
+    }
+    return formatAmount(value, TOKENS.NATIVE.address, chainId);
+  } catch (error) {
+    console.error("Error formatting value:", error);
+    return `${value} (format error)`;
+  }
 }
