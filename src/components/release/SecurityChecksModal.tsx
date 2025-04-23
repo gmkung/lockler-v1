@@ -1,8 +1,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "../ui/button";
 import { getSecurityIcon } from "./utils";
-import { CircleCheck, Info } from "lucide-react";
+import { CircleCheck, Info, ExternalLink } from "lucide-react";
 import { Dispatch, SetStateAction } from "react";
+import { SUPPORTED_CHAINS } from "@/lib/constants";
 
 interface SecurityChecksModalProps {
   modules: Array<{
@@ -20,18 +21,26 @@ interface SecurityChecksModalProps {
   }>;
   open?: boolean;
   onOpenChange?: Dispatch<SetStateAction<boolean>>;
+  safeAddress?: string;
+  chainId?: number;
 }
 
-export function SecurityChecksModal({ modules, open, onOpenChange }: SecurityChecksModalProps) {
+export function SecurityChecksModal({ modules, open, onOpenChange, safeAddress, chainId }: SecurityChecksModalProps) {
   const module = modules[0];
   if (!module) return null;
 
-  const totalChecks = Object.keys(module.validationChecks).length + 2; // +2 for isEnabled and isRealityModule
+  const totalChecks = Object.keys(module.validationChecks).length + 2;
   const passedChecks = [
     module.isEnabled,
     module.isRealityModule,
     ...Object.values(module.validationChecks)
   ].filter(Boolean).length;
+
+  const getSafeAppUrl = () => {
+    if (!safeAddress || !chainId) return '';
+    const chainPrefix = chainId === SUPPORTED_CHAINS.GNOSIS ? 'gno' : '1';
+    return `https://app.safe.global/apps/open?safe=${chainPrefix}:${safeAddress}&appUrl=https%3A%2F%2Fzodiac.gnosisguild.org%2F`;
+  };
 
   // If open and onOpenChange are provided, use them for controlled dialog
   // Otherwise, use the dialog in uncontrolled mode
@@ -66,6 +75,18 @@ export function SecurityChecksModal({ modules, open, onOpenChange }: SecurityChe
               </div>
             ))}
           </div>
+          {safeAddress && chainId && (
+            <div className="mt-6 flex justify-end">
+              <Button
+                variant="outline"
+                className="gap-2 text-sm bg-gray-800/50 border-gray-700 hover:bg-gray-700/50 text-gray-200"
+                onClick={() => window.open(getSafeAppUrl(), '_blank')}
+              >
+                Inspect on Safe app
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
@@ -113,6 +134,18 @@ export function SecurityChecksModal({ modules, open, onOpenChange }: SecurityChe
               </div>
             ))}
           </div>
+          {safeAddress && chainId && (
+            <div className="mt-6 flex justify-end">
+              <Button
+                variant="outline"
+                className="gap-2 text-sm bg-gray-800/50 border-gray-700 hover:bg-gray-700/50 text-gray-200"
+                onClick={() => window.open(getSafeAppUrl(), '_blank')}
+              >
+                Inspect on Safe app
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
