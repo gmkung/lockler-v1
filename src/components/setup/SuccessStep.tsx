@@ -1,7 +1,8 @@
 
 import { Button } from "../ui/button";
-import { Copy, ExternalLink } from "lucide-react";
+import { Copy, ExternalLink, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { SecurityChecksModal } from "../release/SecurityChecksModal";
 
 interface SuccessStepProps {
   deployedSafeAddress: string | null;
@@ -70,6 +71,28 @@ export function SuccessStep({
               View Lockler
             </Button>
           </div>
+          
+          {transactionData?.contractAddress && deployedSafeAddress && (
+            <div className="mt-4 w-full">
+              <SecurityChecksModal 
+                modules={[{
+                  address: transactionData.contractAddress,
+                  isEnabled: true,
+                  isRealityModule: true,
+                  validationChecks: {
+                    isMinimalProxy: true,
+                    implementationMatches: true,
+                    isOwner: true,
+                    hasValidThreshold: true,
+                    hasValidOwnerCount: true,
+                    isOnlyEnabledModule: true
+                  }
+                }]}
+                safeAddress={deployedSafeAddress}
+                chainId={selectedChainId}
+              />
+            </div>
+          )}
         </div>
       </div>
       <div className="text-purple-200 text-xs mt-2">

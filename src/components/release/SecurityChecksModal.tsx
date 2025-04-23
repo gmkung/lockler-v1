@@ -99,7 +99,7 @@ export function SecurityChecksModal({ modules, open, onOpenChange, safeAddress, 
       <DialogTrigger asChild>
         <Button 
           variant="outline" 
-          className="gap-2 text-sm bg-gray-800/50 border-gray-700 hover:bg-gray-700/50 text-gray-200"
+          className="gap-2 text-sm bg-gray-800/50 border-gray-700 hover:bg-gray-700/50 text-gray-200 w-full"
         >
           {passedChecks === totalChecks ? (
             <CircleCheck className="h-4 w-4 text-green-500" />
@@ -155,4 +155,3 @@ export function SecurityChecksModal({ modules, open, onOpenChange, safeAddress, 
     </Dialog>
   );
 }
-
