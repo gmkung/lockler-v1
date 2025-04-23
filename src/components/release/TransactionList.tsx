@@ -2,6 +2,7 @@ import { CircleCheck, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Question } from "reality-kleros-subgraph";
+import { QuestionPhase } from "@/abis/realityv3";
 import ReactMarkdown from 'react-markdown';
 import { VouchProposal } from '../VouchProposal';
 import { ProposalTransaction, type TransactionStatus } from '@/lib/types';
@@ -12,6 +13,7 @@ import { ERC20_ABI } from '@/abis/erc20';
 import { useToast } from "@/hooks/use-toast";
 import { formatAmount } from '../../lib/currency';
 import { analyzeTransaction } from '@/lib/transactionUtils';
+import { useEffect, useState } from 'react';
 
 interface TransactionListProps {
   questions: Question[];
@@ -95,7 +97,7 @@ function TransactionDetails({ tx, chainId }: { tx: ProposalTransaction; chainId:
         <div className="flex items-center">
           <span className="text-sm text-gray-400 w-16">Data:</span>
           <span className="font-mono text-sm truncate">
-            {details.type === 'custom' && details.decodedCalldata 
+            {details.type === 'custom' && details.decodedCalldata
               ? `${details.decodedCalldata.functionName}(${details.decodedCalldata.params.join(', ')})`
               : tx.data.slice(0, 10) + '...'}
           </span>
@@ -105,21 +107,21 @@ function TransactionDetails({ tx, chainId }: { tx: ProposalTransaction; chainId:
   );
 }
 
-function TransactionStatus({ 
-  status, 
-  onExecute 
-}: { 
+function TransactionStatus({
+  status,
+  onExecute
+}: {
   status?: TransactionStatus;
   onExecute: () => void;
 }) {
   const { toast } = useToast();
-  
+
   const handleExecute = async () => {
     try {
       await onExecute();
     } catch (error: any) {
       let errorMessage = "Failed to execute transaction";
-      
+
       if (error.message) {
         if (error.reason) {
           errorMessage = `Error: ${error.reason}`;
@@ -136,13 +138,13 @@ function TransactionStatus({
           errorMessage = error.message;
         }
       }
-      
+
       toast({
         variant: "destructive",
         title: "Transaction Failed",
         description: errorMessage,
       });
-      
+
       console.error("Transaction error details:", error);
     }
   };
@@ -155,7 +157,7 @@ function TransactionStatus({
       </div>
     );
   }
-  
+
   return (
     <Button
       disabled={!status?.canExecute}
@@ -170,6 +172,34 @@ function TransactionStatus({
   );
 }
 
+function TimeRemaining({ question }: { question: Question }) {
+  if (!question.currentAnswer) {
+    return null;
+  }
+
+  const timeRemainingInSeconds = Math.floor(question.timeRemainingInPhase / 1000);
+  if (timeRemainingInSeconds <= 0) {
+    return <div className="text-sm text-purple-200">Phase ended</div>;
+  }
+
+  const days = Math.floor(timeRemainingInSeconds / 86400);
+  const hours = Math.floor((timeRemainingInSeconds % 86400) / 3600);
+  const minutes = Math.floor((timeRemainingInSeconds % 3600) / 60);
+  const seconds = timeRemainingInSeconds % 60;
+
+  let timeStr = '';
+  if (days > 0) timeStr += `${days}d `;
+  if (hours > 0) timeStr += `${hours}h `;
+  if (minutes > 0) timeStr += `${minutes}m `;
+  if (seconds > 0) timeStr += `${seconds}s`;
+
+  return (
+    <div className="text-sm text-purple-200">
+      {timeStr.trim()}
+    </div>
+  );
+}
+
 export function TransactionList({ questions, transactionDetails, transactionStatuses, loadingStatuses, moduleAddress, chainId, onExecuteTransaction, onVouchComplete }: TransactionListProps) {
   return (
     <div className="space-y-5">
@@ -179,22 +209,22 @@ export function TransactionList({ questions, transactionDetails, transactionStat
             <div className="bg-purple-900/10 p-4 border-b border-purple-800/20">
               <div className="flex justify-between">
                 <div className="space-y-2">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3"> 
                     <div className="text-xs font-mono text-purple-300">
                       ID: {question.id.slice(0, 8)}...{question.id.slice(-6)}
                     </div>
                     {getStatusBadge(question.phase)}
                   </div>
+                  <TimeRemaining question={question} />
                 </div>
               </div>
               <div className="mt-2 flex items-center gap-3">
                 <span className="text-sm text-purple-200">Answer: </span>
-                <span className={`font-medium ${
-                  !question.currentAnswer ? "text-purple-200" :
+                <span className={`font-medium ${!question.currentAnswer ? "text-purple-200" :
                   question.currentAnswer === "0x0000000000000000000000000000000000000000000000000000000000000001" ? "text-green-400" : "text-red-400"
-                }`}>
+                  }`}>
                   {!question.currentAnswer ? "Pending" :
-                   question.currentAnswer === "0x0000000000000000000000000000000000000000000000000000000000000001" ? "Approved" : "Rejected"}
+                    question.currentAnswer === "0x0000000000000000000000000000000000000000000000000000000000000001" ? "Approved" : "Rejected"}
                 </span>
               </div>
             </div>
