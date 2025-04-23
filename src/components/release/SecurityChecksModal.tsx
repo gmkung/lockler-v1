@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "../ui/button";
 import { getSecurityIcon } from "./utils";
@@ -38,12 +39,15 @@ export function SecurityChecksModal({ modules, open, onOpenChange, safeAddress, 
 
   const getSafeAppUrl = () => {
     if (!safeAddress || !chainId) return '';
-    const chainPrefix = chainId === SUPPORTED_CHAINS.GNOSIS ? 'gno' : '1';
+    let chainPrefix = '1';
+    if (chainId === SUPPORTED_CHAINS.GNOSIS) {
+      chainPrefix = 'gno';
+    } else if (chainId === SUPPORTED_CHAINS.MAINNET) {
+      chainPrefix = 'eth';
+    }
     return `https://app.safe.global/apps/open?safe=${chainPrefix}:${safeAddress}&appUrl=https%3A%2F%2Fzodiac.gnosisguild.org%2F`;
   };
 
-  // If open and onOpenChange are provided, use them for controlled dialog
-  // Otherwise, use the dialog in uncontrolled mode
   return open !== undefined && onOpenChange ? (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-gray-900 border-gray-800">
@@ -151,3 +155,4 @@ export function SecurityChecksModal({ modules, open, onOpenChange, safeAddress, 
     </Dialog>
   );
 }
+
