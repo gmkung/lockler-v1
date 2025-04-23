@@ -149,11 +149,6 @@ export function TopBar({
                 ) : (
                   <Info className="h-5 w-5 text-yellow-400" />
                 )}
-                {checksOpen && (
-                  <SecurityChecksModal
-                    modules={modules}
-                  />
-                )}
               </span>
             </span>
           </div>
@@ -189,11 +184,13 @@ export function TopBar({
           )}
         </div>
       </div>
-      {/* SecurityChecksModal as a dialog */}
+      {/* SecurityChecksModal as a dialog - now correctly passing safeAddress and chainId */}
       <SecurityChecksModal
         modules={modules}
         open={checksOpen}
         onOpenChange={setChecksOpen}
+        safeAddress={safeAddress}
+        chainId={chainId}
       />
     </div>
   );
