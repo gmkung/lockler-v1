@@ -96,7 +96,7 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
               id="description"
               value={contractTerms.description}
               onChange={(e) => setContractTerms({ ...contractTerms, description: e.target.value })}
-              className={`${inputClass} min-h-[120px] w-full`}
+              className={`${inputClass} min-h-[180px] w-full resize-y`}
               placeholder="Describe what triggers release (e.g. Design delivery, bug bounty, etc)"
             />
           </div>
@@ -204,7 +204,19 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
           </div>
 
           <div>
-            <Label className="text-purple-100 font-semibold">Participants</Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-purple-100 font-semibold">Participants</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <HelpCircle className="h-4 w-4 text-purple-400" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[300px]">
+                    <p>These are the named addresses that should send or receive funds from this Lockler. This is for display purposes - the correctness and validity of any proposed transactions will still be evaluated by the Kleros Oracle after a proposal is submitted.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             {contractTerms.payments.map((payment, index) => (
               <div key={index} className="flex gap-3 mt-3 bg-[#1a1831] p-3 rounded-xl items-center">
                 <div className="flex-none">
