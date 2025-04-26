@@ -96,7 +96,7 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
               id="description"
               value={contractTerms.description}
               onChange={(e) => setContractTerms({ ...contractTerms, description: e.target.value })}
-              className={`${inputClass} min-h-[180px] w-full resize-y`}
+              className={`${inputClass} min-h-[240px] w-full resize-y`}
               placeholder="Describe what triggers release (e.g. Design delivery, bug bounty, etc)"
             />
           </div>
