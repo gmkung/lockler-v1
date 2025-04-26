@@ -21,10 +21,11 @@ interface ContractTermsFormProps {
   chainId: number;
 }
 
-// Utility style helpers
 const inputClass = "rounded-xl bg-gray-900 mt-1 text-white text-sm border-0 focus:ring-2 focus:ring-pink-400";
 const selectClass = "rounded-xl bg-gray-900 text-white px-2 py-1 text-sm border-0 focus:ring-2 focus:ring-purple-500";
 const cardClass = "rounded-3xl bg-gradient-to-br from-[#23213A] to-[#2D274B] border border-gray-800 shadow-md";
+
+const SECONDS_IN_DAY = 86400;
 
 export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode, chainId }: ContractTermsFormProps) {
   const getAvailableTokens = () => getAvailableTokensUtil(chainId);
@@ -65,12 +66,19 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
     }
   };
 
+  const convertDaysToSeconds = (days: number) => Math.floor(days * SECONDS_IN_DAY);
+  const convertSecondsToDays = (seconds: number) => Math.max(1, Math.floor(seconds / SECONDS_IN_DAY));
+
+  const updateDurationParam = (field: 'timeout' | 'cooldown' | 'expiration', daysValue: string) => {
+    const days = parseFloat(daysValue);
+    const seconds = !isNaN(days) ? convertDaysToSeconds(days) : 0;
+    setContractTerms({ ...contractTerms, [field]: seconds });
+  };
+
   return (
     <div className="w-full">
       <div className="grid gap-8 grid-cols-5">
-        {/* Input Fields Column - Takes up 3/5 of the space */}
         <div className="col-span-3 space-y-6">
-          {/* Basic Info */}
           <div>
             <Label htmlFor="title" className="text-purple-100 font-semibold">Title</Label>
             <Input
@@ -93,10 +101,21 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
             />
           </div>
 
-          {/* Config Section - Compact Layout */}
           <div className="grid grid-cols-4 gap-4 bg-[#1a1831] p-4 rounded-xl">
             <div>
-              <Label className="text-purple-100 text-xs">Question Bond ({getNativeCurrencySymbol()})</Label>
+              <div className="flex items-center gap-1">
+                <Label className="text-purple-100 text-xs">Question Bond ({getNativeCurrencySymbol()})</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <HelpCircle className="h-4 w-4 text-purple-400" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[300px]">
+                      <p>Amount of native currency that a transaction proposer needs to put up as deposit to prevent abuse. This amount will only be lost if the proposal was successfully challenged.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="bond"
                 type="number"
@@ -108,41 +127,82 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
               />
             </div>
             <div>
-              <Label className="text-purple-100 text-xs">Timeout (s)</Label>
+              <div className="flex items-center gap-1">
+                <Label className="text-purple-100 text-xs">Timeout (days)</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <HelpCircle className="h-4 w-4 text-purple-400" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[300px]">
+                      <p>The time allowed for answering each question before it can be answered by the arbitrator.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="timeout"
                 type="number"
-                value={contractTerms.timeout || "0"}
-                onChange={(e) => setContractTerms({ ...contractTerms, timeout: parseInt(e.target.value) })}
+                value={contractTerms.timeout ? convertSecondsToDays(contractTerms.timeout) : "0"}
+                onChange={(e) => updateDurationParam('timeout', e.target.value)}
                 className={inputClass + " text-xs"}
-                placeholder="3600"
+                placeholder="1"
+                min="0"
+                step="1"
               />
             </div>
             <div>
-              <Label className="text-purple-100 text-xs">Cooldown (s)</Label>
+              <div className="flex items-center gap-1">
+                <Label className="text-purple-100 text-xs">Cooldown (days)</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <HelpCircle className="h-4 w-4 text-purple-400" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[300px]">
+                      <p>Waiting period required after an oracle provides an answer before the transaction can be executed.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="cooldown"
                 type="number"
-                value={contractTerms.cooldown || "0"}
-                onChange={(e) => setContractTerms({ ...contractTerms, cooldown: parseInt(e.target.value) })}
+                value={contractTerms.cooldown ? convertSecondsToDays(contractTerms.cooldown) : "0"}
+                onChange={(e) => updateDurationParam('cooldown', e.target.value)}
                 className={inputClass + " text-xs"}
-                placeholder="3600"
+                placeholder="1"
+                min="0"
+                step="1"
               />
             </div>
             <div>
-              <Label className="text-purple-100 text-xs">Expiration (s)</Label>
+              <div className="flex items-center gap-1">
+                <Label className="text-purple-100 text-xs">Expiration (days)</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <HelpCircle className="h-4 w-4 text-purple-400" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[300px]">
+                      <p>Duration that a positive answer from the oracle remains valid. After this period, the answer expires and the proposal becomes invalid. Set to 0 for no expiration.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="expiration"
                 type="number"
-                value={contractTerms.expiration || "0"}
-                onChange={(e) => setContractTerms({ ...contractTerms, expiration: parseInt(e.target.value) })}
+                value={contractTerms.expiration ? convertSecondsToDays(contractTerms.expiration) : "0"}
+                onChange={(e) => updateDurationParam('expiration', e.target.value)}
                 className={inputClass + " text-xs"}
-                placeholder="86400"
+                placeholder="7"
+                min="0"
+                step="1"
               />
             </div>
           </div>
 
-          {/* Participants Section */}
           <div>
             <Label className="text-purple-100 font-semibold">Participants</Label>
             {contractTerms.payments.map((payment, index) => (
@@ -204,7 +264,6 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
           </div>
         </div>
 
-        {/* JSON Preview Column */}
         <div className="col-span-2 space-y-3">
           <div className="flex items-center gap-2">
             <Label className="text-purple-100 font-semibold">Contract JSON Preview</Label>
