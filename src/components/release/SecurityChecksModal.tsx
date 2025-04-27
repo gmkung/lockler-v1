@@ -5,6 +5,12 @@ import { getSecurityIcon } from "./utils";
 import { CircleCheck, Info, ExternalLink } from "lucide-react";
 import { Dispatch, SetStateAction } from "react";
 import { SUPPORTED_CHAINS } from "@/lib/constants";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SecurityChecksModalProps {
   modules: Array<{
@@ -48,50 +54,85 @@ export function SecurityChecksModal({ modules, open, onOpenChange, safeAddress, 
     return `https://app.safe.global/apps/open?safe=${chainPrefix}:${safeAddress}&appUrl=https%3A%2F%2Fzodiac.gnosisguild.org%2F`;
   };
 
+  const renderCheckWithTooltip = (label: string, value: boolean, tooltip: string) => (
+    <div className="flex justify-between items-center p-2 rounded hover:bg-gray-800/50">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="text-sm text-gray-200 cursor-help">{label}</span>
+          </TooltipTrigger>
+          <TooltipContent side="left" className="max-w-[300px]">
+            <p className="text-sm">{tooltip}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <span className={value ? "text-green-400" : "text-red-400"}>
+        {getSecurityIcon(value)}
+      </span>
+    </div>
+  );
+
+  const dialogContent = (
+    <div className="space-y-4 mt-4">
+      <div className="grid grid-cols-1 gap-2">
+        {renderCheckWithTooltip(
+          "Module Enabled",
+          module.isEnabled,
+          "Verifies that the Reality Module is enabled on the Lockler Safe"
+        )}
+        {renderCheckWithTooltip(
+          "Reality Module Verification",
+          module.isRealityModule,
+          "Confirms this module is based on a verified Reality Module contract"
+        )}
+        {renderCheckWithTooltip(
+          "Minimal Proxy",
+          module.validationChecks.isMinimalProxy,
+          "Verifies the contract is an EIP-1167 minimal proxy to the verified Reality Module deployment on this chain"
+        )}
+        {renderCheckWithTooltip(
+          "Is Owner",
+          module.validationChecks.isOwner,
+          "Confirms the Reality Module is set as one of the owners of the Safe"
+        )}
+        {renderCheckWithTooltip(
+          "Has Valid Threshold",
+          module.validationChecks.hasValidThreshold,
+          "Verifies the Safe requires exactly 2 signatures for any transaction"
+        )}
+        {renderCheckWithTooltip(
+          "Has Valid Owner Count",
+          module.validationChecks.hasValidOwnerCount,
+          "Safe has 3 or fewer owners (currently has 2)"
+        )}
+        {renderCheckWithTooltip(
+          "Is Only Enabled Module",
+          module.validationChecks.isOnlyEnabledModule,
+          "Confirms this is the only module enabled on the Safe, ensuring it's the only way to move funds"
+        )}
+      </div>
+      {safeAddress && chainId && (
+        <div className="mt-6 flex justify-end">
+          <Button
+            variant="outline"
+            className="gap-2 text-sm bg-gray-800/50 border-gray-700 hover:bg-gray-700/50 text-gray-200"
+            onClick={() => window.open(getSafeAppUrl(), '_blank')}
+          >
+            Inspect on Safe app
+            <ExternalLink className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
   return open !== undefined && onOpenChange ? (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-gray-900 border-gray-800">
         <DialogHeader>
           <DialogTitle className="text-white">Security Verification Details</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-4">
-          <div className="grid grid-cols-1 gap-2">
-            <div className="flex justify-between items-center p-2 rounded hover:bg-gray-800/50">
-              <span className="text-sm text-gray-200">Module Enabled:</span>
-              <span className={module.isEnabled ? "text-green-400" : "text-red-400"}>
-                {getSecurityIcon(module.isEnabled)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center p-2 rounded hover:bg-gray-800/50">
-              <span className="text-sm text-gray-200">Reality Module Verification:</span>
-              <span className={module.isRealityModule ? "text-green-400" : "text-red-400"}>
-                {getSecurityIcon(module.isRealityModule)}
-              </span>
-            </div>
-            {Object.entries(module.validationChecks).map(([key, value]) => (
-              <div key={key} className="flex justify-between items-center p-2 rounded hover:bg-gray-800/50">
-                <span className="text-sm text-gray-200">
-                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
-                </span>
-                <span className={value ? "text-green-400" : "text-red-400"}>
-                  {getSecurityIcon(value)}
-                </span>
-              </div>
-            ))}
-          </div>
-          {safeAddress && chainId && (
-            <div className="mt-6 flex justify-end">
-              <Button
-                variant="outline"
-                className="gap-2 text-sm bg-gray-800/50 border-gray-700 hover:bg-gray-700/50 text-gray-200"
-                onClick={() => window.open(getSafeAppUrl(), '_blank')}
-              >
-                Inspect on Safe app
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-        </div>
+        {dialogContent}
       </DialogContent>
     </Dialog>
   ) : (
@@ -113,44 +154,7 @@ export function SecurityChecksModal({ modules, open, onOpenChange, safeAddress, 
         <DialogHeader>
           <DialogTitle className="text-white">Security Verification Details</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-4">
-          <div className="grid grid-cols-1 gap-2">
-            <div className="flex justify-between items-center p-2 rounded hover:bg-gray-800/50">
-              <span className="text-sm text-gray-200">Module Enabled:</span>
-              <span className={module.isEnabled ? "text-green-400" : "text-red-400"}>
-                {getSecurityIcon(module.isEnabled)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center p-2 rounded hover:bg-gray-800/50">
-              <span className="text-sm text-gray-200">Reality Module Verification:</span>
-              <span className={module.isRealityModule ? "text-green-400" : "text-red-400"}>
-                {getSecurityIcon(module.isRealityModule)}
-              </span>
-            </div>
-            {Object.entries(module.validationChecks).map(([key, value]) => (
-              <div key={key} className="flex justify-between items-center p-2 rounded hover:bg-gray-800/50">
-                <span className="text-sm text-gray-200">
-                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
-                </span>
-                <span className={value ? "text-green-400" : "text-red-400"}>
-                  {getSecurityIcon(value)}
-                </span>
-              </div>
-            ))}
-          </div>
-          {safeAddress && chainId && (
-            <div className="mt-6 flex justify-end">
-              <Button
-                variant="outline"
-                className="gap-2 text-sm bg-gray-800/50 border-gray-700 hover:bg-gray-700/50 text-gray-200"
-                onClick={() => window.open(getSafeAppUrl(), '_blank')}
-              >
-                Inspect on Safe app
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-        </div>
+        {dialogContent}
       </DialogContent>
     </Dialog>
   );
