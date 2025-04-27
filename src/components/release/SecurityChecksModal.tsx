@@ -103,7 +103,7 @@ export function SecurityChecksModal({ modules, open, onOpenChange, safeAddress, 
         {renderCheckWithTooltip(
           "Has Valid Owner Count",
           module.validationChecks.hasValidOwnerCount,
-          "Safe has 3 or fewer owners (currently has 2)"
+          "Safe has 3 or fewer owners."
         )}
         {renderCheckWithTooltip(
           "Is Only Enabled Module",
