@@ -15,6 +15,7 @@ interface LocklerResponse {
       id: string;
     }>;
     threshold: string;
+    createdAt: string;
   }>;
 }
 
@@ -41,6 +42,7 @@ const fetchLocklers = async (
               id
             }
             threshold
+            createdAt
           }
         }
       `,
@@ -53,7 +55,7 @@ const fetchLocklers = async (
 
   const data = await response.json();
   return data.data;
-};
+}
 
 export function useLocklers() {
   const { address } = useAccount();

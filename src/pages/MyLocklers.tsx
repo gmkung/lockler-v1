@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useLocklers } from "@/hooks/useLocklers";
@@ -18,6 +19,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link2, FileText } from "lucide-react";
+import { format } from "date-fns";
 
 export default function MyLocklers() {
   const chainId = useChainId();
@@ -68,8 +70,8 @@ function LocklerTable({ locklers }: { locklers: any[] }) {
       <TableHeader>
         <TableRow>
           <TableHead>Safe ID</TableHead>
-          <TableHead>Reality Module</TableHead>
-          <TableHead>Threshold</TableHead>
+          <TableHead>Owners</TableHead>
+          <TableHead>Created At</TableHead>
           <TableHead>Action</TableHead>
         </TableRow>
       </TableHeader>
@@ -79,10 +81,18 @@ function LocklerTable({ locklers }: { locklers: any[] }) {
             <TableCell className="font-medium truncate max-w-[200px]">
               {lockler.safe.id}
             </TableCell>
-            <TableCell className="truncate max-w-[200px]">
-              {lockler.realityModules[0]?.id || "N/A"}
+            <TableCell>
+              <div className="max-h-[100px] overflow-y-auto text-xs">
+                {lockler.owners.map((owner: string, index: number) => (
+                  <div key={index} className="mb-1 truncate max-w-[200px]">
+                    {owner}
+                  </div>
+                ))}
+              </div>
             </TableCell>
-            <TableCell>{lockler.threshold}</TableCell>
+            <TableCell>
+              {formatTimestamp(lockler.createdAt)}
+            </TableCell>
             <TableCell>
               <Link to={`/release/${chainId}/${lockler.safe.id}`}>
                 <Button variant="outline" size="sm">
@@ -96,6 +106,12 @@ function LocklerTable({ locklers }: { locklers: any[] }) {
       </TableBody>
     </Table>
   );
+}
+
+function formatTimestamp(timestamp: string): string {
+  // Convert the timestamp (in seconds) to a JavaScript Date object
+  const date = new Date(parseInt(timestamp) * 1000);
+  return format(date, 'PPP p'); // Format as "Aug 29, 2023, 2:30 PM"
 }
 
 function LocklerSkeleton() {
