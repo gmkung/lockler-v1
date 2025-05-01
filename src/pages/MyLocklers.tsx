@@ -7,10 +7,11 @@ import { AppTopBar } from "@/components/AppTopBar";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Link2, FileText, Copy, CopyCheck } from "lucide-react";
+import { Link2, FileText, Copy, CopyCheck, Network } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Footer } from "@/components/ui/footer";
+import { NetworkStatus } from "@/components/ui/NetworkStatus";
 
 export default function MyLocklers() {
   const chainId = useChainId();
@@ -67,10 +68,11 @@ function LocklerGrid({ locklers }: { locklers: any[] }) {
 function LocklerCard({ lockler, chainId }: { lockler: any, chainId: number }) {
   return (
     <Card className="bg-gray-900/30 rounded-xl border border-gray-800 overflow-hidden hover:border-purple-500/50 transition-all hover:shadow-lg hover:shadow-purple-500/10">
-      <CardHeader className="bg-gray-900/40 pb-3">
+      <CardHeader className="bg-gray-900/40 pb-3 flex flex-row justify-between items-center">
         <p className="font-medium text-purple-200 truncate" title={lockler.safe.id}>
           {lockler.safe.id.substring(0, 8)}...{lockler.safe.id.substring(lockler.safe.id.length - 6)}
         </p>
+        <NetworkStatus chainId={chainId} />
       </CardHeader>
       <CardContent className="pt-3">
         <div className="space-y-2">

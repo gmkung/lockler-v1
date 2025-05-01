@@ -71,15 +71,19 @@ export function WalletConnect({ requiredChainId }: WalletConnectProps) {
   
   return (
     <div className="flex flex-col items-end">
-      <div className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
-        <div className="h-3 w-3 bg-green-500 rounded-full" />
-        <p className="text-sm font-medium text-gray-200">
-          {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected'}
-        </p>
+      <div className="flex items-center gap-0 overflow-hidden rounded-lg border border-gray-700">
+        <div className="flex items-center gap-2 bg-gray-800 px-4 py-2">
+          <div className="h-3 w-3 bg-green-500 rounded-full" />
+          <p className="text-sm font-medium text-gray-200">
+            {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected'}
+          </p>
+        </div>
+        {connectedChainId && (
+          <div className="h-full px-4 py-2 bg-purple-900/50 border-l border-gray-700">
+            <NetworkStatus chainId={connectedChainId} />
+          </div>
+        )}
       </div>
-      {connectedChainId && (
-        <NetworkStatus chainId={connectedChainId} />
-      )}
     </div>
   );
 }
