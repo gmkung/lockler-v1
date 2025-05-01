@@ -28,7 +28,6 @@ interface AppTopBarProps {
       isOnlyEnabledModule: boolean;
     };
   }>;
-  onSetupNew?: () => void;
   pageTitle?: string;
 }
 
@@ -37,7 +36,6 @@ export function AppTopBar({
   safeAddress,
   moduleAddress,
   modules = [],
-  onSetupNew,
   pageTitle
 }: AppTopBarProps) {
   const location = useLocation();
@@ -50,8 +48,7 @@ export function AppTopBar({
   
   const navItems = [
     { path: "/setup", label: "Create Lockler" },
-    { path: "/myLocklers", label: "My Locklers" },
-    { path: "/release", label: "Release Funds" }
+    { path: "/myLocklers", label: "My Locklers" }
   ];
   
   const module = modules && modules[0];
@@ -204,15 +201,6 @@ export function AppTopBar({
               Connect Wallet
             </Button>
           ) : null}
-          
-          {onSetupNew && (
-            <Button
-              onClick={onSetupNew}
-              className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600"
-            >
-              Setup New Lockler
-            </Button>
-          )}
         </div>
       </div>
       

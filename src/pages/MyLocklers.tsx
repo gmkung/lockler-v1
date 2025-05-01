@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useLocklers } from "@/hooks/useLocklers";
 import { useChainId } from "wagmi";
 import { AppTopBar } from "@/components/AppTopBar";
@@ -23,19 +22,13 @@ import { Footer } from "@/components/ui/footer";
 
 export default function MyLocklers() {
   const chainId = useChainId();
-  const navigate = useNavigate();
   const { data, isLoading, error } = useLocklers();
-  
-  const handleSetupNew = () => {
-    navigate('/setup');
-  };
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#23213A] to-[#2D274B]">
       <AppTopBar 
         chainId={chainId}
         pageTitle="My Locklers"
-        onSetupNew={handleSetupNew}
       />
       
       <div className="container mx-auto px-4 py-6">

@@ -61,10 +61,6 @@ export default function Release() {
     setTransactionStatuses 
   } = useTransactionStatus(questions, moduleAddress, chainId);
 
-  const handleSetupNew = () => {
-    navigate('/setup');
-  };
-
   const handleExecuteTransactionWrapper = async (
     question: Question,
     transaction: ProposalTransaction,
@@ -161,7 +157,6 @@ export default function Release() {
           safeAddress={safeAddress}
           moduleAddress={moduleAddress}
           modules={modules}
-          onSetupNew={handleSetupNew}
           pageTitle="Lockler Control"
         />
         
