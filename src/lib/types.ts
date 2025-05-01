@@ -1,5 +1,4 @@
-
-import { ethers } from 'ethers';
+import { ethers } from "ethers";
 
 export interface NativeCurrency {
   name: string;
@@ -26,6 +25,7 @@ export interface Chain {
   blockExplorer: string;
   nativeCurrency: NativeCurrency;
   contracts: ChainContracts;
+  locklerSubgraphEndpoint: string;
 }
 
 export interface SetupParams {
@@ -86,13 +86,13 @@ export type Payment = {
   address: string;
   amount: string;
   currency: string;
-  role: 'sender' | 'receiver';
+  role: "sender" | "receiver";
 };
 
 export type EscrowContractTerms = {
   title: string;
   description: string;
-  type: 'p2p' | 'grant';
+  type: "p2p" | "grant";
   payments: Payment[];
   createdAt: number;
   bond?: string;
@@ -129,4 +129,4 @@ export interface ProposalTransaction {
   };
 }
 
-export type TransactionType = 'native' | 'erc20' | 'erc721' | 'custom';
+export type TransactionType = "native" | "erc20" | "erc721" | "custom";

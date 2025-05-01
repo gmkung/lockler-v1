@@ -13,6 +13,8 @@ export const CHAIN_CONFIG: Record<number, Chain> = {
     name: "Ethereum Mainnet",
     rpcUrl: "https://eth-mainnet.g.alchemy.com/v2/your-api-key",
     blockExplorer: "https://etherscan.io",
+    locklerSubgraphEndpoint:
+      "https://api.studio.thegraph.com/query/72336/lockler-subgraph-eth/version/latest",
     nativeCurrency: {
       name: "Ether",
       symbol: "ETH",
@@ -35,6 +37,8 @@ export const CHAIN_CONFIG: Record<number, Chain> = {
     name: "Gnosis Chain",
     rpcUrl: "https://gnosis-rpc.publicnode.com",
     blockExplorer: "https://gnosisscan.io",
+    locklerSubgraphEndpoint:
+      "https://api.studio.thegraph.com/query/72336/lockler-subgraph-gno/version/latest",
     nativeCurrency: {
       name: "xDAI",
       symbol: "xDAI",
@@ -63,15 +67,15 @@ export const DEFAULT_SALT_NONCE = Date.now().toString();
 // Updated defaults with more logical values
 export const DEFAULT_BOND = "0.01"; // 0.01 ETH/xDAI
 export const DEFAULT_TIMEOUTS = {
-  TIMEOUT: 86400,    // 24 hours in seconds
-  COOLDOWN: 43200,   // 12 hours in seconds
-  EXPIRATION: 604800 // 7 days in seconds
+  TIMEOUT: 86400, // 24 hours in seconds
+  COOLDOWN: 43200, // 12 hours in seconds
+  EXPIRATION: 604800, // 7 days in seconds
 } as const;
 
 // Helper functions to get chain-specific values
 export const getChainConfig = (chainId: number): Chain => {
   const config = CHAIN_CONFIG[chainId];
-  console.log('Found config:', config);
+  console.log("Found config:", config);
   if (!config) {
     throw new Error(`Unsupported chain ID: ${chainId}`);
   }
