@@ -3,11 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { JsonRpcProvider } from 'ethers';
 import { Card, CardHeader, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Logo } from "../components/ui/logo";
-import { ShieldCheck, ExternalLink } from "lucide-react";
-import { SecurityChecksModal } from "../components/release/SecurityChecksModal";
-import { TopBar } from "../components/release/TopBar";
+import { AppTopBar } from '@/components/AppTopBar';
 import { TransactionList } from "../components/release/TransactionList";
 import { getBlockExplorer, CHAIN_CONFIG, getRpcUrl, SUPPORTED_CHAINS, TOKENS } from '../lib/constants';
 import { ProposeTransactionModal } from '../components/ProposeTransactionModal';
@@ -65,26 +61,8 @@ export default function Release() {
     setTransactionStatuses 
   } = useTransactionStatus(questions, moduleAddress, chainId);
 
-  const getCurrencyInfo = (address: string, chainId: number | null) => {
-    if (address === TOKENS.NATIVE.address) {
-      return {
-        symbol: chainId === SUPPORTED_CHAINS.GNOSIS ? 'xDAI' : TOKENS.NATIVE.symbol,
-        decimals: TOKENS.NATIVE.decimals
-      };
-    }
-
-    if (chainId && TOKENS.USDC[chainId as keyof typeof TOKENS.USDC]) {
-      return TOKENS.USDC[chainId as keyof typeof TOKENS.USDC];
-    }
-
-    if (chainId === SUPPORTED_CHAINS.MAINNET && TOKENS.PNK[SUPPORTED_CHAINS.MAINNET as keyof typeof TOKENS.PNK]) {
-      return TOKENS.PNK[SUPPORTED_CHAINS.MAINNET as keyof typeof TOKENS.PNK];
-    }
-
-    return {
-      symbol: 'UNKNOWN',
-      decimals: 18
-    };
+  const handleSetupNew = () => {
+    navigate('/setup');
   };
 
   const handleExecuteTransactionWrapper = async (
@@ -178,15 +156,15 @@ export default function Release() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#23213A] to-[#2D274B] py-6 px-4 flex flex-col">
       <div className="container mx-auto max-w-7xl flex-grow">
-        <TopBar
+        <AppTopBar
           chainId={chainId}
           safeAddress={safeAddress}
           moduleAddress={moduleAddress}
           modules={modules}
-          walletAddress={address}
-          onConnectWallet={() => connect({ connector: injected() })}
-          onSetupNew={() => navigate('/setup')}
+          onSetupNew={handleSetupNew}
+          pageTitle="Lockler Control"
         />
+        
         <Card className="bg-[#2D274B] border-gray-800 rounded-3xl shadow-2xl">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

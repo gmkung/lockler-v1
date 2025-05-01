@@ -10,6 +10,7 @@ import { ContractTermsForm } from "../components/ContractTermsForm";
 import { Copy, ExternalLink, Lock } from "lucide-react";
 import { switchChain } from '../lib/utils';
 import { toMinorUnits } from '../lib/currency';
+import { AppTopBar } from '@/components/AppTopBar';
 
 import {
     DEFAULT_SALT_NONCE,
@@ -292,114 +293,121 @@ export default function Setup() {
     );
 
     return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a1831] to-[#231a2c] items-center justify-center py-7 px-3">
-            <StepWrapper wide={step === 2}>
-                <div className="mb-4 text-center">
-                    <ChainSelector />
-                </div>
-
-                <div className="mb-4">
-                    <StepProgressBar step={step} total={3} />
-                </div>
-
-                {step === 1 && (
-                    <div>
-                        <div className="mt-3 mb-2 text-center">
-                            <div className="text-sm text-purple-300 font-semibold mb-1">
-                                Step 1 of 3
-                            </div>
-                            <h1 className="text-2xl font-extrabold text-white mb-2">
-                                Create Lockler Safe
-                            </h1>
-                            <p className="text-sm text-purple-200 mb-2 px-2">
-                                Create single-use smart contract escrows addresses, secured by Kleros
-                            </p>
-                        </div>
-                        <div className="rounded-xl bg-purple-900/30 border border-purple-900 px-3 py-2 mb-4">
-                            <div className="text-xs text-purple-100 text-center">
-                                <span className="font-semibold">Lockler uses Safe under the hood</span> — the most trusted smart contract wallet in Web3.
-                            </div>
-                        </div>
-
-                        <ModeSelection escrowMode={escrowMode} setEscrowMode={setEscrowMode} />
-                        <RoleSelection escrowMode={escrowMode} p2pRole={p2pRole} setP2PRole={setP2PRole} />
-                        <CounterpartyInput
-                            escrowMode={escrowMode}
-                            p2pRole={p2pRole}
-                            counterpartyAddress={counterpartyAddress}
-                            setCounterpartyAddress={setCounterpartyAddress}
-                        />
-
-                        <Button
-                            className="w-full py-3 rounded-3xl text-lg bg-gradient-to-br from-pink-500 to-purple-500 mt-4 font-bold transition-colors shadow-lg"
-                            onClick={handleSafeDeploy}
-                            disabled={loading || !!deployedSafeAddress || (escrowMode === 'p2p' && !counterpartyAddress)}
-                        >
-                            {loading ? "Deploying…" : deployedSafeAddress ? "Lockler Safe Created!" : "Create Lockler Safe"}
-                        </Button>
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a1831] to-[#231a2c]">
+            <AppTopBar 
+              pageTitle="Create Lockler"
+              chainId={selectedChainId}
+            />
+            
+            <div className="flex-grow flex items-center justify-center py-7 px-3">
+                <StepWrapper wide={step === 2}>
+                    <div className="mb-4 text-center">
+                        <ChainSelector />
                     </div>
-                )}
 
-                {step === 2 && (
-                    <div className="w-full animate-scale-in">
-                        <div className="mt-3 mb-4 text-center px-1">
-                            <div className="text-sm text-purple-300 font-semibold mb-1">
-                                Step 2 of 3
+                    <div className="mb-4">
+                        <StepProgressBar step={step} total={3} />
+                    </div>
+
+                    {step === 1 && (
+                        <div>
+                            <div className="mt-3 mb-2 text-center">
+                                <div className="text-sm text-purple-300 font-semibold mb-1">
+                                    Step 1 of 3
+                                </div>
+                                <h1 className="text-2xl font-extrabold text-white mb-2">
+                                    Create Lockler Safe
+                                </h1>
+                                <p className="text-sm text-purple-200 mb-2 px-2">
+                                    Create single-use smart contract escrows addresses, secured by Kleros
+                                </p>
                             </div>
-                            <h1 className="text-2xl font-extrabold text-white mb-2">
-                                Security System Setup
-                            </h1>
-                            <p className="text-sm text-purple-200 mb-4 px-2">
-                                The created Safe will be governed by a Kleros-governed Zodiac Reality module, ensuring only payments that fulfil the contract can be proposed.
-                            </p>
-                        </div>
+                            <div className="rounded-xl bg-purple-900/30 border border-purple-900 px-3 py-2 mb-4">
+                                <div className="text-xs text-purple-100 text-center">
+                                    <span className="font-semibold">Lockler uses Safe under the hood</span> — the most trusted smart contract wallet in Web3.
+                                </div>
+                            </div>
 
-                        <div className="bg-purple-900/30 border border-purple-700 p-6 rounded-2xl mb-6">
-                            <div className="text-lg text-purple-100 font-semibold mb-4">Fund Release Conditions</div>
-                            <ContractTermsForm
-                                contractTerms={contractTerms}
-                                setContractTerms={setContractTerms}
+                            <ModeSelection escrowMode={escrowMode} setEscrowMode={setEscrowMode} />
+                            <RoleSelection escrowMode={escrowMode} p2pRole={p2pRole} setP2PRole={setP2PRole} />
+                            <CounterpartyInput
                                 escrowMode={escrowMode}
-                                chainId={selectedChainId}
+                                p2pRole={p2pRole}
+                                counterpartyAddress={counterpartyAddress}
+                                setCounterpartyAddress={setCounterpartyAddress}
                             />
+
+                            <Button
+                                className="w-full py-3 rounded-3xl text-lg bg-gradient-to-br from-pink-500 to-purple-500 mt-4 font-bold transition-colors shadow-lg"
+                                onClick={handleSafeDeploy}
+                                disabled={loading || !!deployedSafeAddress || (escrowMode === 'p2p' && !counterpartyAddress)}
+                            >
+                                {loading ? "Deploying…" : deployedSafeAddress ? "Lockler Safe Created!" : "Create Lockler Safe"}
+                            </Button>
                         </div>
+                    )}
 
-                        <Button
-                            onClick={handleModuleDeploy}
-                            disabled={!(deployedSafeAddress || existingSafeAddress) || loading}
-                            className="w-full py-3 rounded-3xl text-lg bg-gradient-to-br from-pink-500 to-purple-500"
-                        >
-                            {loading ? "Deploying…" : moduleDeploymentHash ? "Security System Ready!" : "Create Security System"}
-                        </Button>
-
-                        {moduleDeploymentHash && (
-                            <div className="rounded-xl bg-gradient-to-r from-purple-600/20 to-fuchsia-500/10 mt-4 py-3 px-4 border border-purple-800 text-white text-sm text-center shadow">
-                                <div className="mb-1">
-                                    <span className="font-bold">Lockler Safe:</span> {deployedSafeAddress}
+                    {step === 2 && (
+                        <div className="w-full animate-scale-in">
+                            <div className="mt-3 mb-4 text-center px-1">
+                                <div className="text-sm text-purple-300 font-semibold mb-1">
+                                    Step 2 of 3
                                 </div>
-                                <div>
-                                    <span className="font-bold">Security Module Hash:</span> {moduleDeploymentHash}
-                                </div>
-                                <Button
-                                    className="mt-3 w-full rounded-3xl text-base bg-gradient-to-r from-green-400 to-green-600"
-                                    onClick={() => setStep(3)}
-                                >
-                                    Go to Final Step
-                                </Button>
+                                <h1 className="text-2xl font-extrabold text-white mb-2">
+                                    Security System Setup
+                                </h1>
+                                <p className="text-sm text-purple-200 mb-4 px-2">
+                                    The created Safe will be governed by a Kleros-governed Zodiac Reality module, ensuring only payments that fulfil the contract can be proposed.
+                                </p>
                             </div>
-                        )}
-                    </div>
-                )}
 
-                {step === 3 && (
-                    <SuccessStep
-                        deployedSafeAddress={deployedSafeAddress}
-                        handleCopyAddress={handleCopyAddress}
-                        transactionData={transactionData}
-                        selectedChainId={selectedChainId}
-                    />
-                )}
-            </StepWrapper>
+                            <div className="bg-purple-900/30 border border-purple-700 p-6 rounded-2xl mb-6">
+                                <div className="text-lg text-purple-100 font-semibold mb-4">Fund Release Conditions</div>
+                                <ContractTermsForm
+                                    contractTerms={contractTerms}
+                                    setContractTerms={setContractTerms}
+                                    escrowMode={escrowMode}
+                                    chainId={selectedChainId}
+                                />
+                            </div>
+
+                            <Button
+                                onClick={handleModuleDeploy}
+                                disabled={!(deployedSafeAddress || existingSafeAddress) || loading}
+                                className="w-full py-3 rounded-3xl text-lg bg-gradient-to-br from-pink-500 to-purple-500"
+                            >
+                                {loading ? "Deploying…" : moduleDeploymentHash ? "Security System Ready!" : "Create Security System"}
+                            </Button>
+
+                            {moduleDeploymentHash && (
+                                <div className="rounded-xl bg-gradient-to-r from-purple-600/20 to-fuchsia-500/10 mt-4 py-3 px-4 border border-purple-800 text-white text-sm text-center shadow">
+                                    <div className="mb-1">
+                                        <span className="font-bold">Lockler Safe:</span> {deployedSafeAddress}
+                                    </div>
+                                    <div>
+                                        <span className="font-bold">Security Module Hash:</span> {moduleDeploymentHash}
+                                    </div>
+                                    <Button
+                                        className="mt-3 w-full rounded-3xl text-base bg-gradient-to-r from-green-400 to-green-600"
+                                        onClick={() => setStep(3)}
+                                    >
+                                        Go to Final Step
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {step === 3 && (
+                        <SuccessStep
+                            deployedSafeAddress={deployedSafeAddress}
+                            handleCopyAddress={handleCopyAddress}
+                            transactionData={transactionData}
+                            selectedChainId={selectedChainId}
+                        />
+                    )}
+                </StepWrapper>
+            </div>
             <Footer />
         </div>
     );
