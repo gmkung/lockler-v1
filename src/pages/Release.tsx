@@ -16,6 +16,7 @@ import { injected } from 'wagmi/connectors';
 import { ErrorState } from '../components/release/ErrorState';
 import { LoadingState } from '../components/release/LoadingState';
 import { FundReleaseConditions } from '../components/release/FundReleaseConditions';
+import { TokenBalances } from '../components/release/TokenBalances';
 import { Question } from 'reality-kleros-subgraph';
 import { ProposalTransaction } from '../lib/types';
 import { Footer } from '../components/ui/footer';
@@ -164,6 +165,11 @@ export default function Release() {
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
+                {/* Add TokenBalances component here */}
+                {safeAddress && chainId && (
+                  <TokenBalances chainId={chainId} safeAddress={safeAddress} />
+                )}
+                
                 {formattedTerms && (
                   <FundReleaseConditions
                     formattedTerms={formattedTerms}
@@ -171,6 +177,7 @@ export default function Release() {
                   />
                 )}
               </div>
+              
               <div>
                 <div className="bg-gray-900 rounded-3xl border border-gray-800 p-5 shadow-2xl">
                   <div className="flex justify-between items-center mb-4">

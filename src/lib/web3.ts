@@ -6,13 +6,17 @@ import {
   Interface,
   ZeroAddress,
   Signer,
+  formatUnits,
 } from "ethers";
 import {
   getChainConfig,
   getContractAddresses,
   getRpcUrl,
+  TOKENS,
 } from "./constants";
 import { SAFE_ABI, MODULE_PROXY_FACTORY_ABI } from "../abis/contracts";
+import { ERC20_ABI } from "../abis/erc20";
+import { getTokenInfo } from "./currency";
 
 // ABI for SafeProxyFactory contract's createProxyWithNonce function
 export const SAFE_PROXY_FACTORY_ABI = [
@@ -187,6 +191,62 @@ export const deploySafe = async (
   console.error("Could not extract Safe address from transaction receipt");
   return null;
 };
+
+/**
+ * Fetches token balances for a given address on a specific chain
+ * @param tokenAddresses Array of token addresses to fetch balances for
+ * @param address The address to check balances for
+ * @param chainId The chain ID
+ * @returns Object mapping token addresses to formatted balances
+ */
+export async function fetchTokenBalances(
+  tokenAddresses: string[],
+  address: string,
+  chainId: number
+): Promise<Record<string, string>> {
+  try {
+    const provider = new JsonRpcProvider(getRpcUrl(chainId));
+    const balances: Record<string, string> = {};
+    
+    // Process in batches to avoid rate limiting
+    const batchSize = 3;
+    
+    for (let i = 0; i < tokenAddresses.length; i += batchSize) {
+      const batch = tokenAddresses.slice(i, i + batchSize);
+      
+      await Promise.all(
+        batch.map(async (tokenAddress) => {
+          try {
+            const { decimals } = getTokenInfo(tokenAddress, chainId);
+            
+            // Handle native token differently than ERC20 tokens
+            if (tokenAddress.toLowerCase() === TOKENS.NATIVE.address.toLowerCase()) {
+              const balance = await provider.getBalance(address);
+              balances[tokenAddress] = formatUnits(balance, decimals);
+            } else {
+              const tokenContract = new Contract(tokenAddress, ERC20_ABI, provider);
+              const balance = await tokenContract.balanceOf(address);
+              balances[tokenAddress] = formatUnits(balance, decimals);
+            }
+          } catch (error) {
+            console.error(`Error fetching balance for token ${tokenAddress}:`, error);
+            balances[tokenAddress] = "0";
+          }
+        })
+      );
+      
+      // Small delay between batches to avoid rate limiting
+      if (i + batchSize < tokenAddresses.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    return balances;
+  } catch (error) {
+    console.error("Error fetching token balances:", error);
+    return {};
+  }
+}
 
 export async function getRealityModulesForSafe(
   provider: JsonRpcProvider | BrowserProvider,
