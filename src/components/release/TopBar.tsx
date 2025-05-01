@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Logo } from "../ui/logo";
 import { Button } from "../ui/button";
@@ -6,6 +5,7 @@ import { ExternalLink, CheckCircle2, Info, Copy as CopyIcon } from "lucide-react
 import { CHAIN_CONFIG, getBlockExplorer } from "../../lib/constants";
 import { SecurityChecksModal } from "./SecurityChecksModal";
 import { useToast } from "@/hooks/use-toast";
+import { NetworkStatus } from "../ui/NetworkStatus";
 
 interface TopBarProps {
   chainId: number;
@@ -76,11 +76,11 @@ export function TopBar({
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <Logo className="h-7 w-7 text-pink-400 shrink-0" />
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-white leading-7 truncate">
+          <h1 className="text-xl sm:text-2xl font-bold text-white leading-7 truncate flex items-center gap-2">
             Lockler Control
+            <NetworkStatus chainId={chainId} />
           </h1>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
-            <span className="text-xs text-gray-400">{CHAIN_CONFIG[chainId]?.name}</span>
             {/* Safe address */}
             <span className="flex items-center gap-1">
               <span className="text-xs text-gray-400">Safe:</span>

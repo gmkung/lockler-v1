@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CHAIN_CONFIG } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { switchChain } from "@/lib/utils";
+import { NetworkStatus } from "./NetworkStatus";
 
 interface WalletConnectProps {
   requiredChainId?: number;
@@ -77,9 +78,7 @@ export function WalletConnect({ requiredChainId }: WalletConnectProps) {
         </p>
       </div>
       {connectedChainId && (
-        <span className="text-xs text-purple-300 mt-1">
-          {CHAIN_CONFIG[connectedChainId]?.name || `Chain #${connectedChainId}`}
-        </span>
+        <NetworkStatus chainId={connectedChainId} />
       )}
     </div>
   );

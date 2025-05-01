@@ -9,6 +9,7 @@ import { AddressDisplay } from "./ui/AddressDisplay";
 import { WalletConnect } from "./ui/WalletConnect";
 import { NavigationMenu } from "./ui/NavigationMenu";
 import { SecurityChecksBadge } from "./ui/SecurityChecksBadge";
+import { NetworkStatus } from "./ui/NetworkStatus";
 
 interface AppTopBarProps {
   chainId?: number;
@@ -56,15 +57,14 @@ export function AppTopBar({
         <div className="flex items-center gap-3">
           <Logo className="h-7 w-7 text-pink-400" />
           <div>
-            <h1 className="text-xl font-bold text-white">
+            <h1 className="text-xl font-bold text-white flex items-center gap-2">
               {"Lockler"}
+              {chainId && <NetworkStatus chainId={chainId} />}
             </h1>
             
-            {/* Display chain and addresses only on Release page */}
+            {/* Display addresses only on Release page */}
             {location.pathname.startsWith('/release/') && chainId && safeAddress && (
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
-                <span className="text-xs text-gray-400">{CHAIN_CONFIG[chainId]?.name}</span>
-                
                 {/* Safe address */}
                 <AddressDisplay 
                   address={safeAddress} 
