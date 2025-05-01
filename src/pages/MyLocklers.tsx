@@ -18,8 +18,9 @@ import {
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Link2, FileText } from "lucide-react";
+import { Link2, FileText, Copy, CopyCheck } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 export default function MyLocklers() {
   const chainId = useChainId();
@@ -82,11 +83,9 @@ function LocklerTable({ locklers }: { locklers: any[] }) {
               {lockler.safe.id}
             </TableCell>
             <TableCell>
-              <div className="max-h-[100px] overflow-y-auto text-xs">
+              <div className="max-h-[100px] overflow-y-auto text-xs space-y-1">
                 {lockler.owners.map((owner: string, index: number) => (
-                  <div key={index} className="mb-1 truncate max-w-[200px]">
-                    {owner}
-                  </div>
+                  <TruncatedAddress key={index} address={owner} />
                 ))}
               </div>
             </TableCell>
@@ -105,6 +104,41 @@ function LocklerTable({ locklers }: { locklers: any[] }) {
         ))}
       </TableBody>
     </Table>
+  );
+}
+
+function TruncatedAddress({ address }: { address: string }) {
+  const [isCopied, setIsCopied] = useState(false);
+  const { toast } = useToast();
+  
+  const truncatedAddress = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  
+  const handleCopy = () => {
+    navigator.clipboard.writeText(address);
+    setIsCopied(true);
+    toast({
+      title: "Address copied",
+      description: `${truncatedAddress} copied to clipboard`,
+    });
+    
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+  
+  return (
+    <div className="flex items-center justify-between bg-gray-50 px-2 py-1 rounded">
+      <span className="mr-2">{truncatedAddress}</span>
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="h-5 w-5" 
+        onClick={handleCopy}
+      >
+        {isCopied ? 
+          <CopyCheck size={14} className="text-green-500" /> : 
+          <Copy size={14} className="text-gray-500 hover:text-gray-700" />
+        }
+      </Button>
+    </div>
   );
 }
 
