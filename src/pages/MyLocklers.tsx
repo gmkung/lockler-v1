@@ -1,18 +1,10 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useLocklers } from "@/hooks/useLocklers";
 import { useChainId } from "wagmi";
 import { AppTopBar } from "@/components/AppTopBar";
-import { 
-  Table, 
-  TableBody, 
-  TableCaption, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link2, FileText, Copy, CopyCheck } from "lucide-react";
@@ -32,8 +24,6 @@ export default function MyLocklers() {
       />
       
       <div className="container mx-auto px-4 py-6">
-        <h1 className="text-3xl font-bold mb-6 text-white">My Locklers</h1>
-        
         <Card className="bg-[#2D274B] border-gray-800 rounded-3xl shadow-2xl">
           <CardHeader>
             <h2 className="text-2xl font-bold text-white">Your Locklers</h2>
@@ -46,7 +36,7 @@ export default function MyLocklers() {
             ) : isLoading ? (
               <LocklerSkeleton />
             ) : data?.locklers && data.locklers.length > 0 ? (
-              <LocklerTable locklers={data.locklers} />
+              <LocklerGrid locklers={data.locklers} />
             ) : (
               <EmptyState />
             )}
@@ -58,50 +48,61 @@ export default function MyLocklers() {
   );
 }
 
-function LocklerTable({ locklers }: { locklers: any[] }) {
+function LocklerGrid({ locklers }: { locklers: any[] }) {
   const chainId = useChainId();
   
   return (
-    <div className="bg-gray-900/30 rounded-xl border border-gray-800 p-4">
-      <Table>
-        <TableCaption className="text-gray-400">List of your Locklers on this chain</TableCaption>
-        <TableHeader>
-          <TableRow className="border-gray-700 hover:bg-transparent">
-            <TableHead className="text-gray-300">Safe ID</TableHead>
-            <TableHead className="text-gray-300">Owners</TableHead>
-            <TableHead className="text-gray-300">Created At</TableHead>
-            <TableHead className="text-gray-300">Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {locklers.map((lockler) => (
-            <TableRow key={lockler.id} className="border-gray-700 hover:bg-gray-800/20">
-              <TableCell className="font-medium truncate max-w-[200px] text-purple-200">
-                {lockler.safe.id}
-              </TableCell>
-              <TableCell>
-                <div className="max-h-[100px] overflow-y-auto text-xs space-y-1">
-                  {lockler.owners.map((owner: string, index: number) => (
-                    <TruncatedAddress key={index} address={owner} />
-                  ))}
-                </div>
-              </TableCell>
-              <TableCell className="text-gray-300">
-                {formatTimestamp(lockler.createdAt)}
-              </TableCell>
-              <TableCell>
-                <Link to={`/release/${chainId}/${lockler.safe.id}`}>
-                  <Button variant="outline" size="sm" className="bg-purple-900/30 text-purple-200 border-purple-700 hover:bg-purple-800/30 hover:text-purple-100">
-                    <FileText className="mr-1" size={16} />
-                    View Details
-                  </Button>
-                </Link>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {locklers.map((lockler) => (
+        <LocklerCard 
+          key={lockler.id} 
+          lockler={lockler} 
+          chainId={chainId} 
+        />
+      ))}
     </div>
+  );
+}
+
+function LocklerCard({ lockler, chainId }: { lockler: any, chainId: number }) {
+  return (
+    <Card className="bg-gray-900/30 rounded-xl border border-gray-800 overflow-hidden hover:border-purple-500/50 transition-all hover:shadow-lg hover:shadow-purple-500/10">
+      <CardHeader className="bg-gray-900/40 pb-3">
+        <p className="font-medium text-purple-200 truncate" title={lockler.safe.id}>
+          {lockler.safe.id.substring(0, 8)}...{lockler.safe.id.substring(lockler.safe.id.length - 6)}
+        </p>
+      </CardHeader>
+      <CardContent className="pt-3">
+        <div className="space-y-2">
+          <div className="text-sm text-gray-400">
+            <span className="block mb-1">Owners:</span>
+            <div className="max-h-[100px] overflow-y-auto space-y-1">
+              {lockler.owners.slice(0, 3).map((owner: string, index: number) => (
+                <TruncatedAddress key={index} address={owner} />
+              ))}
+              {lockler.owners.length > 3 && (
+                <p className="text-xs text-gray-500 mt-1">+{lockler.owners.length - 3} more</p>
+              )}
+            </div>
+          </div>
+          <div className="text-sm text-gray-400">
+            <span>Created:</span> {formatTimestamp(lockler.createdAt)}
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter className="border-t border-gray-800 bg-gray-900/20 pt-3">
+        <Link to={`/release/${chainId}/${lockler.safe.id}`} className="w-full">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="bg-purple-900/30 text-purple-200 border-purple-700 hover:bg-purple-800/30 hover:text-purple-100 w-full"
+          >
+            <FileText className="mr-2" size={16} />
+            View Details
+          </Button>
+        </Link>
+      </CardFooter>
+    </Card>
   );
 }
 
@@ -148,10 +149,23 @@ function formatTimestamp(timestamp: string): string {
 
 function LocklerSkeleton() {
   return (
-    <div className="space-y-3">
-      <Skeleton className="h-8 w-full bg-gray-800/50" />
-      {[1, 2, 3].map((i) => (
-        <Skeleton key={i} className="h-16 w-full bg-gray-800/50" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {[1, 2, 3, 4].map((i) => (
+        <Card key={i} className="bg-gray-900/30 border-gray-800">
+          <CardHeader>
+            <Skeleton className="h-6 w-3/4 bg-gray-800/50" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-full bg-gray-800/50" />
+              <Skeleton className="h-4 w-full bg-gray-800/50" />
+              <Skeleton className="h-4 w-2/3 bg-gray-800/50" />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Skeleton className="h-8 w-full bg-gray-800/50" />
+          </CardFooter>
+        </Card>
       ))}
     </div>
   );

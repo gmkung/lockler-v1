@@ -242,11 +242,18 @@ export function AppTopBar({
               Switch to {CHAIN_CONFIG[chainId]?.name}
             </Button>
           ) : (
-            <div className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
-              <div className="h-3 w-3 bg-green-500 rounded-full" />
-              <p className="text-sm font-medium text-gray-200">
-                {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected'}
-              </p>
+            <div className="flex flex-col items-end">
+              <div className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
+                <div className="h-3 w-3 bg-green-500 rounded-full" />
+                <p className="text-sm font-medium text-gray-200">
+                  {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected'}
+                </p>
+              </div>
+              {connectedChainId && (
+                <span className="text-xs text-purple-300 mt-1">
+                  {CHAIN_CONFIG[connectedChainId]?.name || `Chain #${connectedChainId}`}
+                </span>
+              )}
             </div>
           )}
         </div>
