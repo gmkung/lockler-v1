@@ -1,15 +1,16 @@
 
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
-import { useAccount, useConnect } from "wagmi";
+import { useAccount, useConnect, useChainId } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { injected } from "wagmi/connectors";
 import { ExternalLink, Copy as CopyIcon, CheckCircle2, Info } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { CHAIN_CONFIG, getBlockExplorer } from "@/lib/constants";
 import { SecurityChecksModal } from "./release/SecurityChecksModal";
+import { switchChain } from "@/lib/utils";
 
 interface AppTopBarProps {
   chainId?: number;
@@ -39,17 +40,29 @@ export function AppTopBar({
   pageTitle
 }: AppTopBarProps) {
   const location = useLocation();
-  const { address } = useAccount();
+  const navigate = useNavigate();
+  const { address, isConnected } = useAccount();
   const { connect } = useConnect();
+  const connectedChainId = useChainId();
   const { toast } = useToast();
   const [copying, setCopying] = useState({ safe: false, module: false });
   const [checksOpen, setChecksOpen] = useState(false);
+  const [isCorrectChain, setIsCorrectChain] = useState(true);
   const blockExplorer = chainId ? getBlockExplorer(chainId) : null;
   
   const navItems = [
     { path: "/setup", label: "Create Lockler" },
     { path: "/myLocklers", label: "My Locklers" }
   ];
+  
+  // Check if we need to switch chains when page's chainId doesn't match connected chain
+  useEffect(() => {
+    if (chainId && connectedChainId && chainId !== connectedChainId) {
+      setIsCorrectChain(false);
+    } else {
+      setIsCorrectChain(true);
+    }
+  }, [chainId, connectedChainId]);
   
   const module = modules && modules[0];
   const securityChecks = module
@@ -79,6 +92,26 @@ export function AppTopBar({
   
   const handleConnectWallet = () => {
     connect({ connector: injected() });
+  };
+  
+  const handleSwitchChain = async () => {
+    if (!chainId) return;
+    
+    const result = await switchChain(chainId);
+    
+    if (result.success) {
+      setIsCorrectChain(true);
+      toast({
+        title: "Network switched",
+        description: `Successfully switched to ${CHAIN_CONFIG[chainId].name}`,
+      });
+    } else {
+      toast({
+        title: "Network switch failed",
+        description: result.error || "Failed to switch networks",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -192,7 +225,7 @@ export function AppTopBar({
         
         {/* Right section: Actions */}
         <div className="flex items-center gap-2">
-          {!address ? (
+          {!isConnected ? (
             <Button
               onClick={handleConnectWallet}
               variant="outline"
@@ -200,7 +233,22 @@ export function AppTopBar({
             >
               Connect Wallet
             </Button>
-          ) : null}
+          ) : isConnected && !isCorrectChain && chainId ? (
+            <Button
+              onClick={handleSwitchChain}
+              variant="outline"
+              className="bg-yellow-900/30 border-yellow-700 text-yellow-200 hover:bg-yellow-800/50"
+            >
+              Switch to {CHAIN_CONFIG[chainId]?.name}
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
+              <div className="h-3 w-3 bg-green-500 rounded-full" />
+              <p className="text-sm font-medium text-gray-200">
+                {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected'}
+              </p>
+            </div>
+          )}
         </div>
       </div>
       
