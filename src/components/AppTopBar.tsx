@@ -50,9 +50,10 @@ export function AppTopBar({
   const [isCorrectChain, setIsCorrectChain] = useState(true);
   const blockExplorer = chainId ? getBlockExplorer(chainId) : null;
   
+  // Simplified navigation items - always showing just "Lockler" as label
   const navItems = [
-    { path: "/setup", label: "Create Lockler" },
-    { path: "/myLocklers", label: "My Locklers" }
+    { path: "/setup", label: "Lockler" },
+    { path: "/myLocklers", label: "Lockler" }
   ];
   
   // Check if we need to switch chains when page's chainId doesn't match connected chain
