@@ -1,3 +1,4 @@
+
 // Import polyfills first
 import "./lib/polyfills";
 
@@ -11,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import Setup from "./pages/Setup";
 import Release from './pages/Release';
 import SelectSafe from './pages/SelectSafe';
+import MyLocklers from './pages/MyLocklers'; // Import the new page
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import { CHAIN_CONFIG, SUPPORTED_CHAINS, getRpcUrl } from './lib/constants';
@@ -56,6 +58,7 @@ const App = () => (
             <Route path="/setup" element={<Setup />} />
             <Route path="/release" element={<SelectSafe />} />
             <Route path="/release/:chainId/:address" element={<Release />} />
+            <Route path="/myLocklers" element={<MyLocklers />} /> {/* Add the new route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
