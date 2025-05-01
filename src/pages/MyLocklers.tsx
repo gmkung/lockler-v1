@@ -1,10 +1,7 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useLocklers } from "@/hooks/useLocklers";
 import { useChainId } from "wagmi";
-import { MetamaskConnect } from "@/components/MetamaskConnect";
-import { NetworkInfo } from "@/components/NetworkInfo";
 import { Navigation } from "@/components/Navigation";
 import { 
   Table, 
@@ -33,22 +30,6 @@ export default function MyLocklers() {
       
       <div className="container mx-auto px-4 py-6">
         <h1 className="text-3xl font-bold mb-6 text-white">My Locklers</h1>
-        
-        <div className="mb-6">
-          <Card className="bg-[#2D274B] border-gray-800 rounded-3xl shadow-lg">
-            <CardContent className="p-5">
-              <MetamaskConnect />
-            </CardContent>
-          </Card>
-        </div>
-        
-        {chainId && (
-          <Card className="bg-[#2D274B] border-gray-800 rounded-3xl shadow-lg mb-6">
-            <CardContent className="p-5">
-              <NetworkInfo chainId={chainId} />
-            </CardContent>
-          </Card>
-        )}
         
         <Card className="bg-[#2D274B] border-gray-800 rounded-3xl shadow-2xl">
           <CardHeader>
