@@ -57,7 +57,7 @@ export function AppTopBar({
           <Logo className="h-7 w-7 text-pink-400" />
           <div>
             <h1 className="text-xl font-bold text-white">
-              {pageTitle || "Lockler"}
+              {"Lockler"}
             </h1>
             
             {/* Display chain and addresses only on Release page */}
