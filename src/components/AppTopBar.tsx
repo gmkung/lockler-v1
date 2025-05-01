@@ -45,8 +45,8 @@ export function AppTopBar({
   
   // Navigation items
   const navItems = [
-    { path: "/setup", label: "Lockler" },
-    { path: "/myLocklers", label: "Lockler" }
+    { path: "/setup", label: "Create Lockler" },
+    { path: "/myLocklers", label: "My Locklers" }
   ];
   
   return (
