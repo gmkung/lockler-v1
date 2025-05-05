@@ -1,24 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { parseEther, formatEther, BrowserProvider } from "ethers";
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
 import { useToast } from "../hooks/use-toast";
-import { deploySafeWithOwners, deployRealityModule } from '../lib/deployment';
 import { getDefaultContractTerms } from '../lib/templates';
-import { ContractTermsForm } from "../components/ContractTermsForm";
-import { Copy, ExternalLink, Lock } from "lucide-react";
-import { switchChain } from '../lib/utils';
-import { toMinorUnits } from '../lib/currency';
+import { Lock } from "lucide-react";
 import { AppTopBar } from '@/components/AppTopBar';
+import { DeploymentModal } from '@/components/setup/DeploymentModal';
+import { useDeployment } from '../hooks/useDeployment';
 
 import {
     DEFAULT_SALT_NONCE,
     DEFAULT_TIMEOUTS,
     DEFAULT_BOND,
-    SUPPORTED_CHAINS,
-    getContractAddresses,
-    getBlockExplorer,
     CHAIN_CONFIG,
 } from '../lib/constants';
 
@@ -30,17 +22,17 @@ import {
     SelectValue,
 } from "../components/ui/select";
 
-import { EscrowContractTerms, Payment } from '../lib/types';
-import { uploadContractTerms } from '../lib/ipfs';
+import { EscrowContractTerms } from '../lib/types';
 import { StepProgressBar } from "../components/StepProgressBar";
 import { StepWrapper } from "../components/StepWrapper";
-import { useNavigate } from "react-router-dom";
 import { ModeSelection } from "../components/setup/ModeSelection";
 import { RoleSelection } from "../components/setup/RoleSelection";
 import { CounterpartyInput } from "../components/setup/CounterpartyInput";
 import { SuccessStep } from "../components/setup/SuccessStep";
 import { useChainSelection } from "../hooks/useChainSelection";
+import { ContractTermsForm } from "../components/ContractTermsForm";
 import { Footer } from '../components/ui/footer';
+import { Input } from "../components/ui/input";
 
 type EscrowMode = 'p2p' | 'grant';
 type P2PRole = 'sender' | 'receiver';
@@ -53,35 +45,41 @@ interface ModuleConfig {
 }
 
 export default function Setup() {
-    const navigate = useNavigate();
+    const { selectedChainId, setSelectedChainId } = useChainSelection();
+    const { toast } = useToast();
+
+    // Form state
     const [escrowMode, setEscrowMode] = useState<EscrowMode>('p2p');
     const [p2pRole, setP2PRole] = useState<P2PRole>('sender');
     const [counterpartyAddress, setCounterpartyAddress] = useState<string>("");
-
-    const { selectedChainId, setSelectedChainId } = useChainSelection();
-
     const [saltNonce, setSaltNonce] = useState(DEFAULT_SALT_NONCE);
-    const [deployedSafeAddress, setDeployedSafeAddress] = useState<string | null>(null);
     const [existingSafeAddress, setExistingSafeAddress] = useState("");
-
-    const [moduleDeploymentHash, setModuleDeploymentHash] = useState<string | null>(null);
-    const [transactionData, setTransactionData] = useState<any>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-
     const [contractTerms, setContractTerms] = useState<EscrowContractTerms>(() =>
         getDefaultContractTerms('p2p', '', '')
     );
 
-    const [moduleConfig, setModuleConfig] = useState<ModuleConfig>({
-        timeout: DEFAULT_TIMEOUTS.TIMEOUT,
-        cooldown: DEFAULT_TIMEOUTS.COOLDOWN,
-        expiration: DEFAULT_TIMEOUTS.EXPIRATION,
-        bond: DEFAULT_BOND
+    // Deployment state and functions using the custom hook
+    const {
+        deployedSafeAddress,
+        moduleDeploymentHash,
+        transactionData,
+        error,
+        loading,
+        deployModalOpen,
+        setDeployModalOpen,
+        handleSafeDeploy,
+        handleModuleDeploy,
+        handleStartDeployment
+    } = useDeployment({
+        escrowMode,
+        p2pRole,
+        counterpartyAddress,
+        saltNonce,
+        contractTerms,
+        chainId: selectedChainId
     });
 
-    const { toast } = useToast();
-
+    // Update contract terms when form fields change
     useEffect(() => {
         if (window.ethereum) {
             window.ethereum.request({ method: 'eth_requestAccounts' })
@@ -94,150 +92,11 @@ export default function Setup() {
                             p2pRole
                         );
                         
-                        terms.payments = terms.payments.map(payment => ({
-                            ...payment,
-                            amount: typeof payment.amount === 'string' && 
-                                    payment.amount.startsWith('0x') ? 
-                                    payment.amount : toMinorUnits(payment.amount.toString(), payment.currency, selectedChainId)
-                        }));
-                        
                         setContractTerms(terms);
                     }
                 });
         }
-    }, [escrowMode, counterpartyAddress, p2pRole]);
-
-    const contracts = getContractAddresses(selectedChainId);
-    const blockExplorer = getBlockExplorer(selectedChainId);
-
-    const handleSafeDeploy = async () => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            if (!window.ethereum) {
-                throw new Error('MetaMask is not installed');
-            }
-
-            if (!selectedChainId || !CHAIN_CONFIG[selectedChainId]) {
-                throw new Error(`Invalid chain ID: ${selectedChainId}. Please select a supported chain.`);
-            }
-
-            console.log("Deploying to chain ID:", selectedChainId);
-
-            const switchResult = await switchChain(selectedChainId);
-            if (!switchResult.success) {
-                throw new Error(`Failed to switch to ${CHAIN_CONFIG[selectedChainId].name}: ${switchResult.error}`);
-            }
-
-            const provider = switchResult.provider as BrowserProvider;
-            const safeAddress = await deploySafeWithOwners(
-                provider,
-                escrowMode,
-                p2pRole,
-                counterpartyAddress,
-                saltNonce,
-                contracts,
-                selectedChainId
-            );
-
-            setDeployedSafeAddress(safeAddress);
-
-            toast({
-                title: "Locker Safe Created!",
-                description: `Your new Locker Safe is: ${safeAddress}`,
-            });
-
-            setTimeout(() => setStep(2), 1200);
-        } catch (error: any) {
-            console.error("Safe deployment error:", error);
-            toast({
-                variant: "destructive",
-                title: "Lockler Deployment Failed",
-                description: error.message || "Failed to deploy Safe",
-            });
-            setError(error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleModuleDeploy = async () => {
-        if (!deployedSafeAddress) {
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Please deploy a Lockler Safe first",
-            });
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-        setTransactionData(null);
-        setModuleDeploymentHash(null);
-
-        try {
-            if (!window.ethereum) {
-                throw new Error('MetaMask is not installed');
-            }
-
-            if (!selectedChainId || !CHAIN_CONFIG[selectedChainId]) {
-                throw new Error(`Invalid chain ID: ${selectedChainId}. Please select a supported chain.`);
-            }
-
-            console.log("Deploying module to chain ID:", selectedChainId);
-
-            const switchResult = await switchChain(selectedChainId);
-            if (!switchResult.success) {
-                throw new Error(`Failed to switch to ${CHAIN_CONFIG[selectedChainId].name}: ${switchResult.error}`);
-            }
-
-            const termsToUpload = {
-                ...contractTerms,
-                bond: moduleConfig.bond,
-                timeout: moduleConfig.timeout,
-                cooldown: moduleConfig.cooldown,
-                expiration: moduleConfig.expiration,
-            };
-            
-            const cid = await uploadContractTerms(termsToUpload);
-
-            const provider = switchResult.provider as BrowserProvider;
-            const result = await deployRealityModule(
-                provider,
-                deployedSafeAddress,
-                contracts,
-                cid,
-                {
-                    timeout: moduleConfig.timeout,
-                    cooldown: moduleConfig.cooldown,
-                    expiration: moduleConfig.expiration,
-                    bond: moduleConfig.bond
-                }
-            );
-
-            setModuleDeploymentHash(result.txHash);
-            setTransactionData(result.receipt);
-
-            toast({
-                title: "Security System Deployed!",
-                description: "Kleros Reality Module has been deployed and configured successfully",
-            });
-
-            setStep(3);
-        } catch (err: any) {
-            console.error("Module deployment error:", err);
-            setError(err.message);
-            toast({
-                variant: "destructive",
-                title: "Security System Deployment Failed",
-                description: err.message || "Failed to deploy Kleros Reality Module",
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
+    }, [escrowMode, counterpartyAddress, p2pRole, selectedChainId]);
 
     const [step, setStep] = useState(1);
 
@@ -250,6 +109,10 @@ export default function Setup() {
             });
         }
     };
+    
+    const goToSuccessStep = () => {
+        setStep(2);
+    };
 
     const ChainSelector = () => (
         <div className="flex items-center mt-1 justify-center">
@@ -258,21 +121,21 @@ export default function Setup() {
                 <Select
                     value={selectedChainId ? selectedChainId.toString() : Object.keys(CHAIN_CONFIG)[0]}
                     onValueChange={(value) => {
-                        if (step === 1) {
+                        if (!deployedSafeAddress) {
                             const chainId = parseInt(value);
                             console.log("Setting chain ID to:", chainId);
                             setSelectedChainId(chainId);
                         }
                     }}
-                    disabled={step > 1}
+                    disabled={!!deployedSafeAddress}
                 >
-                    <SelectTrigger className={`h-7 w-[140px] text-xs bg-purple-800/30 border-purple-600 text-soft-purple ${step > 1 ? 'cursor-not-allowed opacity-80' : ''}`}>
+                    <SelectTrigger className={`h-7 w-[140px] text-xs bg-purple-800/30 border-purple-600 text-soft-purple ${deployedSafeAddress ? 'cursor-not-allowed opacity-80' : ''}`}>
                         <SelectValue>
                             {selectedChainId && CHAIN_CONFIG[selectedChainId]?.name
                                 ? CHAIN_CONFIG[selectedChainId].name
                                 : "Select Chain"}
                         </SelectValue>
-                        {step > 1 && (
+                        {deployedSafeAddress && (
                             <Lock className="h-3 w-3 ml-1 text-purple-400" />
                         )}
                     </SelectTrigger>
@@ -300,69 +163,73 @@ export default function Setup() {
             />
             
             <div className="flex-grow flex items-center justify-center py-7 px-3">
-                <StepWrapper wide={step === 2}>
+                <StepWrapper wide={step === 1}>
                     <div className="mb-4 text-center">
                         <ChainSelector />
                     </div>
 
                     <div className="mb-4">
-                        <StepProgressBar step={step} total={3} />
+                        <StepProgressBar step={step} total={2} />
                     </div>
 
                     {step === 1 && (
                         <div>
                             <div className="mt-3 mb-2 text-center">
                                 <div className="text-sm text-purple-300 font-semibold mb-1">
-                                    Step 1 of 3
+                                    Step 1 of 2
                                 </div>
                                 <h1 className="text-2xl font-extrabold text-white mb-2">
-                                    Create Lockler Safe
+                                    Configure Your Lockler
                                 </h1>
                                 <p className="text-sm text-purple-200 mb-2 px-2">
                                     Create single-use smart contract escrows addresses, secured by Kleros
                                 </p>
                             </div>
-                            <div className="rounded-xl bg-purple-900/30 border border-purple-900 px-3 py-2 mb-4">
-                                <div className="text-xs text-purple-100 text-center">
-                                    <span className="font-semibold">Lockler uses Safe under the hood</span> — the most trusted smart contract wallet in Web3.
-                                </div>
+        
+
+                            {/* Escrow Configuration Section */}
+                            <div className="bg-purple-900/20 border border-purple-700/50 p-4 rounded-xl mb-6">
+                                <h2 className="text-lg text-purple-100 font-semibold mb-3">Escrow Configuration</h2>
+                                <ModeSelection escrowMode={escrowMode} setEscrowMode={setEscrowMode} />
+                                
+                                {escrowMode === 'p2p' && (
+                                    <div className="mb-4 px-1">
+                                        <label className="block text-purple-200 font-bold mb-2">
+                                            Your Role
+                                        </label>
+                                        <div className="flex gap-3 items-center">
+                                            <div className="w-1/3">
+                                                <Select
+                                                    value={p2pRole}
+                                                    onValueChange={(value: P2PRole) => setP2PRole(value)}
+                                                >
+                                                    <SelectTrigger className="h-10 rounded-xl bg-gray-900 text-white border-0 focus:ring-2 focus:ring-purple-500">
+                                                        <SelectValue placeholder="Select role">
+                                                            {p2pRole === 'sender' ? 'I am the Sender' : 'I am the Receiver'}
+                                                        </SelectValue>
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-gray-900 text-white border-purple-800">
+                                                        <SelectItem value="sender" className="hover:bg-purple-900/30">I am the Sender</SelectItem>
+                                                        <SelectItem value="receiver" className="hover:bg-purple-900/30">I am the Receiver</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="flex-1">
+                                                <Input
+                                                    className="rounded-xl bg-gray-900 text-white text-sm border-0 focus:ring-2 focus:ring-pink-400 h-10 w-full"
+                                                    value={counterpartyAddress}
+                                                    onChange={(e) => setCounterpartyAddress(e.target.value)}
+                                                    placeholder={`Enter ${p2pRole === 'sender' ? 'receiver' : 'sender'} Ethereum address`}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            <ModeSelection escrowMode={escrowMode} setEscrowMode={setEscrowMode} />
-                            <RoleSelection escrowMode={escrowMode} p2pRole={p2pRole} setP2PRole={setP2PRole} />
-                            <CounterpartyInput
-                                escrowMode={escrowMode}
-                                p2pRole={p2pRole}
-                                counterpartyAddress={counterpartyAddress}
-                                setCounterpartyAddress={setCounterpartyAddress}
-                            />
-
-                            <Button
-                                className="w-full py-3 rounded-3xl text-lg bg-gradient-to-br from-pink-500 to-purple-500 mt-4 font-bold transition-colors shadow-lg"
-                                onClick={handleSafeDeploy}
-                                disabled={loading || !!deployedSafeAddress || (escrowMode === 'p2p' && !counterpartyAddress)}
-                            >
-                                {loading ? "Deploying…" : deployedSafeAddress ? "Lockler Safe Created!" : "Create Lockler Safe"}
-                            </Button>
-                        </div>
-                    )}
-
-                    {step === 2 && (
-                        <div className="w-full animate-scale-in">
-                            <div className="mt-3 mb-4 text-center px-1">
-                                <div className="text-sm text-purple-300 font-semibold mb-1">
-                                    Step 2 of 3
-                                </div>
-                                <h1 className="text-2xl font-extrabold text-white mb-2">
-                                    Security System Setup
-                                </h1>
-                                <p className="text-sm text-purple-200 mb-4 px-2">
-                                    The created Safe will be governed by a Kleros-governed Zodiac Reality module, ensuring only payments that fulfil the contract can be proposed.
-                                </p>
-                            </div>
-
-                            <div className="bg-purple-900/30 border border-purple-700 p-6 rounded-2xl mb-6">
-                                <div className="text-lg text-purple-100 font-semibold mb-4">Fund Release Conditions</div>
+                            {/* Fund Release Conditions Section */}
+                            <div className="bg-purple-900/20 border border-purple-700/50 p-4 rounded-xl mb-6">
+                                <h2 className="text-lg text-purple-100 font-semibold mb-3">Fund Release Conditions</h2>
                                 <ContractTermsForm
                                     contractTerms={contractTerms}
                                     setContractTerms={setContractTerms}
@@ -372,33 +239,33 @@ export default function Setup() {
                             </div>
 
                             <Button
-                                onClick={handleModuleDeploy}
-                                disabled={!(deployedSafeAddress || existingSafeAddress) || loading}
-                                className="w-full py-3 rounded-3xl text-lg bg-gradient-to-br from-pink-500 to-purple-500"
+                                className="w-full py-3 rounded-3xl text-lg bg-gradient-to-br from-pink-500 to-purple-500 mt-4 font-bold transition-colors shadow-lg"
+                                onClick={handleStartDeployment}
+                                disabled={loading || !!deployedSafeAddress || (escrowMode === 'p2p' && !counterpartyAddress)}
                             >
-                                {loading ? "Deploying…" : moduleDeploymentHash ? "Security System Ready!" : "Create Security System"}
+                                {loading ? "Deploying…" : 
+                                 deployedSafeAddress && moduleDeploymentHash ? "Lockler Ready!" : 
+                                 "Create Lockler"}
                             </Button>
-
-                            {moduleDeploymentHash && (
-                                <div className="rounded-xl bg-gradient-to-r from-purple-600/20 to-fuchsia-500/10 mt-4 py-3 px-4 border border-purple-800 text-white text-sm text-center shadow">
-                                    <div className="mb-1">
-                                        <span className="font-bold">Lockler Safe:</span> {deployedSafeAddress}
-                                    </div>
-                                    <div>
-                                        <span className="font-bold">Security Module Hash:</span> {moduleDeploymentHash}
-                                    </div>
-                                    <Button
-                                        className="mt-3 w-full rounded-3xl text-base bg-gradient-to-r from-green-400 to-green-600"
-                                        onClick={() => setStep(3)}
-                                    >
-                                        Go to Final Step
-                                    </Button>
+                            
+                            {error && (
+                                <div className="mt-4 p-3 bg-red-900/30 border border-red-700 rounded-lg text-red-300 text-sm">
+                                    {error}
                                 </div>
                             )}
+                            
+                            <DeploymentModal
+                                open={deployModalOpen}
+                                onOpenChange={setDeployModalOpen}
+                                onDeploySafe={handleSafeDeploy}
+                                onDeployModule={handleModuleDeploy}
+                                onFinish={goToSuccessStep}
+                                safeAddress={deployedSafeAddress}
+                            />
                         </div>
                     )}
 
-                    {step === 3 && (
+                    {step === 2 && (
                         <SuccessStep
                             deployedSafeAddress={deployedSafeAddress}
                             handleCopyAddress={handleCopyAddress}

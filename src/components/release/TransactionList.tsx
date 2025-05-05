@@ -2,7 +2,7 @@ import { CircleCheck, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Question } from "reality-kleros-subgraph";
-import { QuestionPhase } from "@/abis/realityv3";
+
 import ReactMarkdown from 'react-markdown';
 import { VouchProposal } from '../VouchProposal';
 import { ProposalTransaction, type TransactionStatus } from '@/lib/types';
@@ -13,7 +13,8 @@ import { ERC20_ABI } from '@/abis/erc20';
 import { useToast } from "@/hooks/use-toast";
 import { formatAmount } from '../../lib/currency';
 import { analyzeTransaction } from '@/lib/transactionUtils';
-import { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
 
 interface TransactionListProps {
   questions: Question[];
@@ -24,6 +25,8 @@ interface TransactionListProps {
   chainId: number;
   onExecuteTransaction: (question: Question, transaction: ProposalTransaction, txIndex: number) => Promise<void>;
   onVouchComplete: () => Promise<void>;
+  moduleCooldown: number | null;
+  moduleExpiration: number | null;
 }
 
 function isERC20Transfer(data: string): boolean {
@@ -55,10 +58,11 @@ function TransactionDetails({ tx, chainId }: { tx: ProposalTransaction; chainId:
   return (
     <div className="text-gray-200 space-y-4">
       {tx.justification && (
-        <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 font-typewriter">
-          <h4 className="font-semibold text-base mb-2 text-white font-typewriter">{tx.justification.title}</h4>
+        <div className="bg-gray-800/30 p-3 rounded-lg border border-gray-900/50 font-typewriter text-xs relative">
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gray-700/50 rounded-l-lg"></div>
+          <h4 className="font-semibold text-sm mb-1 text-gray-300 font-typewriter pl-2">{tx.justification.title}</h4>
           {tx.justification.description && (
-            <div className="prose prose-xs max-w-none prose-invert prose-p:text-gray-300 prose-headings:text-gray-200 font-typewriter">
+            <div className="prose prose-xs max-w-none prose-invert prose-p:text-gray-500 prose-headings:text-gray-400 prose-p:text-xs prose-headings:text-xs font-typewriter pl-2 italic">
               <ReactMarkdown>{tx.justification.description}</ReactMarkdown>
             </div>
           )}
@@ -109,10 +113,12 @@ function TransactionDetails({ tx, chainId }: { tx: ProposalTransaction; chainId:
 
 function TransactionStatus({
   status,
-  onExecute
+  onExecute,
+  question
 }: {
   status?: TransactionStatus;
   onExecute: () => void;
+  question: Question;
 }) {
   const { toast } = useToast();
 
@@ -149,6 +155,7 @@ function TransactionStatus({
     }
   };
 
+  // If transaction is already executed, show executed state
   if (status?.isExecuted) {
     return (
       <div className="text-green-400 flex items-center">
@@ -158,14 +165,30 @@ function TransactionStatus({
     );
   }
 
+  // If answer is not finalized yet, don't show execute button at all
+  if (question.phase !== "FINALIZED") {
+    return (
+      <div className="text-yellow-400/70 text-sm">
+        Awaiting finalization
+      </div>
+    );
+  }
+
+  // If answer is finalized but in cooldown or has some other issue
+  if (!status?.canExecute) {
+    return (
+      <div className="text-purple-400/70 text-sm">
+        Not yet executable
+      </div>
+    );
+  }
+
+  // Only show the Execute button when transaction is finalized AND executable
   return (
     <Button
-      disabled={!status?.canExecute}
       onClick={handleExecute}
       size="sm"
-      className={status?.canExecute
-        ? "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white"
-        : "bg-purple-900/20 text-purple-400 hover:bg-purple-900/20 cursor-not-allowed border-purple-800/20"}
+      className="bg-gradient-to-r from-emerald-800 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
     >
       Execute Transaction
     </Button>
@@ -173,59 +196,182 @@ function TransactionStatus({
 }
 
 function TimeRemaining({ question }: { question: Question }) {
-  if (!question.currentAnswer) {
+  const [now, setNow] = useState(Math.floor(Date.now() / 1000));
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setNow(Math.floor(Date.now() / 1000));
+    }, 1000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  if (question.phase === 'FINALIZED') {
     return null;
   }
 
-  const timeRemainingInSeconds = Math.floor(question.timeRemainingInPhase / 1000);
-  if (timeRemainingInSeconds <= 0) {
-    return <div className="text-sm text-purple-200">Phase ended</div>;
+  const finalizableTs = typeof question.currentScheduledFinalizationTimestamp === 'number'
+                        ? question.currentScheduledFinalizationTimestamp
+                        : (typeof question.currentScheduledFinalizationTimestamp === 'string'
+                           ? parseInt(question.currentScheduledFinalizationTimestamp, 10)
+                           : 0);
+
+  if (!question.currentAnswer || !finalizableTs || finalizableTs <= 0) {
+    return null;
   }
 
-  const days = Math.floor(timeRemainingInSeconds / 86400);
-  const hours = Math.floor((timeRemainingInSeconds % 86400) / 3600);
-  const minutes = Math.floor((timeRemainingInSeconds % 3600) / 60);
-  const seconds = timeRemainingInSeconds % 60;
+  if (now >= finalizableTs) {
+    if ((question.phase as string) === 'ANSWERED') {
+      return <div className="text-sm text-yellow-300">Ready to finalize</div>;
+    }
+    return null;
+  }
+
+  const timeToFinalization = finalizableTs - now;
+
+  return (
+    <div className="text-sm text-yellow-400" title={`Scheduled finalization timestamp: ${finalizableTs}`}>
+      Finalizable in: {formatTime(timeToFinalization)}
+    </div>
+  );
+}
+
+function formatTime(timeInSeconds: number): string {
+  if (timeInSeconds <= 0) {
+    return '';
+  }
+  const days = Math.floor(timeInSeconds / 86400);
+  const hours = Math.floor((timeInSeconds % 86400) / 3600);
+  const minutes = Math.floor((timeInSeconds % 3600) / 60);
+  const seconds = timeInSeconds % 60;
 
   let timeStr = '';
   if (days > 0) timeStr += `${days}d `;
   if (hours > 0) timeStr += `${hours}h `;
   if (minutes > 0) timeStr += `${minutes}m `;
-  if (seconds > 0) timeStr += `${seconds}s`;
+  if (days === 0 && hours === 0 && minutes === 0 && seconds > 0) timeStr += `${seconds}s`;
+  else if (timeStr !== '' && seconds === 0) {}
+  else if (timeStr !== '') timeStr += `${seconds}s`;
 
-  return (
-    <div className="text-sm text-purple-200">
-      {timeStr.trim()}
-    </div>
-  );
+  return timeStr.trim();
 }
 
-export function TransactionList({ questions, transactionDetails, transactionStatuses, loadingStatuses, moduleAddress, chainId, onExecuteTransaction, onVouchComplete }: TransactionListProps) {
+interface ExecutionCountdownProps {
+  question: Question;
+  cooldown: number | null;
+  expiration: number | null;
+}
+
+const ExecutionCountdown = ({ question, cooldown, expiration }: ExecutionCountdownProps) => {
+  const [now, setNow] = useState(Math.floor(Date.now() / 1000));
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setNow(Math.floor(Date.now() / 1000));
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const isApproved = question.currentAnswer === "0x0000000000000000000000000000000000000000000000000000000000000001";
+  const isFinalized = question.phase === "FINALIZED";
+  const finalizedTs = typeof question.answerFinalizedTimestamp === 'number'
+    ? question.answerFinalizedTimestamp
+    : (typeof question.answerFinalizedTimestamp === 'string'
+      ? parseInt(question.answerFinalizedTimestamp, 10)
+      : 0);
+
+  // Show appropriate messages based on the current state
+  if (!isFinalized) {
+    return null; // Handled by TimeRemaining component
+  }
+  
+  if (!isApproved) {
+    return <div className="text-sm text-red-400">Rejected</div>;
+  }
+  
+  if (!finalizedTs || finalizedTs <= 0 || cooldown === null || expiration === null) {
+    return <div className="text-sm text-gray-400">Awaiting data...</div>;
+  }
+
+  const executionAvailableTs = finalizedTs + cooldown;
+  const expiryTs = expiration > 0 ? finalizedTs + expiration : Infinity;
+
+  // If the proposal has expired
+  if (now >= expiryTs) {
+    return <div className="text-sm text-red-400">Expired</div>;
+  }
+
+  // If the proposal is ready for execution
+  if (now >= executionAvailableTs) {
+    let expiryInfo = '';
+    if (expiryTs !== Infinity) {
+      const timeToExpire = expiryTs - now;
+      expiryInfo = ` (expires in ${formatTime(timeToExpire)})`;
+    }
+    return (
+      <div className="text-sm font-medium text-green-400 flex flex-col">
+        <div className="flex items-center">
+          <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1 animate-pulse"></span>
+          Ready to execute
+        </div>
+        {expiryInfo && (
+          <div className="text-xs text-gray-400 mt-0.5">
+            Expires in {formatTime(expiryTs - now)}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // If the proposal is in cooldown period
+  const timeToExecution = executionAvailableTs - now;
+  return (
+    <div className="text-sm text-purple-200">
+      In cooldown: {formatTime(timeToExecution)} remaining
+    </div>
+  );
+};
+
+export function TransactionList({ questions, transactionDetails, transactionStatuses, loadingStatuses, moduleAddress, chainId, onExecuteTransaction, onVouchComplete, moduleCooldown, moduleExpiration }: TransactionListProps) {
   return (
     <div className="space-y-5">
       {questions.map((question) => (
-        <Card key={question.id} className="border-purple-800/20 bg-white/5 backdrop-blur">
+        <Card key={question.id} className="border-gray-800/30 bg-white/5 backdrop-blur">
           <CardContent className="p-0">
-            <div className="bg-purple-900/10 p-4 border-b border-purple-800/20">
-              <div className="flex justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3"> 
-                    <div className="text-xs font-mono text-purple-300">
-                      ID: {question.id.slice(0, 8)}...{question.id.slice(-6)}
-                    </div>
-                    {getStatusBadge(question.phase)}
+            <div className="bg-gray-800/30 p-4 border-b border-gray-700/30">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="text-xs font-mono text-purple-300 whitespace-nowrap">
+                    ID: {question.id.slice(0, 8)}...{question.id.slice(-6)}
                   </div>
-                  <TimeRemaining question={question} />
+                  {getStatusBadge(question.phase)}
+                  {question.phase !== "FINALIZED" && <TimeRemaining question={question} />}
                 </div>
+                <a
+                  href={`https://reality.eth.limo/app/#!/network/${chainId}/question/${moduleAddress}-${question.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-purple-400 hover:text-purple-300 transition-colors flex-shrink-0 ml-2"
+                  title="View on Reality.eth"
+                >
+                  <ExternalLink className="h-5 w-5" />
+                </a>
               </div>
-              <div className="mt-2 flex items-center gap-3">
-                <span className="text-sm text-purple-200">Answer: </span>
-                <span className={`font-medium ${!question.currentAnswer ? "text-purple-200" :
-                  question.currentAnswer === "0x0000000000000000000000000000000000000000000000000000000000000001" ? "text-green-400" : "text-red-400"
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-purple-200">Answer:</span>
+                  <span className={`font-medium ${!question.currentAnswer ? "text-purple-200" :
+                    question.currentAnswer === "0x0000000000000000000000000000000000000000000000000000000000000001" ? "text-green-400" : "text-red-400"
                   }`}>
-                  {!question.currentAnswer ? "Pending" :
-                    question.currentAnswer === "0x0000000000000000000000000000000000000000000000000000000000000001" ? "Approved" : "Rejected"}
-                </span>
+                    {!question.currentAnswer ? "Pending" :
+                      question.currentAnswer === "0x0000000000000000000000000000000000000000000000000000000000000001" ? "Approved" : "Rejected"}
+                  </span>
+                </div>
+                <ExecutionCountdown
+                  question={question}
+                  cooldown={moduleCooldown}
+                  expiration={moduleExpiration}
+                />
               </div>
             </div>
 
@@ -236,16 +382,20 @@ export function TransactionList({ questions, transactionDetails, transactionStat
               </div>
             ) : (
               transactionDetails[question.id]?.map((tx, index) => (
-                <div key={index} className="p-4 border-b border-purple-800/20 last:border-b-0">
+                <div key={index} className="p-4 border-b border-gray-700/30 last:border-b-0">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <p className="font-medium text-purple-100">Transaction {index + 1}</p>
-                      {!tx.error && (
-                        <TransactionStatus
-                          status={transactionStatuses[question.id]?.[index]}
-                          onExecute={() => onExecuteTransaction(question, tx, index)}
-                        />
-                      )}
+                      <div className="flex items-center gap-3">
+                        {/* Only show execution button for finalized questions with approved answers */}
+                        {!tx.error && (
+                          <TransactionStatus
+                            status={transactionStatuses[question.id]?.[index]}
+                            onExecute={() => onExecuteTransaction(question, tx, index)}
+                            question={question}
+                          />
+                        )}
+                      </div>
                     </div>
                     {tx.error ? (
                       <p className="text-red-400 text-sm">{tx.error}</p>
@@ -257,7 +407,7 @@ export function TransactionList({ questions, transactionDetails, transactionStat
               ))
             )}
 
-            <div className="p-4 bg-purple-900/10 border-t border-purple-800/20">
+            <div className="p-4 bg-gray-800/30 border-t border-gray-700/30">
               <VouchProposal
                 questionId={question.id}
                 moduleAddress={moduleAddress}

@@ -93,7 +93,7 @@ export type EscrowContractTerms = {
   title: string;
   description: string;
   type: "p2p" | "grant";
-  payments: Payment[];
+
   createdAt: number;
   bond?: string;
   timeout?: number;
