@@ -116,7 +116,7 @@ export default function Setup() {
 
     const ChainSelector = () => (
         <div className="flex items-center mt-1 justify-center">
-            <span className="font-semibold mr-2 text-soft-purple">Deploying on:</span>
+            <span className="font-semibold mr-2 text-purple-300">Deploying on:</span>
             <div className="relative">
                 <Select
                     value={selectedChainId ? selectedChainId.toString() : Object.keys(CHAIN_CONFIG)[0]}
@@ -129,7 +129,7 @@ export default function Setup() {
                     }}
                     disabled={!!deployedSafeAddress}
                 >
-                    <SelectTrigger className={`h-7 w-[140px] text-xs bg-purple-800/30 border-purple-600 text-soft-purple ${deployedSafeAddress ? 'cursor-not-allowed opacity-80' : ''}`}>
+                    <SelectTrigger className={`h-7 w-[140px] text-xs bg-purple-800/30 border-purple-600 text-purple-200 ${deployedSafeAddress ? 'cursor-not-allowed opacity-80' : ''}`}>
                         <SelectValue>
                             {selectedChainId && CHAIN_CONFIG[selectedChainId]?.name
                                 ? CHAIN_CONFIG[selectedChainId].name
@@ -139,12 +139,12 @@ export default function Setup() {
                             <Lock className="h-3 w-3 ml-1 text-purple-400" />
                         )}
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-gray-900 border-purple-700 text-purple-200">
                         {Object.entries(CHAIN_CONFIG).map(([id, config]) => (
                             <SelectItem 
                                 key={id} 
                                 value={id} 
-                                className="text-soft-purple hover:bg-purple-900/30"
+                                className="text-gray-100 hover:bg-purple-900/30 focus:bg-purple-900/30 focus:text-white hover:text-white"
                             >
                                 {config.name}
                             </SelectItem>
@@ -182,7 +182,7 @@ export default function Setup() {
                                     Configure Your Lockler
                                 </h1>
                                 <p className="text-sm text-purple-200 mb-2 px-2">
-                                    Create single-use smart contract escrows addresses, secured by Kleros
+                                    Create single-use smart contract escrows addresses. Built on Safe, secured by Kleros.
                                 </p>
                             </div>
         

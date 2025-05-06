@@ -117,3 +117,41 @@ export async function switchChain(targetChainId: number): Promise<{
     }
   }
 }
+
+// Helper function to parse error messages (Moved from VouchProposal)
+export function parseErrorMessage(error: any): string {
+    console.error("Raw error:", error); // Log the raw error for debugging
+
+    // Check for user rejection patterns
+    if (error?.code === 4001 || error?.code === 'ACTION_REJECTED' || error?.message?.includes('User rejected') || error?.message?.includes('user denied')) {
+        return "Transaction rejected by user.";
+    }
+
+    // Check for revert reasons (similar to TransactionList)
+    if (error?.reason) {
+        return `Error: ${error.reason}`;
+    }
+    if (error?.message?.includes('reason=')) {
+        // Adjusted regex to handle potential escapes inside the reason string if needed
+        const reasonMatch = error.message.match(/reason="([^"\\]*(?:\\.[^"\\]*)*)"/); 
+        if (reasonMatch && reasonMatch[1]) {
+            return `Error: ${reasonMatch[1]}`;
+        }
+    }
+    
+    // Check for short message
+    if (error?.shortMessage) {
+        // Avoid overly technical short messages if possible
+        if (!error.shortMessage.includes('{') && !error.shortMessage.includes('(')){
+             return error.shortMessage;
+        }
+    }
+    
+    // Fallback generic messages
+    if (error?.message?.includes('insufficient funds')) {
+        return "Error: Insufficient funds for transaction.";
+    }
+
+    // More generic fallback
+    return "Transaction failed. Please check console for details."; 
+}

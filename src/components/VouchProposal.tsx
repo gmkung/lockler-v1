@@ -9,6 +9,7 @@ import { Loader2, AlertTriangle } from 'lucide-react';
 import { CHAIN_CONFIG, getRpcUrl } from '../lib/constants';
 import { switchChain } from '../lib/utils';
 import { ARBITRATOR_PROXY_ABI } from '../abis/arbitratorproxy';
+import { parseErrorMessage } from '../lib/utils';
 
 interface VouchProposalProps {
     questionId: string;
@@ -203,7 +204,7 @@ export function VouchProposal({ questionId, moduleAddress, chainId, arbitrator, 
             onVouchComplete?.();
         } catch (err: any) {
             console.error('Error submitting vouch:', err);
-            setError(err.message || 'Failed to submit vouch. Please ensure you have enough ETH and try again.');
+            setError(parseErrorMessage(err));
         } finally {
             setIsSubmitting(false);
         }
@@ -252,7 +253,7 @@ export function VouchProposal({ questionId, moduleAddress, chainId, arbitrator, 
             onArbitrationRequested?.();
         } catch (err: any) {
             console.error('Error requesting arbitration:', err);
-            setArbitrationError(err.message || 'Failed to request arbitration. Please ensure you have enough ETH and try again.');
+            setArbitrationError(parseErrorMessage(err));
         } finally {
             setIsArbitrating(false);
         }
@@ -433,7 +434,7 @@ export function VouchProposal({ questionId, moduleAddress, chainId, arbitrator, 
                                                     <span className="text-gray-500 italic">Fee Unavailable</span>
                                                 )}
                                             </span>
-                                            <span className="text-xs text-gray-500 mt-1 px-1">Pay a fee to escalate this to Kleros Court. Use this when you are confident you are right and the Current Bond is equal or higher than the arbitration cost.</span>
+                                            <span className="text-xs text-gray-500 mt-1 px-1">Pay a fee to escalate this to Kleros Court. Use this when you are confident that you are right and the Current Bond is equal or higher than the arbitration cost.</span>
                                         </div>
                                     </>
                                 );

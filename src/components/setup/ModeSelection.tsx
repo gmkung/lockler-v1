@@ -20,7 +20,8 @@ export function ModeSelection({ escrowMode, setEscrowMode }: ModeSelectionProps)
           Transfer Lockler
         </div>
         <div className={`text-xs text-center w-full break-words ${escrowMode === 'p2p' ? "text-purple-100" : "text-purple-300/90"}`}>
-          For peer-to-peer transfers needing both parties' agreement.
+          For P2P escrowed transactions where refunds or withdrawals are governed by the terms below.
+          Possible to update contract terms if there is mutual agreement.
         </div>
       </button>
       <button
@@ -37,7 +38,8 @@ export function ModeSelection({ escrowMode, setEscrowMode }: ModeSelectionProps)
           Grant Lockler
         </div>
         <div className={`text-xs text-center w-full break-words ${escrowMode === 'grant' ? "text-pink-50" : "text-pink-100/80"}`}>
-          Distribute funds to recipients with security checks.
+          For truly decentralized grant/bounty payouts.<br></br>
+          Anyone can withdraw from it if they can prove they are acting in line with the terms below.
         </div>
       </button>
     </div>
