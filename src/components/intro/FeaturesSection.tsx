@@ -49,7 +49,7 @@ export const FeaturesSection = () => {
         </h2>
         <div className="h-1 w-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mx-auto mb-6" />
         <p className="text-lg text-purple-100/80 max-w-2xl mx-auto">
-          Explore the cutting-edge technology behind Lockler's secure and flexible conditional payment system
+          Explore the cutting-edge technology behind Lockler's secure and conditional payment system, secured by Kleros
         </p>
       </motion.div>
       

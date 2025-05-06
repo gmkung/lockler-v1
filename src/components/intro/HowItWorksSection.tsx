@@ -24,7 +24,7 @@ const steps = [
   {
     number: "04",
     title: "Verify & Release",
-    description: "Once conditions are met, funds are automatically released to the recipient according to your terms.",
+    description: "Once conditions are met and verified, funds are trustlessly released according to your predefined terms.",
     color: "from-blue-500 to-cyan-500"
   }
 ];
