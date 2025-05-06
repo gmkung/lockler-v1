@@ -80,7 +80,7 @@ export const HeroSection = () => {
           <Button 
             asChild 
             size="lg"
-            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white text-xl px-10 py-7 transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(219,39,119,0.5)] hover:shadow-[0_0_30px_rgba(219,39,119,0.7)]"
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xl px-10 py-7 transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(219,39,119,0.5)] hover:shadow-[0_0_30px_rgba(219,39,119,0.7)]"
           >
             <Link to="/setup">Create New Lockler</Link>
           </Button>
@@ -89,7 +89,7 @@ export const HeroSection = () => {
             asChild 
             variant="outline" 
             size="lg"
-            className="border-2 border-purple-400/50 text-purple-200 hover:bg-purple-900/30 hover:text-purple-100 text-xl px-10 py-7 transition-all duration-300 hover:scale-105 backdrop-blur-sm hover:border-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.3)] hover:shadow-[0_0_20px_rgba(168,85,247,0.5)]"
+            className="border-2 border-indigo-500/70 text-indigo-100 hover:bg-indigo-900/40 hover:text-indigo-50 text-xl px-10 py-7 transition-all duration-300 hover:scale-105 backdrop-blur-sm hover:border-indigo-400 shadow-[0_0_10px_rgba(99,102,241,0.4)] hover:shadow-[0_0_20px_rgba(99,102,241,0.6)]"
           >
             <Link to="/myLocklers">View My Locklers</Link>
           </Button>
