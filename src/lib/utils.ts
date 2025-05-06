@@ -1,3 +1,4 @@
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { BrowserProvider, ethers } from 'ethers';
@@ -5,6 +6,15 @@ import { CHAIN_CONFIG, getRpcUrl } from './constants';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+// Animation utilities for the intro page
+export function getRandomDelay(min = 0, max = 2): number {
+  return Math.random() * (max - min) + min;
+}
+
+export function getRandomDuration(min = 1, max = 5): number {
+  return Math.random() * (max - min) + min;
 }
 
 /**

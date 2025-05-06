@@ -1,105 +1,134 @@
-import React from 'react';
+
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/logo';
 import { motion } from 'framer-motion';
 import { Footer } from '@/components/ui/footer';
-
-// Enhanced shiny background effect
-const ShinyBackground = () => (
-  <div className="absolute inset-0 overflow-hidden z-0">
-    {/* Slow large rotation */}
-    <motion.div
-      className="absolute top-[-60%] left-[-60%] w-[220%] h-[220%] bg-gradient-radial from-purple-900/25 via-transparent to-transparent opacity-80"
-      animate={{ rotate: 360 }}
-      transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-    />
-    {/* Faster smaller counter-rotation */}
-    <motion.div
-      className="absolute bottom-[-40%] right-[-40%] w-[150%] h-[150%] bg-gradient-radial from-pink-900/20 via-transparent to-transparent opacity-70"
-      animate={{ rotate: -360 }}
-      transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-    />
-    {/* Floating Orbs */}
-    {[...Array(5)].map((_, i) => (
-      <motion.div
-        key={i}
-        className="absolute rounded-full bg-gradient-radial from-indigo-500/10 to-transparent opacity-50"
-        style={{
-          width: `${Math.random() * 150 + 50}px`,
-          height: `${Math.random() * 150 + 50}px`,
-          top: `${Math.random() * 100}%`,
-          left: `${Math.random() * 100}%`,
-        }}
-        animate={{
-          x: [0, Math.random() * 100 - 50, 0],
-          y: [0, Math.random() * 100 - 50, 0],
-          scale: [1, 1.1, 1],
-          opacity: [0.3, 0.6, 0.3],
-        }}
-        transition={{
-          duration: Math.random() * 10 + 10,
-          repeat: Infinity,
-          repeatType: "mirror",
-          ease: "easeInOut",
-        }}
-      />
-    ))}
-  </div>
-);
+import { ParticleField } from '@/components/intro/ParticleField';
+import { GlowingOrbs } from '@/components/intro/GlowingOrbs';
+import { FloatingGrid } from '@/components/intro/FloatingGrid';
+import { HeroSection } from '@/components/intro/HeroSection';
+import { FeaturesSection } from '@/components/intro/FeaturesSection';
+import { HowItWorksSection } from '@/components/intro/HowItWorksSection';
 
 export default function Intro() {
-  return (
-    <div className="relative min-h-screen flex flex-col justify-between bg-gradient-to-br from-[#1a182d] to-[#23213A] text-white overflow-hidden">
-      <ShinyBackground />
+  useEffect(() => {
+    // Smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href') || '');
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth'
+          });
+        }
+      });
+    });
+  }, []);
 
+  return (
+    <div className="relative min-h-screen flex flex-col justify-between bg-gradient-to-b from-[#0e0b1f] via-[#1a182d] to-[#23213A] text-white overflow-hidden">
+      {/* Background elements */}
+      <ParticleField />
+      <GlowingOrbs />
+      <FloatingGrid />
+      
       {/* Header - Minimalist for landing page */}
-      <header className="relative z-10 py-4 px-6">
-        <div className="container mx-auto flex items-center gap-3">
-          <Logo className="h-12 w-12 text-pink-400" />
-          <h1 className="text-2xl font-bold text-white">Lockler</h1>
+      <header className="relative z-10 py-6 px-6">
+        <div className="container mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Logo className="h-10 w-10 text-pink-400" />
+            <h1 className="text-2xl font-bold text-white">Lockler</h1>
+          </div>
+          
+          <nav className="hidden md:flex items-center gap-8">
+            <a href="#features" className="text-purple-200 hover:text-white transition-colors">Features</a>
+            <a href="#how-it-works" className="text-purple-200 hover:text-white transition-colors">How It Works</a>
+            <Link to="/myLocklers" className="text-purple-200 hover:text-white transition-colors">My Locklers</Link>
+          </nav>
+          
+          <Button 
+            asChild 
+            variant="outline" 
+            className="hidden md:flex border-purple-400 text-purple-200 hover:bg-purple-900/30"
+          >
+            <Link to="/setup">Get Started</Link>
+          </Button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 flex-grow flex items-center justify-center text-center px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-3xl"
-        >
-          <motion.h2 
-            className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400 [text-shadow:0_0_15px_rgba(0,0,0,0.3)]"
-            initial={{ backgroundPosition: '0% 50%' }}
-            animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+      <main className="flex-grow flex flex-col">
+        {/* Hero Section */}
+        <HeroSection />
+        
+        {/* Features Section */}
+        <section id="features">
+          <FeaturesSection />
+        </section>
+        
+        {/* How It Works Section */}
+        <section id="how-it-works">
+          <HowItWorksSection />
+        </section>
+        
+        {/* CTA Section */}
+        <section className="relative z-10 py-24 px-4">
+          <motion.div 
+            className="max-w-4xl mx-auto text-center"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
           >
-            Secure, Conditional Fund Release
-          </motion.h2>
-          
-          <p className="text-lg md:text-xl text-gray-200 mb-8 max-w-xl mx-auto [text-shadow:0_1px_3px_rgba(0,0,0,0.2)]">
-            Lockler combines the security of Gnosis Safe with the decentralized Kleros Optimistic Oracle to create robust, condition-based escrow and payment release systems on the blockchain.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-            <Button 
-              asChild 
-              size="lg"
-              className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-lg px-8 py-6 w-full sm:w-auto transition-transform duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
+            <motion.h2 
+              className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-300"
+              initial={{ y: 30 }}
+              whileInView={{ y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
             >
-              <Link to="/setup">Create New Lockler</Link>
-            </Button>
-            <Button 
-              asChild 
-              variant="outline" 
-              size="lg"
-              className="border-purple-400/50 text-purple-200 hover:bg-purple-900/30 hover:text-purple-100 text-lg px-8 py-6 w-full sm:w-auto transition-transform duration-200 hover:scale-105 bg-black/10 backdrop-blur-sm shadow-lg hover:shadow-xl"
+              Ready to Secure Your Funds?
+            </motion.h2>
+            
+            <motion.p 
+              className="text-xl text-purple-100/80 mb-10"
+              initial={{ y: 30 }}
+              whileInView={{ y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
             >
-              <Link to="/myLocklers">View My Locklers</Link>
-            </Button>
-          </div>
-        </motion.div>
+              Create your first Lockler in minutes and experience the future of conditional payment systems.
+            </motion.p>
+            
+            <motion.div 
+              className="flex flex-wrap justify-center gap-6"
+              initial={{ y: 30 }}
+              whileInView={{ y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <Button 
+                asChild 
+                size="lg"
+                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white text-xl px-10 py-7 transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(219,39,119,0.5)] hover:shadow-[0_0_30px_rgba(219,39,119,0.7)]"
+              >
+                <Link to="/setup">Create New Lockler</Link>
+              </Button>
+              
+              <Button 
+                asChild 
+                variant="outline" 
+                size="lg"
+                className="border-2 border-purple-400/50 text-purple-200 hover:bg-purple-900/30 hover:text-purple-100 text-xl px-10 py-7 transition-all duration-300 hover:scale-105 backdrop-blur-sm hover:border-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.3)] hover:shadow-[0_0_20px_rgba(168,85,247,0.5)]"
+              >
+                <Link to="/myLocklers">View My Locklers</Link>
+              </Button>
+            </motion.div>
+          </motion.div>
+        </section>
       </main>
 
       {/* Footer */}
@@ -108,4 +137,4 @@ export default function Intro() {
       </div>
     </div>
   );
-} 
+}
