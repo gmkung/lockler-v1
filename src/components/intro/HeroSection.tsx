@@ -68,7 +68,7 @@ export const HeroSection = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.8 }}
         >
-          The next generation of decentralized escrow and conditional payments on the blockchain, powered by Gnosis Safe and Kleros Oracle technology.
+          The next generation of decentralized escrow and conditional payments on the blockchain, powered by Gnosis Safe and Kleros Optimistic Oracle technology.
         </motion.p>
         
         <motion.div 
@@ -112,7 +112,7 @@ export const HeroSection = () => {
             <div className="bg-pink-900/50 p-4 rounded-full mb-3 border border-pink-400/30 shadow-[0_0_15px_rgba(236,72,153,0.3)]">
               <Zap className="h-8 w-8 text-pink-300" />
             </div>
-            <span className="text-pink-200 font-medium">Instant Release</span>
+            <span className="text-pink-200 font-medium">Conditional Release</span>
           </motion.div>
           
           <motion.div className="flex flex-col items-center" variants={iconVariants}>

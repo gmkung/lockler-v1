@@ -4,14 +4,15 @@ import { motion } from 'framer-motion';
 
 export const GlowingOrbs = () => {
   // Generate random positions for the orbs
-  const orbs = Array.from({ length: 6 }, (_, i) => ({
+  const orbs = Array.from({ length: 8 }, (_, i) => ({
     id: i,
     x: `${Math.random() * 80 + 10}%`,
     y: `${Math.random() * 80 + 10}%`,
-    size: Math.random() * 200 + 100,
-    duration: Math.random() * 20 + 10,
+    size: Math.random() * 250 + 150,
+    duration: Math.random() * 25 + 15,
     delay: Math.random() * 5,
-    color: i % 2 === 0 ? 'from-purple-600/20' : 'from-pink-500/20',
+    color: i % 3 === 0 ? 'from-purple-600/20' : 
+           i % 3 === 1 ? 'from-pink-500/20' : 'from-indigo-500/20',
   }));
 
   return (
@@ -25,12 +26,12 @@ export const GlowingOrbs = () => {
             height: orb.size,
             left: orb.x,
             top: orb.y,
-            filter: 'blur(30px)',
+            filter: 'blur(40px)',
           }}
           animate={{
-            x: [0, 30, -20, 10, 0],
-            y: [0, -30, 20, 10, 0],
-            scale: [1, 1.1, 0.9, 1.05, 1],
+            x: [0, 40, -30, 20, 0],
+            y: [0, -40, 30, 15, 0],
+            scale: [1, 1.2, 0.9, 1.1, 1],
           }}
           transition={{
             duration: orb.duration,
