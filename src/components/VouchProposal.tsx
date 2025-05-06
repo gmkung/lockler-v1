@@ -352,80 +352,80 @@ export function VouchProposal({ questionId, moduleAddress, chainId, arbitrator, 
                                         {currentAnswer === 'true' ? (
                                             <div 
                                                 onClick={() => !vouchDisabled && handleVouch(false)}
-                                                className={`flex-1 p-4 rounded-lg border text-center transition-all duration-150 flex flex-col items-center justify-center min-h-[100px]
+                                                className={`flex-1 p-4 rounded-lg border text-center transition-all duration-150 flex flex-col items-center justify-center min-h-[120px]
                                                     ${vouchDisabled ? 
                                                         'border-purple-400/20 text-purple-300/50 opacity-50 cursor-not-allowed' : 
                                                         'border-purple-400/50 text-purple-300 hover:bg-purple-900/30 hover:text-purple-200 cursor-pointer'}
                                                 `}
                                             >
-                                                <span className="font-medium">
-                                                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin inline mr-1" /> : null} 
-                                                    Vouch Against (No)
-                                                </span>
-                                                <span className="text-xs text-gray-400 mt-1">Place a bond to vouch for your answer; will be refunded if your answer is unchallenged.</span>
+                                                <div className="h-5 flex items-center justify-center mb-1 w-full text-center">
+                                                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                                                    <span className="font-medium">Vouch Against (No)</span>
+                                                </div>
+                                                <span className="text-xs text-gray-400 flex-grow text-center flex items-center">Place a bond to vouch for your answer; will be refunded if your answer is unchallenged.</span>
                                             </div>
                                         ) : currentAnswer === 'false' ? (
                                             <div 
                                                 onClick={() => !vouchDisabled && handleVouch(true)}
-                                                className={`flex-1 p-4 rounded-lg text-center text-white transition-all duration-150 flex flex-col items-center justify-center min-h-[100px]
+                                                className={`flex-1 p-4 rounded-lg text-center text-white transition-all duration-150 flex flex-col items-center justify-center min-h-[120px]
                                                     ${vouchDisabled ? 
                                                         'bg-gradient-to-r from-emerald-900/50 to-teal-600/50 opacity-50 cursor-not-allowed' : 
                                                         'bg-gradient-to-r from-emerald-800 to-teal-500 hover:from-emerald-700 hover:to-teal-600 cursor-pointer'}
                                                 `}
                                             >
-                                                <span className="font-medium">
-                                                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin inline mr-1" /> : null} 
-                                                    Vouch For (Yes)
-                                                </span>
-                                                <span className="text-xs text-gray-300 mt-1">Place a bond to vouch for your answer; will be refunded if your answer is unchallenged.</span>
+                                                <div className="h-5 flex items-center justify-center mb-1 w-full text-center">
+                                                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                                                    <span className="font-medium">Vouch For (Yes)</span>
+                                                </div>
+                                                <span className="text-xs text-gray-300 flex-grow text-center flex items-center">Place a bond to vouch for your answer; will be refunded if your answer is unchallenged.</span>
                                             </div>
                                         ) : (
                                             <>
                                                 <div 
                                                     onClick={() => !vouchDisabled && handleVouch(false)}
-                                                    className={`flex-1 p-4 rounded-lg border text-center transition-all duration-150 flex flex-col items-center justify-center min-h-[100px]
+                                                    className={`flex-1 p-4 rounded-lg border text-center transition-all duration-150 flex flex-col items-center justify-center min-h-[120px]
                                                         ${vouchDisabled ? 
                                                             'border-purple-400/20 text-purple-300/50 opacity-50 cursor-not-allowed' : 
                                                             'border-purple-400/50 text-purple-300 hover:bg-purple-900/30 hover:text-purple-200 cursor-pointer'}
                                                     `}
                                                 >
-                                                    <span className="font-medium">
-                                                        {(isSubmitting && currentAnswer !== 'true') ? <Loader2 className="h-4 w-4 animate-spin inline mr-1" /> : null} 
-                                                        Vouch Against (No)
-                                                    </span>
-                                                    <span className="text-xs text-gray-400 mt-1">Place a bond to vouch for your answer; will be refunded if your answer is unchallenged.</span>
+                                                    <div className="h-5 flex items-center justify-center mb-1 w-full text-center">
+                                                        {(isSubmitting && currentAnswer !== 'true') ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                                                        <span className="font-medium">Vouch Against (No)</span>
+                                                    </div>
+                                                    <span className="text-xs text-gray-400 flex-grow text-center flex items-center justify-center">Place a bond to vouch for your answer; will be refunded if your answer is unchallenged.</span>
                                                 </div>
                                                 <div 
                                                     onClick={() => !vouchDisabled && handleVouch(true)}
-                                                    className={`flex-1 p-4 rounded-lg text-center text-white transition-all duration-150 flex flex-col items-center justify-center min-h-[100px]
+                                                    className={`flex-1 p-4 rounded-lg text-center text-white transition-all duration-150 flex flex-col items-center justify-center min-h-[120px]
                                                         ${vouchDisabled ? 
                                                             'bg-gradient-to-r from-emerald-900/50 to-teal-600/50 opacity-50 cursor-not-allowed' : 
                                                             'bg-gradient-to-r from-emerald-800 to-teal-500 hover:from-emerald-700 hover:to-teal-600 cursor-pointer'}
                                                     `}
                                                 >
-                                                    <span className="font-medium">
-                                                        {(isSubmitting && currentAnswer !== 'false') ? <Loader2 className="h-4 w-4 animate-spin inline mr-1" /> : null} 
-                                                        Vouch For (Yes)
-                                                    </span>
-                                                    <span className="text-xs text-gray-300 mt-1">Place a bond to vouch for your answer; will be refunded if your answer is unchallenged.</span>
+                                                    <div className="h-5 flex items-center justify-center mb-1 w-full text-center">
+                                                        {(isSubmitting && currentAnswer !== 'false') ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                                                        <span className="font-medium">Vouch For (Yes)</span>
+                                                    </div>
+                                                    <span className="text-xs text-gray-300 flex-grow text-center flex items-center justify-center">Place a bond to vouch for your answer; will be refunded if your answer is unchallenged.</span>
                                                 </div>
                                             </> 
                                         )}
 
                                         <div 
                                             onClick={() => !arbitrationDisabled && handleRequestArbitration()}
-                                            className={`flex-1 p-4 rounded-lg border text-center transition-all duration-150 flex flex-col items-center justify-center min-h-[100px]
+                                            className={`flex-1 p-4 rounded-lg border text-center transition-all duration-150 flex flex-col items-center justify-center min-h-[120px]
                                                 ${arbitrationDisabled ? 
                                                     'border-gray-600/50 bg-gray-700/20 text-gray-400/70 opacity-60 cursor-not-allowed' : 
                                                     'border-gray-600/80 bg-gray-700/50 text-gray-200 hover:bg-gray-700/70 hover:border-gray-500 cursor-pointer'}
                                             `}
                                             style={arbitrationDisabled ? { pointerEvents: 'none' } : {}}
                                         >
-                                            <span className="font-medium">
-                                                {isArbitrating ? <Loader2 className="h-4 w-4 animate-spin inline mr-1" /> : null} 
-                                                Request Arbitration
-                                            </span>
-                                            <span className="text-xs mt-1">
+                                            <div className="h-5 flex items-center justify-center mb-1 w-full text-center">
+                                                {isArbitrating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                                                <span className="font-medium">Request Arbitration</span>
+                                            </div>
+                                            <div className="text-xs mt-1 h-4 flex items-center justify-center w-full text-center">
                                                 {isLoadingFee ? (
                                                     <span className="text-gray-400 italic">Loading fee...</span>
                                                 ) : disputeFee !== null ? (
@@ -433,15 +433,13 @@ export function VouchProposal({ questionId, moduleAddress, chainId, arbitrator, 
                                                 ) : (
                                                     <span className="text-gray-500 italic">Fee Unavailable</span>
                                                 )}
-                                            </span>
-                                            <span className="text-xs text-gray-500 mt-1 px-1">Pay a fee to escalate this to Kleros Court. Use this when you are confident that you are right and the Current Bond is equal or higher than the arbitration cost.</span>
+                                            </div>
+                                            <span className="text-xs text-gray-500 mt-1 px-1 flex-grow text-center flex items-center justify-center">Pay a fee to escalate this to Kleros Court. Use this when you are confident that you are right and the Current Bond is equal or higher than the arbitration cost.</span>
                                         </div>
                                     </>
                                 );
                             })()}
                         </div>
-
-                        <p className="text-xs text-gray-500 text-center mt-3">Arbitration should be used if you disagree with the final answer after the question timeout.</p>
                     </div>
                 </DialogContent>
             </Dialog>

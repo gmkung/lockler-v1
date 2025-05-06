@@ -115,13 +115,26 @@ function TransactionDetails({ tx, chainId }: { tx: ProposalTransaction; chainId:
 function TransactionStatus({
   status,
   onExecute,
-  question
+  question,
+  moduleCooldown,
+  moduleExpiration
 }: {
   status?: TransactionStatus;
   onExecute: () => void;
   question: Question;
+  moduleCooldown: number | null;
+  moduleExpiration: number | null;
 }) {
   const { toast } = useToast();
+  const [now, setNow] = useState(Math.floor(Date.now() / 1000));
+  
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setNow(Math.floor(Date.now() / 1000));
+    }, 1000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handleExecute = async () => {
     try {
@@ -175,24 +188,73 @@ function TransactionStatus({
     );
   }
 
-  // If answer is finalized but in cooldown or has some other issue
-  if (!status?.canExecute) {
+  // Check if the answer is approved (1)
+  const isApproved = question.currentAnswer === "0x0000000000000000000000000000000000000000000000000000000000000001";
+  if (!isApproved) {
     return (
-      <div className="text-purple-400/70 text-sm">
-        Not yet executable
+      <div className="text-red-400/70 text-sm">
+        Rejected
       </div>
     );
   }
 
-  // Only show the Execute button when transaction is finalized AND executable
+  // Check cooldown and expiration
+  const finalizedTs = typeof question.answerFinalizedTimestamp === 'number'
+    ? question.answerFinalizedTimestamp
+    : (typeof question.answerFinalizedTimestamp === 'string'
+      ? parseInt(question.answerFinalizedTimestamp, 10)
+      : 0);
+
+  // If we don't have the finalization timestamp or cooldown/expiration info
+  if (!finalizedTs || finalizedTs <= 0 || moduleCooldown === null || moduleExpiration === null) {
+    return (
+      <div className="text-gray-400/70 text-sm">
+        Awaiting data...
+      </div>
+    );
+  }
+
+  const cooldownEndTs = finalizedTs + moduleCooldown;
+  const expirationTs = moduleExpiration > 0 ? finalizedTs + moduleExpiration : Infinity;
+
+  // If the proposal has expired
+  if (now >= expirationTs) {
+    return (
+      <div className="text-red-400/70 text-sm">
+        Expired
+      </div>
+    );
+  }
+
+  // If still in cooldown
+  if (now < cooldownEndTs) {
+    const timeRemaining = cooldownEndTs - now;
+    return (
+      <div className="text-purple-400/70 text-sm">
+        In cooldown: {formatTime(timeRemaining)} remaining
+      </div>
+    );
+  }
+
+  // Only show the Execute button when transaction is finalized, approved, passed cooldown, 
+  // not expired, and is executable according to status
+  if (status?.canExecute) {
+    return (
+      <Button
+        onClick={handleExecute}
+        size="sm"
+        className="bg-gradient-to-r from-emerald-800 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
+      >
+        Execute Transaction
+      </Button>
+    );
+  }
+
+  // If the status indicates it can't be executed for other reasons
   return (
-    <Button
-      onClick={handleExecute}
-      size="sm"
-      className="bg-gradient-to-r from-emerald-800 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
-    >
-      Execute Transaction
-    </Button>
+    <div className="text-purple-400/70 text-sm">
+      Not yet executable
+    </div>
   );
 }
 
@@ -394,6 +456,8 @@ export function TransactionList({ questions, transactionDetails, transactionStat
                             status={transactionStatuses[question.id]?.[index]}
                             onExecute={() => onExecuteTransaction(question, tx, index)}
                             question={question}
+                            moduleCooldown={moduleCooldown}
+                            moduleExpiration={moduleExpiration}
                           />
                         )}
                       </div>
