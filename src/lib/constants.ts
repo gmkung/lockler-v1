@@ -119,11 +119,6 @@ export const TOKENS = {
       symbol: "PNK",
       decimals: 18,
     },
-    [SUPPORTED_CHAINS.GNOSIS]: {
-      address: "0x37b60f4E9A31A64cCc0024dce7D0fD07eAA0F7B3", // Gnosis Chain
-      symbol: "PNK",
-      decimals: 18,
-    },
   },
   USDT: {
     [SUPPORTED_CHAINS.MAINNET]: {
