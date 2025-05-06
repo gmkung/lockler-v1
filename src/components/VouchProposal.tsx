@@ -434,7 +434,7 @@ export function VouchProposal({ questionId, moduleAddress, chainId, arbitrator, 
                                                     <span className="text-gray-500 italic">Fee Unavailable</span>
                                                 )}
                                             </div>
-                                            <span className="text-xs text-gray-500 mt-1 px-1 flex-grow text-center flex items-center justify-center">Pay a fee to escalate this to Kleros Court. Use this when you are confident that you are right and the Current Bond is equal or higher than the arbitration cost.</span>
+                                            <span className="text-xs text-gray-500 mt-1 px-1 flex-grow text-center flex items-center justify-center">Pay a fee to escalate this to Kleros Court if you are confident that you are right and the Current Bond is equal or higher than the arbitration cost.</span>
                                         </div>
                                     </>
                                 );
