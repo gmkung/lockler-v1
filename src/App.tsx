@@ -1,4 +1,3 @@
-
 // Import polyfills first
 import "./lib/polyfills";
 
@@ -16,6 +15,7 @@ import MyLocklers from './pages/MyLocklers'; // Import the new page
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import { CHAIN_CONFIG, SUPPORTED_CHAINS, getRpcUrl } from './lib/constants';
+import Intro from './pages/Intro'; // Import the new Intro page
 
 const queryClient = new QueryClient();
 
@@ -54,7 +54,7 @@ const App = () => (
       <BrowserRouter>
         <TooltipProvider>
           <Routes>
-            <Route path="/" element={<Navigate to="/setup" replace />} />
+            <Route path="/" element={<Intro />} /> {/* Set Intro as the root route */}
             <Route path="/setup" element={<Setup />} />
             <Route path="/release" element={<SelectSafe />} />
             <Route path="/release/:chainId/:address" element={<Release />} />

@@ -1,10 +1,9 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "../ui/button";
 import { getSecurityIcon } from "./utils";
-import { CircleCheck, Info, ExternalLink } from "lucide-react";
+import { CircleCheck, Info, ExternalLink, Scale } from "lucide-react";
 import { Dispatch, SetStateAction } from "react";
-import { SUPPORTED_CHAINS } from "@/lib/constants";
+import { SUPPORTED_CHAINS, getBlockExplorer } from "@/lib/constants";
 import {
   Tooltip,
   TooltipContent,
@@ -30,10 +29,12 @@ interface SecurityChecksModalProps {
   onOpenChange?: Dispatch<SetStateAction<boolean>>;
   safeAddress?: string;
   chainId?: number;
+  arbitrator?: string | null;
 }
 
-export function SecurityChecksModal({ modules, open, onOpenChange, safeAddress, chainId }: SecurityChecksModalProps) {
+export function SecurityChecksModal({ modules, open, onOpenChange, safeAddress, chainId, arbitrator }: SecurityChecksModalProps) {
   const module = modules[0];
+  const blockExplorer = chainId ? getBlockExplorer(chainId) : null;
   if (!module) return null;
 
   const totalChecks = Object.keys(module.validationChecks).length + 2;
@@ -69,6 +70,35 @@ export function SecurityChecksModal({ modules, open, onOpenChange, safeAddress, 
       <span className={value ? "text-green-400" : "text-red-400"}>
         {getSecurityIcon(value)}
       </span>
+    </div>
+  );
+
+  const renderArbitratorInfo = () => (
+    <div className="flex justify-between items-center p-2 rounded hover:bg-gray-800/50 mt-2 border-t border-gray-800 pt-3">
+      <div className="flex items-center">
+        <Scale className="h-4 w-4 text-gray-400 mr-2" />
+        <span className="text-sm text-gray-200">Arbitrator:</span>
+      </div>
+      {arbitrator ? (
+        <div className="flex items-center gap-1">
+          <span className="text-xs font-mono text-gray-300" title={arbitrator}>
+            {`${arbitrator.slice(0, 6)}...${arbitrator.slice(-4)}`}
+          </span>
+          {blockExplorer && (
+            <a
+              href={`${blockExplorer}/address/${arbitrator}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1 rounded-md hover:bg-gray-700/70 transition-colors"
+              title="View Arbitrator on explorer"
+            >
+              <ExternalLink className="h-3 w-3 text-gray-400 hover:text-gray-200" />
+            </a>
+          )}
+        </div>
+      ) : (
+        <span className="text-xs text-gray-500">Not Set</span>
+      )}
     </div>
   );
 
@@ -111,6 +141,7 @@ export function SecurityChecksModal({ modules, open, onOpenChange, safeAddress, 
           "Confirms this is the only module enabled on the Safe, ensuring it's the only way to move funds"
         )}
       </div>
+      {renderArbitratorInfo()}
       {safeAddress && chainId && (
         <div className="mt-6 flex justify-end">
           <Button

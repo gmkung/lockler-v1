@@ -27,6 +27,7 @@ interface TransactionListProps {
   onVouchComplete: () => Promise<void>;
   moduleCooldown: number | null;
   moduleExpiration: number | null;
+  arbitrator: string;
 }
 
 function isERC20Transfer(data: string): boolean {
@@ -332,7 +333,7 @@ const ExecutionCountdown = ({ question, cooldown, expiration }: ExecutionCountdo
   );
 };
 
-export function TransactionList({ questions, transactionDetails, transactionStatuses, loadingStatuses, moduleAddress, chainId, onExecuteTransaction, onVouchComplete, moduleCooldown, moduleExpiration }: TransactionListProps) {
+export function TransactionList({ questions, transactionDetails, transactionStatuses, loadingStatuses, moduleAddress, chainId, onExecuteTransaction, onVouchComplete, moduleCooldown, moduleExpiration, arbitrator }: TransactionListProps) {
   return (
     <div className="space-y-5">
       {questions.map((question) => (
@@ -412,6 +413,7 @@ export function TransactionList({ questions, transactionDetails, transactionStat
                 questionId={question.id}
                 moduleAddress={moduleAddress}
                 chainId={chainId}
+                arbitrator={arbitrator}
                 disabled={question.phase !== "OPEN"}
                 onVouchComplete={onVouchComplete}
               />
