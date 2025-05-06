@@ -119,5 +119,50 @@ export const TOKENS = {
       symbol: "PNK",
       decimals: 18,
     },
+    [SUPPORTED_CHAINS.GNOSIS]: {
+      address: "0x37b60f4E9A31A64cCc0024dce7D0fD07eAA0F7B3", // Gnosis Chain
+      symbol: "PNK",
+      decimals: 18,
+    },
+  },
+  USDT: {
+    [SUPPORTED_CHAINS.MAINNET]: {
+      address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // Ethereum Mainnet
+      symbol: "USDT",
+      decimals: 6,
+    },
+  },
+  WETH: {
+    [SUPPORTED_CHAINS.MAINNET]: {
+      address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // Ethereum Mainnet
+      symbol: "WETH",
+      decimals: 18,
+    },
+    [SUPPORTED_CHAINS.GNOSIS]: {
+      address: "0x6A023CCd1ff6F2045C3309768eAd9E68F978f6e1", // Gnosis Chain
+      symbol: "WETH",
+      decimals: 18,
+    },
+  },
+  WBTC: {
+    [SUPPORTED_CHAINS.MAINNET]: {
+      address: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599", // Ethereum Mainnet
+      symbol: "WBTC",
+      decimals: 8,
+    },
+  },
+  DAI: {
+    [SUPPORTED_CHAINS.MAINNET]: {
+      address: "0x6B175474E89094C44Da98b954EedeAC495271d0F", // Ethereum Mainnet
+      symbol: "DAI",
+      decimals: 18,
+    },
+  },
+  GNO: {
+    [SUPPORTED_CHAINS.GNOSIS]: {
+      address: "0x9C58BAcC331c9aa871AFD802DB6379a98e80CEdb", // Gnosis Chain
+      symbol: "GNO",
+      decimals: 18,
+    },
   },
 };
