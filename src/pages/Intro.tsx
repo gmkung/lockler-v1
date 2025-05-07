@@ -113,7 +113,7 @@ export default function Intro() {
               <Button 
                 asChild 
                 size="lg"
-                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white text-xl px-10 py-7 transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(219,39,119,0.5)] hover:shadow-[0_0_30px_rgba(219,39,119,0.7)]"
+                className="bg-purple-900/80 hover:bg-purple-800 text-white text-xl px-10 py-7 transition-all duration-300 hover:scale-105 border border-purple-700/50 shadow-[0_0_15px_rgba(147,51,234,0.3)] hover:shadow-[0_0_20px_rgba(147,51,234,0.5)]"
               >
                 <Link to="/setup">Create New Lockler</Link>
               </Button>
@@ -122,7 +122,7 @@ export default function Intro() {
                 asChild 
                 variant="outline" 
                 size="lg"
-                className="border-2 border-purple-400/50 text-purple-200 hover:bg-purple-900/30 hover:text-purple-100 text-xl px-10 py-7 transition-all duration-300 hover:scale-105 backdrop-blur-sm hover:border-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.3)] hover:shadow-[0_0_20px_rgba(168,85,247,0.5)]"
+                className="border border-purple-700/50 text-purple-200 bg-purple-950/30 hover:bg-purple-900/40 hover:text-purple-100 text-xl px-10 py-7 transition-all duration-300 hover:scale-105 backdrop-blur-sm hover:border-purple-600/70 shadow-[0_0_10px_rgba(147,51,234,0.2)] hover:shadow-[0_0_15px_rgba(147,51,234,0.3)]"
               >
                 <Link to="/myLocklers">View My Locklers</Link>
               </Button>
