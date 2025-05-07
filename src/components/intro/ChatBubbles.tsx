@@ -81,8 +81,8 @@ export const ChatBubbles: React.FC = () => {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       <div className="relative w-full h-full max-w-5xl mx-auto">
-        {/* Left side bubbles */}
-        <div className="absolute top-[10%] left-[-30px] md:left-[-100px] lg:left-[-120px] opacity-30 md:opacity-40 w-60 md:w-72 transform rotate-[-8deg] scale-75 md:scale-90">
+        {/* Left side bubbles - moved up by adjusting top value from 10% to 5% */}
+        <div className="absolute top-[5%] left-[-30px] md:left-[-100px] lg:left-[-120px] opacity-30 md:opacity-40 w-60 md:w-72 transform rotate-[-8deg] scale-75 md:scale-90">
           <AnimatePresence mode="wait">
             {visibleMessages.map((message) => 
               message.sender === 'alice' && (
@@ -101,8 +101,8 @@ export const ChatBubbles: React.FC = () => {
           </AnimatePresence>
         </div>
         
-        {/* Right side bubbles */}
-        <div className="absolute top-[20%] right-[-30px] md:right-[-100px] lg:right-[-120px] opacity-30 md:opacity-40 w-60 md:w-72 transform rotate-[8deg] scale-75 md:scale-90">
+        {/* Right side bubbles - moved up by adjusting top value from 20% to 12% */}
+        <div className="absolute top-[12%] right-[-30px] md:right-[-100px] lg:right-[-120px] opacity-30 md:opacity-40 w-60 md:w-72 transform rotate-[8deg] scale-75 md:scale-90">
           <AnimatePresence mode="wait">
             {visibleMessages.map((message) => 
               message.sender === 'bob' && (
