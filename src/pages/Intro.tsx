@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,17 +13,19 @@ import { HowItWorksSection } from '@/components/intro/HowItWorksSection';
 
 export default function Intro() {
   useEffect(() => {
-    // Smooth scrolling for anchor links
+    // Smooth scrolling for anchor links (only for real in-page anchors, not hash router links)
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href') || '');
-        if (target) {
-          target.scrollIntoView({
-            behavior: 'smooth'
-          });
-        }
-      });
+      const href = anchor.getAttribute('href');
+      // Only attach if it's a real in-page anchor (not a hash route)
+      if (href && href.length > 1 && !href.startsWith("#/")) {
+        anchor.addEventListener('click', function (e) {
+          e.preventDefault();
+          const target = document.querySelector(href);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth' });
+          }
+        });
+      }
     });
   }, []);
 
