@@ -17,17 +17,17 @@ const conversations: Message[][] = [
     { id: 1, sender: 'alice', text: "Hey, I need to send you payment for that design work but I'm worried about sending it upfront 😕", delay: 0 },
     { id: 2, sender: 'bob', text: "Let's use Lockler! It's completely trustless", delay: 1500 },
     { id: 3, sender: 'alice', text: "What's that? 🤔", delay: 3000 },
-    { id: 4, sender: 'bob', text: "It creates a smart escrow address. You send funds there, and I only get paid if fulfil our agreement", delay: 4500 },
+    { id: 4, sender: 'bob', text: "It creates a Safe gatekept by Kleros Court. You send funds there, and I only get paid if I fulfil our agreement", delay: 4500 },
     { id: 5, sender: 'alice', text: "So I don't have to trust you or a middleman? That sounds perfect! 👍", delay: 6500 },
     { id: 6, sender: 'bob', text: "I created a Lockler at 0x7F3e2b1D...9eA5! Check terms and send ETH there 🚀", delay: 8000 },
   ],
   
   // Conversation 2: No contract calls needed
   [
-    { id: 1, sender: 'bob', text: "I want to sell you the rights to my NFT collection, but smart contracts are complicated...", delay: 0 },
+    { id: 1, sender: 'bob', text: "I want to sell you the rights to my NFT collection, but smart contracts escrows are complicated...", delay: 0 },
     { id: 2, sender: 'alice', text: "With Lockler, you don't need to call any smart contract directly", delay: 1500 },
     { id: 3, sender: 'bob', text: "Really? How does it work then? 🧐", delay: 3000 },
-    { id: 4, sender: 'alice', text: "Just send the address or rights to the Lockler address, and it handles everything securely", delay: 4500 },
+    { id: 4, sender: 'alice', text: "Just send the payments or rights to the Lockler address (basically a Safe).", delay: 4500 },
     { id: 5, sender: 'bob', text: "That's so much easier! No complex contract interactions 🙌", delay: 6500 },
     { id: 6, sender: 'alice', text: "Here is the Lockler at 0x2dB98c4F...5aC3! Vámonos 💯", delay: 8000 },
   ],
