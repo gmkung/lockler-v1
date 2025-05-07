@@ -19,7 +19,7 @@ const conversations: Message[][] = [
     { id: 3, sender: 'alice', text: "What's that? 🤔", delay: 3000 },
     { id: 4, sender: 'bob', text: "It creates a smart escrow address. You send funds there, and I only get paid if I deliver according to our agreement", delay: 4500 },
     { id: 5, sender: 'alice', text: "So I don't have to trust you or a middleman? That sounds perfect! 👍", delay: 6500 },
-    { id: 6, sender: 'bob', text: "Already created a Lockler for us! Check the terms, send the ETH there and we'll get started! 🚀", delay: 8000 },
+    { id: 6, sender: 'bob', text: "Created a Lockler at 0x7F3e2b1D...9eA5! Check terms and send ETH there 🚀", delay: 8000 },
   ],
   
   // Conversation 2: No contract calls needed
@@ -29,7 +29,7 @@ const conversations: Message[][] = [
     { id: 3, sender: 'bob', text: "Really? How does it work then? 🧐", delay: 3000 },
     { id: 4, sender: 'alice', text: "Just send the address or rights to the Lockler address, and it handles everything securely", delay: 4500 },
     { id: 5, sender: 'bob', text: "That's so much easier! No complex contract interactions 🙌", delay: 6500 },
-    { id: 6, sender: 'alice', text: "Just set up a Lockler for us! Send me the link and I'll deposit the funds when ready 💯", delay: 8000 },
+    { id: 6, sender: 'alice', text: "Set up a Lockler at 0x2dB98c4F...5aC3! Send me the link 💯", delay: 8000 },
   ],
   
   // Conversation 3: Subjective conditions
@@ -39,7 +39,7 @@ const conversations: Message[][] = [
     { id: 3, sender: 'alice', text: "What's that? 🤔", delay: 3000 },
     { id: 4, sender: 'bob', text: "It's a decentralized court system. If we disagree, neutral jurors decide based on our agreement", delay: 4500 },
     { id: 5, sender: 'alice', text: "So it can handle subjective conditions? That's amazing! Let's use Lockler for this project 🎉", delay: 6500 },
-    { id: 6, sender: 'bob', text: "Done! Made a Lockler with our terms just now. Take a look and send the funds when you're ready! 🔐", delay: 8000 },
+    { id: 6, sender: 'bob', text: "Made a Lockler at 0x9Ad4c5E2...3fF8! Check terms and fund it when ready 🔐", delay: 8000 },
   ]
 ];
 
