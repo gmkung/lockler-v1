@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 import Setup from "./pages/Setup";
 import Release from './pages/Release';
@@ -52,7 +52,7 @@ const config = createConfig({
 const App = () => (
   <WagmiProvider config={config}>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <HashRouter>
         <TooltipProvider>
           <Routes>
             <Route path="/" element={<Intro />} /> {/* Set Intro as the root route */}
@@ -66,7 +66,7 @@ const App = () => (
           <Toaster />
           <Sonner />
         </TooltipProvider>
-      </BrowserRouter>
+      </HashRouter>
     </QueryClientProvider>
   </WagmiProvider>
 );
