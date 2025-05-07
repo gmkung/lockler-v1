@@ -11,7 +11,7 @@ export const CHAIN_CONFIG: Record<number, Chain> = {
   [SUPPORTED_CHAINS.MAINNET]: {
     id: SUPPORTED_CHAINS.MAINNET,
     name: "Ethereum Mainnet",
-    rpcUrl: "https://eth-mainnet.g.alchemy.com/v2/your-api-key",
+    rpcUrl: "https://ethereum-rpc.publicnode.com",
     blockExplorer: "https://etherscan.io",
     locklerSubgraphEndpoint:
       "https://api.studio.thegraph.com/query/72336/lockler-subgraph-eth/version/latest",

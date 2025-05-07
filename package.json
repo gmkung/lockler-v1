@@ -8,7 +8,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postbuild": "cp dist/index.html dist/404.html || cp build/index.html build/404.html"
   },
   "dependencies": {
     "@gnosis.pm/zodiac": "^4.0.3",
