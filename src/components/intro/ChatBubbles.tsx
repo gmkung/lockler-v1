@@ -19,6 +19,7 @@ const conversations: Message[][] = [
     { id: 3, sender: 'alice', text: "What's that? 🤔", delay: 3000 },
     { id: 4, sender: 'bob', text: "It creates a smart escrow address. You send funds there, and I only get paid if I deliver according to our agreement", delay: 4500 },
     { id: 5, sender: 'alice', text: "So I don't have to trust you or a middleman? That sounds perfect! 👍", delay: 6500 },
+    { id: 6, sender: 'bob', text: "Already created a Lockler for us! Check the terms, send the ETH there and we'll get started! 🚀", delay: 8000 },
   ],
   
   // Conversation 2: No contract calls needed
@@ -28,6 +29,7 @@ const conversations: Message[][] = [
     { id: 3, sender: 'bob', text: "Really? How does it work then? 🧐", delay: 3000 },
     { id: 4, sender: 'alice', text: "Just send the address or rights to the Lockler address, and it handles everything securely", delay: 4500 },
     { id: 5, sender: 'bob', text: "That's so much easier! No complex contract interactions 🙌", delay: 6500 },
+    { id: 6, sender: 'alice', text: "Just set up a Lockler for us! Send me the link and I'll deposit the funds when ready 💯", delay: 8000 },
   ],
   
   // Conversation 3: Subjective conditions
@@ -37,6 +39,7 @@ const conversations: Message[][] = [
     { id: 3, sender: 'alice', text: "What's that? 🤔", delay: 3000 },
     { id: 4, sender: 'bob', text: "It's a decentralized court system. If we disagree, neutral jurors decide based on our agreement", delay: 4500 },
     { id: 5, sender: 'alice', text: "So it can handle subjective conditions? That's amazing! Let's use Lockler for this project 🎉", delay: 6500 },
+    { id: 6, sender: 'bob', text: "Done! Made a Lockler with our terms just now. Take a look and send the funds when you're ready! 🔐", delay: 8000 },
   ]
 ];
 
@@ -66,7 +69,7 @@ export const ChatBubbles: React.FC = () => {
     // After conversation completes, wait and change to next conversation
     const conversationChangeTimeout = setTimeout(() => {
       setActiveConversation((prev) => (prev + 1) % conversations.length);
-    }, 12000); // Wait a bit after conversation ends before starting the next one
+    }, 14000); // Extended wait time to accommodate the new message
     
     // Cleanup timeouts on unmount or conversation change
     return () => {
