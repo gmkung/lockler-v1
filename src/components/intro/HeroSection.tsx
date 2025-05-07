@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/logo';
 import { Zap, Shield, Globe } from 'lucide-react';
+import { ChatBubbles } from './ChatBubbles';
 
 const iconVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -13,9 +14,12 @@ const iconVariants = {
 
 export const HeroSection = () => {
   return (
-    <div className="relative z-10 min-h-[90vh] flex flex-col items-center justify-center px-4 py-16">
+    <div className="relative z-10 min-h-[90vh] flex flex-col items-center justify-center px-4 py-16 overflow-hidden">
+      {/* Add ChatBubbles in the background */}
+      <ChatBubbles />
+      
       <motion.div
-        className="flex flex-col items-center text-center max-w-5xl"
+        className="flex flex-col items-center text-center max-w-5xl z-10"
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
