@@ -20,22 +20,22 @@ export const HeroSection = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
       >
-        <motion.div 
+        <motion.div
           className="mb-6"
-          animate={{ 
+          animate={{
             scale: [1, 1.05, 1],
-            rotate: [0, -2, 0, 2, 0] 
+            rotate: [0, -2, 0, 2, 0]
           }}
-          transition={{ 
-            duration: 8, 
-            repeat: Infinity, 
-            repeatType: "reverse" 
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            repeatType: "reverse"
           }}
         >
           <Logo className="h-20 w-20 text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.5)]" />
         </motion.div>
-        
-        <motion.h1 
+
+        <motion.h1
           className="text-5xl sm:text-7xl lg:text-8xl font-extrabold mb-6 tracking-tighter"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -45,57 +45,57 @@ export const HeroSection = () => {
             LOCKLER
           </span>
         </motion.h1>
-        
+
         <motion.div
           className="bg-gradient-to-r from-purple-400 via-pink-500 to-indigo-400 h-1 w-40 rounded-full mb-8"
           initial={{ width: 0, opacity: 0 }}
           animate={{ width: 160, opacity: 1 }}
           transition={{ delay: 0.6, duration: 1 }}
         />
-        
-        <motion.h2 
+
+        <motion.h2
           className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-100 to-white [text-shadow:0_0_15px_rgba(255,255,255,0.3)]"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.8 }}
         >
-          Secure, Conditional Fund Release
+          Single-purpose smart escrow addresses
         </motion.h2>
-        
-        <motion.p 
+
+        <motion.p
           className="text-lg sm:text-xl md:text-2xl text-purple-100/90 mb-10 max-w-3xl mx-auto font-light leading-relaxed"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.8 }}
         >
-          The next generation of decentralized escrow and conditional payments on the blockchain, powered by Gnosis Safe and Kleros Optimistic Oracle technology.
+          Next-gen decentralized escrow, powered by Safe and the Kleros Optimistic Oracle.
         </motion.p>
-        
-        <motion.div 
+
+        <motion.div
           className="flex flex-wrap justify-center gap-6 mb-12"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8, duration: 0.8 }}
         >
-          <Button 
-            asChild 
+          <Button
+            asChild
             size="lg"
             className="bg-gradient-to-r from-purple-700 to-pink-700 hover:from-purple-800 hover:to-pink-800 text-white text-xl px-10 py-7 transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(219,39,119,0.5)] hover:shadow-[0_0_30px_rgba(219,39,119,0.7)]"
           >
             <Link to="/setup">Create New Lockler</Link>
           </Button>
-          
-          <Button 
-            asChild 
-            variant="outline" 
+
+          <Button
+            asChild
+            variant="outline"
             size="lg"
             className="border-2 border-indigo-500/70 bg-indigo-900/40 text-white hover:bg-indigo-800/50 hover:text-white text-xl px-10 py-7 transition-all duration-300 hover:scale-105 backdrop-blur-sm hover:border-indigo-400 shadow-[0_0_10px_rgba(99,102,241,0.4)] hover:shadow-[0_0_20px_rgba(99,102,241,0.6)]"
           >
             <Link to="/myLocklers">View My Locklers</Link>
           </Button>
         </motion.div>
-        
-        <motion.div 
+
+        <motion.div
           className="flex flex-wrap justify-center gap-10 md:gap-16 mt-6"
           initial="hidden"
           animate="visible"
@@ -107,14 +107,14 @@ export const HeroSection = () => {
             </div>
             <span className="text-purple-200 font-medium">Secure by Design</span>
           </motion.div>
-          
+
           <motion.div className="flex flex-col items-center" variants={iconVariants}>
             <div className="bg-pink-900/50 p-4 rounded-full mb-3 border border-pink-400/30 shadow-[0_0_15px_rgba(236,72,153,0.3)]">
               <Zap className="h-8 w-8 text-pink-300" />
             </div>
             <span className="text-pink-200 font-medium">Conditional Release</span>
           </motion.div>
-          
+
           <motion.div className="flex flex-col items-center" variants={iconVariants}>
             <div className="bg-indigo-900/50 p-4 rounded-full mb-3 border border-indigo-400/30 shadow-[0_0_15px_rgba(129,140,248,0.3)]">
               <Globe className="h-8 w-8 text-indigo-300" />
@@ -123,15 +123,15 @@ export const HeroSection = () => {
           </motion.div>
         </motion.div>
       </motion.div>
-      
-      <motion.div 
+
+      <motion.div
         className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 2, duration: 1 }}
       >
         <div className="text-purple-300/70 text-sm mb-2">Scroll to discover</div>
-        <motion.div 
+        <motion.div
           className="w-1 h-8 bg-gradient-to-b from-purple-500 to-transparent rounded-full"
           animate={{ height: [16, 32, 16] }}
           transition={{ duration: 1.5, repeat: Infinity }}
