@@ -1,4 +1,3 @@
-
 import { useAccount, useChainId } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { getChainConfig } from "@/lib/constants";
@@ -32,7 +31,11 @@ const fetchLocklers = async (
     body: JSON.stringify({
       query: `
         {
-          locklers(where:{owners_contains:["${address.toLowerCase()}"]}) {
+          locklers(
+            where: { owners_contains: ["${address.toLowerCase()}"] }
+            orderBy: createdAt
+            orderDirection: desc
+          ) {
             id
             owners
             safe {

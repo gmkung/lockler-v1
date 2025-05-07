@@ -399,6 +399,9 @@ export function TransactionList({ questions, transactionDetails, transactionStat
                   </div>
                   {getStatusBadge(question.phase)}
                   {question.phase !== "FINALIZED" && <TimeRemaining question={question} />}
+                  <div className="text-xs text-gray-400">
+                    Created: {new Date(question.createdTimestamp * 1000).toLocaleString()}
+                  </div>
                 </div>
                 <a
                   href={`https://reality.eth.limo/app/#!/network/${chainId}/question/${moduleAddress}-${question.id}`}
