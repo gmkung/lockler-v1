@@ -48,14 +48,6 @@ export default function Intro() {
             <a href="#how-it-works" className="text-purple-200 hover:text-white transition-colors">How It Works</a>
             <Link to="/myLocklers" className="text-purple-200 hover:text-white transition-colors">My Locklers</Link>
           </nav>
-          
-          <Button 
-            asChild 
-            variant="outline" 
-            className="hidden md:flex border-purple-400 text-purple-200 hover:bg-purple-900/30"
-          >
-            <Link to="/setup">Get Started</Link>
-          </Button>
         </div>
       </header>
 
