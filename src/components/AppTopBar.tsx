@@ -1,3 +1,4 @@
+
 import { useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/ui/logo";
 import { useAccount, useChainId } from "wagmi";
@@ -8,6 +9,7 @@ import { AddressDisplay } from "./ui/AddressDisplay";
 import { WalletConnect } from "./ui/WalletConnect";
 import { NavigationMenu } from "./ui/NavigationMenu";
 import { SecurityChecksBadge } from "./ui/SecurityChecksBadge";
+import { Link } from "react-router-dom";
 
 
 interface AppTopBarProps {
@@ -53,15 +55,14 @@ export function AppTopBar({
     <nav className="bg-[#242132] border-b border-gray-800 mb-6 px-4 py-3 shadow-lg">
       <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
         {/* Left section: Logo + Title */}
-        <div className="flex items-center gap-3">
+        <Link to="/" className="flex items-center gap-3">
           <Logo className="h-14 w-14 text-pink-400" />
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               {"Lockler"}
             </h1>
-
           </div>
-        </div>
+        </Link>
 
         {/* Center section: Navigation */}
         <NavigationMenu items={navItems} />

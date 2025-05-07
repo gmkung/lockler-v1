@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Logo } from "../ui/logo";
 import { Button } from "../ui/button";
@@ -5,6 +6,7 @@ import { ExternalLink, CheckCircle2, Info, Copy as CopyIcon } from "lucide-react
 import { CHAIN_CONFIG, getBlockExplorer } from "../../lib/constants";
 import { SecurityChecksModal } from "./SecurityChecksModal";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 
 
 interface TopBarProps {
@@ -60,7 +62,9 @@ export function TopBar({
     <div className="w-full rounded-2xl bg-[#242132] border border-gray-800 p-3 px-4 flex flex-col md:flex-row items-center justify-between gap-2 shadow-lg mb-3">
       {/* Left Section: Logo + Title */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        <Logo className="h-7 w-7 text-pink-400 shrink-0" />
+        <Link to="/">
+          <Logo className="h-7 w-7 text-pink-400 shrink-0" />
+        </Link>
         <div className="text-xl font-semibold text-white">{pageTitle}</div>
       </div>
       {/* Right Section: Wallet/Connect button, Setup New */}

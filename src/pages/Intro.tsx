@@ -38,10 +38,10 @@ export default function Intro() {
       {/* Header - Minimalist for landing page */}
       <header className="relative z-10 py-6 px-6">
         <div className="container mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3">
             <Logo className="h-10 w-10 text-pink-400" />
             <h1 className="text-2xl font-bold text-white">Lockler</h1>
-          </div>
+          </Link>
           
           <nav className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-purple-200 hover:text-white transition-colors">Features</a>
