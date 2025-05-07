@@ -127,12 +127,12 @@ function TransactionStatus({
 }) {
   const { toast } = useToast();
   const [now, setNow] = useState(Math.floor(Date.now() / 1000));
-  
+
   useEffect(() => {
     const intervalId = setInterval(() => {
       setNow(Math.floor(Date.now() / 1000));
     }, 1000);
-    
+
     return () => clearInterval(intervalId);
   }, []);
 
@@ -226,19 +226,9 @@ function TransactionStatus({
     );
   }
 
-  // If still in cooldown
-  if (now < cooldownEndTs) {
-    const timeRemaining = cooldownEndTs - now;
-    return (
-      <div className="text-purple-400/70 text-sm">
-        In cooldown: {formatTime(timeRemaining)} remaining
-      </div>
-    );
-  }
-
   // Only show the Execute button when transaction is finalized, approved, passed cooldown, 
   // not expired, and is executable according to status
-  if (status?.canExecute) {
+  if (now > cooldownEndTs && status?.canExecute) {
     return (
       <Button
         onClick={handleExecute}
@@ -273,10 +263,10 @@ function TimeRemaining({ question }: { question: Question }) {
   }
 
   const finalizableTs = typeof question.currentScheduledFinalizationTimestamp === 'number'
-                        ? question.currentScheduledFinalizationTimestamp
-                        : (typeof question.currentScheduledFinalizationTimestamp === 'string'
-                           ? parseInt(question.currentScheduledFinalizationTimestamp, 10)
-                           : 0);
+    ? question.currentScheduledFinalizationTimestamp
+    : (typeof question.currentScheduledFinalizationTimestamp === 'string'
+      ? parseInt(question.currentScheduledFinalizationTimestamp, 10)
+      : 0);
 
   if (!question.currentAnswer || !finalizableTs || finalizableTs <= 0) {
     return null;
@@ -312,7 +302,7 @@ function formatTime(timeInSeconds: number): string {
   if (hours > 0) timeStr += `${hours}h `;
   if (minutes > 0) timeStr += `${minutes}m `;
   if (days === 0 && hours === 0 && minutes === 0 && seconds > 0) timeStr += `${seconds}s`;
-  else if (timeStr !== '' && seconds === 0) {}
+  else if (timeStr !== '' && seconds === 0) { }
   else if (timeStr !== '') timeStr += `${seconds}s`;
 
   return timeStr.trim();
@@ -347,11 +337,11 @@ const ExecutionCountdown = ({ question, cooldown, expiration }: ExecutionCountdo
   if (!isFinalized) {
     return null; // Handled by TimeRemaining component
   }
-  
+
   if (!isApproved) {
     return <div className="text-sm text-red-400">Rejected</div>;
   }
-  
+
   if (!finalizedTs || finalizedTs <= 0 || cooldown === null || expiration === null) {
     return <div className="text-sm text-gray-400">Awaiting data...</div>;
   }
@@ -425,7 +415,7 @@ export function TransactionList({ questions, transactionDetails, transactionStat
                   <span className="text-sm text-purple-200">Answer:</span>
                   <span className={`font-medium ${!question.currentAnswer ? "text-purple-200" :
                     question.currentAnswer === "0x0000000000000000000000000000000000000000000000000000000000000001" ? "text-green-400" : "text-red-400"
-                  }`}>
+                    }`}>
                     {!question.currentAnswer ? "Pending" :
                       question.currentAnswer === "0x0000000000000000000000000000000000000000000000000000000000000001" ? "Approved" : "Rejected"}
                   </span>
