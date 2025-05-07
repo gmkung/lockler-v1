@@ -11,12 +11,11 @@ export function Footer() {
           © {currentYear} Lockler. All rights reserved.
         </div>
         <div className="flex space-x-4 text-xs">
-          <Link to="/privacy" className="hover:text-purple-300 transition">Privacy Policy</Link>
           <Link to="/terms" className="hover:text-purple-300 transition">Terms of Service</Link>
-          <a 
-            href="https://github.com/lockler" 
-            target="_blank" 
-            rel="noopener noreferrer" 
+          <a
+            href="https://github.com/gmkung/lockler-v1.git"
+            target="_blank"
+            rel="noopener noreferrer"
             className="hover:text-purple-300 transition"
           >
             GitHub

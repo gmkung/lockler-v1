@@ -320,13 +320,12 @@ export default function Release() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="min-h-screen bg-gradient-to-br from-[#23213A] to-[#2D274B] py-6 px-4 flex flex-col justify-between">
+      <div className="min-h-screen bg-gradient-to-br from-[#23213A] to-[#2D274B] flex flex-col justify-between">
+        <AppTopBar
+          chainId={chainId}
+          pageTitle="Lockler Control"
+        />
         <div className="container mx-auto max-w-7xl flex-grow">
-          <AppTopBar
-            chainId={chainId}
-            pageTitle="Lockler Control"
-          />
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div>
               {safeAddress && chainId && moduleAddress && (

@@ -6,10 +6,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Setup from "./pages/Setup";
 import Release from './pages/Release';
+import Terms from './pages/Terms';
+
 import SelectSafe from './pages/SelectSafe';
 import MyLocklers from './pages/MyLocklers'; // Import the new page
 import { WagmiProvider, createConfig, http } from 'wagmi';
@@ -58,6 +59,7 @@ const App = () => (
             <Route path="/setup" element={<Setup />} />
             <Route path="/release" element={<SelectSafe />} />
             <Route path="/release/:chainId/:address" element={<Release />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="/myLocklers" element={<MyLocklers />} /> {/* Add the new route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
