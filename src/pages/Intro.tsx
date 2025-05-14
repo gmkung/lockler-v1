@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ export default function Intro() {
             <a href="#features" className="text-purple-200 hover:text-white transition-colors">Features</a>
             <a href="#how-it-works" className="text-purple-200 hover:text-white transition-colors">How It Works</a>
             <Link to="/myLocklers" className="text-purple-200 hover:text-white transition-colors">My Locklers</Link>
+            <Link to="/about" className="text-purple-200 hover:text-white transition-colors">About</Link>
           </nav>
         </div>
       </header>

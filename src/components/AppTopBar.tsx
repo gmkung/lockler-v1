@@ -45,10 +45,11 @@ export function AppTopBar({
   const [checksOpen, setChecksOpen] = useState(false);
   const blockExplorer = chainId ? getBlockExplorer(chainId) : null;
 
-  // Navigation items
+  // Navigation items - Add About page to the navigation
   const navItems = [
     { path: "/setup", label: "Create Lockler" },
-    { path: "/myLocklers", label: "My Locklers" }
+    { path: "/myLocklers", label: "My Locklers" },
+    { path: "/about", label: "About" } // Add the About link
   ];
 
   return (
