@@ -7,7 +7,7 @@ import { Spotlight } from '@/components/ui/spotlight';
 import { InteractiveSpotlight } from '@/components/ui/interactive-spotlight';
 import { AppTopBar } from '@/components/AppTopBar';
 import { Footer } from '@/components/ui/footer';
-import { Lock, Icosahedron } from 'lucide-react';
+import { Lock, Hexagon } from 'lucide-react';
 
 export default function About() {
   return (
@@ -101,7 +101,7 @@ export default function About() {
           <Card className="bg-purple-900/20 border-purple-500/30 hover:border-purple-500/60 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-purple-300">
-                <Icosahedron className="h-5 w-5" />
+                <Hexagon className="h-5 w-5" />
                 Decentralized Control
               </CardTitle>
             </CardHeader>
@@ -140,7 +140,7 @@ export default function About() {
           <Card className="bg-indigo-900/20 border-indigo-500/30">
             <CardHeader>
               <CardTitle className="text-2xl text-center text-indigo-300 flex items-center justify-center gap-2">
-                <Icosahedron className="h-6 w-6" />
+                <Hexagon className="h-6 w-6" />
                 Advanced Technology
               </CardTitle>
               <CardDescription className="text-center text-indigo-200/70">
