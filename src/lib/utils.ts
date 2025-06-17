@@ -1,4 +1,3 @@
-
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { BrowserProvider, ethers } from 'ethers';
@@ -164,4 +163,9 @@ export function parseErrorMessage(error: any): string {
 
     // More generic fallback
     return "Transaction failed. Please check console for details."; 
+}
+
+export function parseQuestionData(data: string): { proposalId: string; txHashesHash: string } {
+  const [proposalId, txHashesHash] = data.split('␟');
+  return { proposalId, txHashesHash };
 }

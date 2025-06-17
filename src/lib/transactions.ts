@@ -1,6 +1,7 @@
 import { BrowserProvider, Contract, keccak256, toUtf8Bytes } from 'ethers';
 import { Question } from 'reality-kleros-subgraph';
 import { CHAIN_CONFIG } from './constants';
+import { parseQuestionData } from './utils';
 
 interface ProposalTransaction {
   to: string;
@@ -101,9 +102,4 @@ export async function handleExecuteTransaction(
     // Make sure to propagate the error to be handled by the caller
     throw err;
   }
-}
-
-function parseQuestionData(data: string): { proposalId: string; txHashesHash: string } {
-  const [proposalId, txHashesHash] = data.split('␟');
-  return { proposalId, txHashesHash };
 } 

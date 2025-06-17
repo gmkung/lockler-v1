@@ -186,7 +186,6 @@ export function useTransactionStatus(
     setTransactionStatuses,
   };
 }
-
 function parseQuestionData(data: string): {
   proposalId: string;
   txHashesHash: string;
@@ -194,3 +193,4 @@ function parseQuestionData(data: string): {
   const [proposalId, txHashesHash] = data.split("␟");
   return { proposalId, txHashesHash };
 }
+
