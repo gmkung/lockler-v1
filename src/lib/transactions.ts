@@ -84,7 +84,6 @@ export async function handleExecuteTransaction(
     console.log('DEBUG txHashes:', txHashes);
     console.log('DEBUG transactions:', transactions);
     const questionString = await realityModule.buildQuestion(proposalId, txHashes);
-    console.log ('DEBUG questionString:',questionString);
     const questionHash = keccak256(toUtf8Bytes(questionString));
     console.log('DEBUG questionHash:', questionHash);
     const newStatuses = await Promise.all(txHashes.map(async (txHash, index) => {

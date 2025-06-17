@@ -202,13 +202,22 @@ export function ModuleAddressCard({
                     <div className="flex items-center justify-between">
                         <span className="text-gray-400 text-xs">Safe address:</span>
                         <div className="flex items-center gap-1.5 ml-2 max-w-[calc(100%-120px)]">
-                            <div
-                                onClick={() => safeAddress && handleCopy(safeAddress, "safe")}
-                                className="text-sm font-mono text-gray-100 hover:text-white transition-colors truncate cursor-pointer"
-                                title={safeAddress || "--"}
-                            >
-                                {safeAddress || "--"}
-                            </div>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div
+                                    onClick={() => safeAddress && handleCopy(safeAddress, "safe")}
+                                    className="text-xs font-mono text-gray-100 hover:text-white transition-colors truncate cursor-pointer"
+                                    title={safeAddress || "--"}
+                                  >
+                                    {safeAddress || "--"}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[200px] px-2 py-1 text-xs">
+                                  <p className="text-xs">This is the address you should send funds to.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                             <div className="flex-shrink-0 flex gap-1">
                                 <button
                                     onClick={() => safeAddress && handleCopy(safeAddress, "safe")}
@@ -239,13 +248,22 @@ export function ModuleAddressCard({
                     <div className="flex items-center justify-between">
                         <span className="text-gray-400 text-xs">Reality module address:</span>
                         <div className="flex items-center gap-1.5 ml-2 max-w-[calc(100%-120px)]">
-                            <div
-                                onClick={() => moduleAddress && handleCopy(moduleAddress, "module")}
-                                className="text-sm font-mono text-gray-100 hover:text-white transition-colors truncate cursor-pointer"
-                                title={moduleAddress || "--"}
-                            >
-                                {moduleAddress || "--"}
-                            </div>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div
+                                    onClick={() => moduleAddress && handleCopy(moduleAddress, "module")}
+                                    className="text-xs font-mono text-gray-100 hover:text-white transition-colors truncate cursor-pointer"
+                                    title={moduleAddress || "--"}
+                                  >
+                                    {moduleAddress || "--"}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[200px] px-2 py-1 text-xs">
+                                  <p className="text-xs">Do NOT send funds to this address.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                             <div className="flex-shrink-0 flex gap-1">
                                 <button
                                     onClick={() => moduleAddress && handleCopy(moduleAddress, "module")}
