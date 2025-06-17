@@ -20,8 +20,9 @@ export function ModeSelection({ escrowMode, setEscrowMode }: ModeSelectionProps)
           Transfer Lockler
         </div>
         <div className={`text-xs text-center w-full break-words ${escrowMode === 'p2p' ? "text-purple-100" : "text-purple-300/90"}`}>
-          For P2P escrowed transactions where refunds or withdrawals are governed by the terms below.
-          Possible to update contract terms if there is mutual agreement.
+          For P2P escrowed transactions where refunds or withdrawals are governed by the terms below.<br />
+          Transfers and update to contract terms can occur without deposits if both the payer and payee agree.<br />
+          Others can propose withdrawal by posting a deposit. 
         </div>
       </button>
       <button
@@ -38,8 +39,10 @@ export function ModeSelection({ escrowMode, setEscrowMode }: ModeSelectionProps)
           Grant Lockler
         </div>
         <div className={`text-xs text-center w-full break-words ${escrowMode === 'grant' ? "text-pink-50" : "text-pink-100/80"}`}>
-          For truly decentralized grant/bounty payouts.<br></br>
-          Anyone can withdraw from it if they can prove they are acting in line with the terms below.
+          Anyone can withdraw fund if they meet the grant terms.<br />
+          Once created, only the Lockler's automated process can update its terms.<br />
+          Any withdrawal or contract update requires posting a deposit.<br />
+          For truly decentralized grant/bounty payouts.
         </div>
       </button>
     </div>
