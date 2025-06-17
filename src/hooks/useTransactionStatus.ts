@@ -14,7 +14,7 @@ function normalizeIpfsPath(proposalId: string): string {
   const justCid = withoutPrefix.split('/')[0];
   
   // Return normalized format
-  return `/ipfs/${justCid}/item.json`;
+  return `/ipfs/${justCid}`;
 }
 
 export function useTransactionStatus(

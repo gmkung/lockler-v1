@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { getAvailableTokens as getAvailableTokensUtil, getTokenInfo, getInputStep } from '../lib/currency';
+import React, { useState, useEffect } from "react";
 
 interface ContractTermsFormProps {
   contractTerms: EscrowContractTerms;
@@ -38,13 +39,50 @@ export function ContractTermsForm({ contractTerms, setContractTerms, escrowMode,
   const getAvailableTokens = () => getAvailableTokensUtil(chainId);
   const getNativeCurrencySymbol = () => getTokenInfo(TOKENS.NATIVE.address, chainId).symbol;
 
-  const convertDaysToSeconds = (days: number) => Math.floor(days * SECONDS_IN_DAY);
-  const convertSecondsToDays = (seconds: number) => Math.max(1, Math.floor(seconds / SECONDS_IN_DAY));
+  const convertDaysToSeconds = (days: number) => days * SECONDS_IN_DAY;
+  const convertSecondsToDays = (seconds: number) => seconds / SECONDS_IN_DAY;
 
-  const updateDurationParam = (field: 'timeout' | 'cooldown' | 'expiration', daysValue: string) => {
-    const days = parseFloat(daysValue);
-    const seconds = !isNaN(days) ? convertDaysToSeconds(days) : 0;
-    setContractTerms({ ...contractTerms, [field]: seconds });
+  // Single state object for all duration inputs
+  const [inputs, setInputs] = useState({
+    timeout: "",
+    cooldown: "",
+    expiration: ""
+  });
+
+  // Sync local input state with contractTerms on mount and when contractTerms change externally
+  useEffect(() => {
+    setInputs({
+      timeout:
+        contractTerms.timeout !== undefined && contractTerms.timeout !== null
+          ? convertSecondsToDays(contractTerms.timeout).toString()
+          : "",
+      cooldown:
+        contractTerms.cooldown !== undefined && contractTerms.cooldown !== null
+          ? convertSecondsToDays(contractTerms.cooldown).toString()
+          : "",
+      expiration:
+        contractTerms.expiration !== undefined && contractTerms.expiration !== null
+          ? convertSecondsToDays(contractTerms.expiration).toString()
+          : ""
+    });
+  }, [contractTerms.timeout, contractTerms.cooldown, contractTerms.expiration]);
+
+  // Generic handlers
+  const handleInputChange = (field: 'timeout' | 'cooldown' | 'expiration') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputs({ ...inputs, [field]: e.target.value });
+    const days = parseFloat(e.target.value);
+    if (!isNaN(days)) {
+      setContractTerms({ ...contractTerms, [field]: convertDaysToSeconds(days) });
+    }
+  };
+
+  const handleInputBlur = (field: 'timeout' | 'cooldown' | 'expiration') => (e: React.FocusEvent<HTMLInputElement>) => {
+    const days = parseFloat(e.target.value);
+    if (!isNaN(days)) {
+      const rounded = Math.floor(days * 10000) / 10000;
+      setInputs({ ...inputs, [field]: rounded.toString() });
+      setContractTerms({ ...contractTerms, [field]: convertDaysToSeconds(rounded) });
+    }
   };
 
   const handleDownloadJson = () => {
@@ -136,12 +174,13 @@ Describe under what conditions funds should be released.`;
               <Input
                 id="timeout"
                 type="number"
-                value={contractTerms.timeout ? convertSecondsToDays(contractTerms.timeout) : "0"}
-                onChange={(e) => updateDurationParam('timeout', e.target.value)}
+                value={inputs.timeout}
+                onChange={handleInputChange("timeout")}
+                onBlur={handleInputBlur("timeout")}
                 className={inputClass + " text-xs"}
                 placeholder="1"
                 min="0"
-                step="1"
+                step="0.0001"
               />
             </div>
             <div>
@@ -161,12 +200,13 @@ Describe under what conditions funds should be released.`;
               <Input
                 id="cooldown"
                 type="number"
-                value={contractTerms.cooldown ? convertSecondsToDays(contractTerms.cooldown) : "0"}
-                onChange={(e) => updateDurationParam('cooldown', e.target.value)}
+                value={inputs.cooldown}
+                onChange={handleInputChange("cooldown")}
+                onBlur={handleInputBlur("cooldown")}
                 className={inputClass + " text-xs"}
                 placeholder="1"
                 min="0"
-                step="1"
+                step="0.0001"
               />
             </div>
             <div>
@@ -186,12 +226,13 @@ Describe under what conditions funds should be released.`;
               <Input
                 id="expiration"
                 type="number"
-                value={contractTerms.expiration ? convertSecondsToDays(contractTerms.expiration) : "0"}
-                onChange={(e) => updateDurationParam('expiration', e.target.value)}
+                value={inputs.expiration}
+                onChange={handleInputChange("expiration")}
+                onBlur={handleInputBlur("expiration")}
                 className={inputClass + " text-xs"}
                 placeholder="7"
                 min="0"
-                step="1"
+                step="0.0001"
               />
             </div>
           </div>

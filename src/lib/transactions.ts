@@ -1,5 +1,4 @@
-
-import { BrowserProvider, Contract, keccak256 } from 'ethers';
+import { BrowserProvider, Contract, keccak256, toUtf8Bytes } from 'ethers';
 import { Question } from 'reality-kleros-subgraph';
 import { CHAIN_CONFIG } from './constants';
 
@@ -54,6 +53,7 @@ export async function handleExecuteTransaction(
     const realityModule = new Contract(moduleAddress, REALITY_MODULE_ABI, signer);
 
     const { proposalId } = parseQuestionData(question.data);
+    console.log("DEBUG proposalId:", proposalId)
     const transactions = transactionDetails[question.id];
 
     // Calculate all transaction hashes
@@ -80,7 +80,13 @@ export async function handleExecuteTransaction(
     await tx.wait();
 
     // Update status after execution
-    const questionHash = keccak256(await realityModule.buildQuestion(proposalId, txHashes));
+    console.log('DEBUG proposalId:', proposalId);
+    console.log('DEBUG txHashes:', txHashes);
+    console.log('DEBUG transactions:', transactions);
+    const questionString = await realityModule.buildQuestion(proposalId, txHashes);
+    console.log ('DEBUG questionString:',questionString);
+    const questionHash = keccak256(toUtf8Bytes(questionString));
+    console.log('DEBUG questionHash:', questionHash);
     const newStatuses = await Promise.all(txHashes.map(async (txHash, index) => {
       const isExecuted = await realityModule.executedProposalTransactions(questionHash, txHash);
       const canExecute = question.currentAnswer === "1" &&

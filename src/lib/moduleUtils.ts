@@ -13,7 +13,9 @@ export const encodeSetupParams = (params: SetupParams): string => {
         ],
         [
             params.owner, params.avatar, params.target, params.oracle,
-            params.timeout, params.cooldown, params.expiration,
+            Math.floor(params.timeout),
+            Math.floor(params.cooldown),
+            Math.floor(params.expiration),
             params.bond, params.templateId, params.arbitrator
         ]
     );
