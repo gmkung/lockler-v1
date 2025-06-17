@@ -206,7 +206,7 @@ export function ProposeTransactionModal({
         } catch (error: any) {
             console.error('Failed to propose transactions:', error);
             // Use the parsing function here before alerting
-            alert(parseErrorMessage(error)); 
+            alert(parseErrorMessage(error));
         } finally {
             setIsSubmitting(false);
         }
@@ -297,14 +297,14 @@ export function ProposeTransactionModal({
                     <DialogTitle className="text-white">Create Proposal with transactions</DialogTitle>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-y-auto px-4 py-4"> 
+                <div className="flex-1 overflow-y-auto px-4 py-4">
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                        
+
                         <div className="lg:col-span-3 space-y-6">
                             <div className="space-y-4">
                                 <Label className="text-gray-300">Transaction Type</Label>
-                                <Select 
-                                    value={currentType} 
+                                <Select
+                                    value={currentType}
                                     onValueChange={(value: TransactionType) => {
                                         setCurrentType(value);
                                         setIsCurrentFormDirty(false);
@@ -342,8 +342,8 @@ export function ProposeTransactionModal({
                                         id="justification-description"
                                         value={currentJustification.description}
                                         onChange={(e) => {
-                                             setCurrentJustification(prev => ({ ...prev, description: e.target.value }));
-                                             if (currentJustification.title) setIsCurrentFormDirty(true);
+                                            setCurrentJustification(prev => ({ ...prev, description: e.target.value }));
+                                            if (currentJustification.title) setIsCurrentFormDirty(true);
                                         }}
                                         placeholder="Detailed explanation (Markdown ok). Include links, lists, etc."
                                         className="w-full min-h-[100px] px-3 py-2 rounded-md border border-gray-700/50 bg-gray-800/50 text-sm text-white placeholder:text-gray-500 ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -358,7 +358,7 @@ export function ProposeTransactionModal({
                                         <Label className="text-gray-300">Recipient Address</Label>
                                         <Input
                                             value={currentTo}
-                                            onChange={(e) => {setCurrentTo(e.target.value); setIsCurrentFormDirty(true);}}
+                                            onChange={(e) => { setCurrentTo(e.target.value); setIsCurrentFormDirty(true); }}
                                             placeholder="0x..."
                                             className="bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-500"
                                         />
@@ -368,7 +368,7 @@ export function ProposeTransactionModal({
                                         <Input
                                             type="number"
                                             value={currentValue}
-                                            onChange={(e) => {setCurrentValue(e.target.value); setIsCurrentFormDirty(true);}}
+                                            onChange={(e) => { setCurrentValue(e.target.value); setIsCurrentFormDirty(true); }}
                                             placeholder="0.0"
                                             step={getInputStep(TOKENS.NATIVE.address, chainId)}
                                             className="bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-500"
@@ -386,10 +386,10 @@ export function ProposeTransactionModal({
 
                             {currentType === 'erc20' && (
                                 <div className="space-y-4 p-4 border border-gray-700/50 rounded-lg bg-gray-800/30">
-                                     <h4 className="text-sm font-medium text-gray-400 mb-3">ERC20 Transfer Details</h4>
+                                    <h4 className="text-sm font-medium text-gray-400 mb-3">ERC20 Transfer Details</h4>
                                     <div>
                                         <Label className="text-gray-300">Token</Label>
-                                        <Select value={currentToken} onValueChange={(value) => {setCurrentToken(value); setIsCurrentFormDirty(true);}}>
+                                        <Select value={currentToken} onValueChange={(value) => { setCurrentToken(value); setIsCurrentFormDirty(true); }}>
                                             <SelectTrigger className="bg-gray-700/50 border-gray-600/50 text-white">
                                                 <SelectValue placeholder="Select token" />
                                             </SelectTrigger>
@@ -398,7 +398,7 @@ export function ProposeTransactionModal({
                                                     <SelectItem key={token.address} value={token.address} className="hover:bg-gray-700 focus:bg-gray-700">
                                                         <div className="flex flex-col">
                                                             <span>{token.symbol}</span>
-                                                            <span className="text-xs text-gray-400">{token.address.slice(0,6)}...{token.address.slice(-4)}</span>
+                                                            <span className="text-xs text-gray-400">{token.address.slice(0, 6)}...{token.address.slice(-4)}</span>
                                                         </div>
                                                     </SelectItem>
                                                 ))}
@@ -409,7 +409,7 @@ export function ProposeTransactionModal({
                                         <Label className="text-gray-300">Recipient Address</Label>
                                         <Input
                                             value={currentRecipient}
-                                            onChange={(e) => {setCurrentRecipient(e.target.value); setIsCurrentFormDirty(true);}}
+                                            onChange={(e) => { setCurrentRecipient(e.target.value); setIsCurrentFormDirty(true); }}
                                             placeholder="0x..."
                                             className="bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-500"
                                         />
@@ -419,7 +419,7 @@ export function ProposeTransactionModal({
                                         <Input
                                             type="number"
                                             value={currentValue}
-                                            onChange={(e) => {setCurrentValue(e.target.value); setIsCurrentFormDirty(true);}}
+                                            onChange={(e) => { setCurrentValue(e.target.value); setIsCurrentFormDirty(true); }}
                                             placeholder="0.0"
                                             step={getInputStep(currentToken, chainId)}
                                             className="bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-500"
@@ -436,22 +436,22 @@ export function ProposeTransactionModal({
                             )}
 
                             {currentType === 'erc721' && (
-                                 <div className="space-y-4 p-4 border border-gray-700/50 rounded-lg bg-gray-800/30">
+                                <div className="space-y-4 p-4 border border-gray-700/50 rounded-lg bg-gray-800/30">
                                     <h4 className="text-sm font-medium text-gray-400 mb-3">ERC721 Transfer Details</h4>
                                     <div>
                                         <Label className="text-gray-300">NFT Contract Address</Label>
                                         <Input
                                             value={currentTo}
-                                            onChange={(e) => {setCurrentTo(e.target.value); setIsCurrentFormDirty(true);}}
+                                            onChange={(e) => { setCurrentTo(e.target.value); setIsCurrentFormDirty(true); }}
                                             placeholder="0x..."
-                                             className="bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-500"
+                                            className="bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-500"
                                         />
                                     </div>
                                     <div>
                                         <Label className="text-gray-300">Recipient Address</Label>
                                         <Input
                                             value={currentRecipient}
-                                            onChange={(e) => {setCurrentRecipient(e.target.value); setIsCurrentFormDirty(true);}}
+                                            onChange={(e) => { setCurrentRecipient(e.target.value); setIsCurrentFormDirty(true); }}
                                             placeholder="0x..."
                                             className="bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-500"
                                         />
@@ -461,7 +461,7 @@ export function ProposeTransactionModal({
                                         <Input
                                             type="number"
                                             value={currentValue}
-                                            onChange={(e) => {setCurrentValue(e.target.value); setIsCurrentFormDirty(true);}}
+                                            onChange={(e) => { setCurrentValue(e.target.value); setIsCurrentFormDirty(true); }}
                                             placeholder="Token ID"
                                             min="0"
                                             step="1"
@@ -479,13 +479,13 @@ export function ProposeTransactionModal({
                             )}
 
                             {currentType === 'custom' && (
-                                 <div className="space-y-4 p-4 border border-gray-700/50 rounded-lg bg-gray-800/30">
-                                     <h4 className="text-sm font-medium text-gray-400 mb-3">Custom Transaction Details</h4>
+                                <div className="space-y-4 p-4 border border-gray-700/50 rounded-lg bg-gray-800/30">
+                                    <h4 className="text-sm font-medium text-gray-400 mb-3">Custom Transaction Details</h4>
                                     <div>
                                         <Label className="text-gray-300">Target Contract Address</Label>
                                         <Input
                                             value={currentTo}
-                                            onChange={(e) => {setCurrentTo(e.target.value); setIsCurrentFormDirty(true);}}
+                                            onChange={(e) => { setCurrentTo(e.target.value); setIsCurrentFormDirty(true); }}
                                             placeholder="0x..."
                                             className="bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-500"
                                         />
@@ -495,7 +495,7 @@ export function ProposeTransactionModal({
                                         <Input
                                             type="number"
                                             value={currentValue}
-                                            onChange={(e) => {setCurrentValue(e.target.value); setIsCurrentFormDirty(true);}}
+                                            onChange={(e) => { setCurrentValue(e.target.value); setIsCurrentFormDirty(true); }}
                                             placeholder="0.0 (Optional)"
                                             className="bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-500"
                                         />
@@ -504,9 +504,9 @@ export function ProposeTransactionModal({
                                         <Label>Call Data</Label>
                                         <Input
                                             value={currentData}
-                                            onChange={(e) => {setCurrentData(e.target.value); setIsCurrentFormDirty(true);}}
+                                            onChange={(e) => { setCurrentData(e.target.value); setIsCurrentFormDirty(true); }}
                                             placeholder="0x..."
-                                             className="bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-500"
+                                            className="bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-500"
                                         />
                                     </div>
                                     <Button
@@ -627,9 +627,9 @@ export function ProposeTransactionModal({
                                 Submitting Proposal...
                             </>
                         ) : (
-                            isLoadingBond ? 
-                            'Propose (Loading Bond...)' : 
-                            `Propose (${transactions.length} Tx${transactions.length === 1 ? '' : 's'} - Bond: ${formatAmount(minimumBond, TOKENS.NATIVE.address, chainId)})`
+                            isLoadingBond ?
+                                'Propose (Loading Bond...)' :
+                                `Propose (${transactions.length} Tx${transactions.length === 1 ? '' : 's'})`
                         )}
                     </Button>
                 </DialogFooter>
