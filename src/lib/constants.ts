@@ -29,7 +29,7 @@ export const CHAIN_CONFIG: Record<number, Chain> = {
       ddhAddress: "0x0961F418E0B6efaA073004989EF1B2fd1bc4a41c", //Verified
       safeMultisend: "0x40A2aCCbd92BCA938b02010E17A5b8929b49130D", //Verified
       defaultOracle: "0x5b7dD1E86623548AF054A4985F7fc8Ccbb554E2c", //Verified
-      defaultArbitrator: "0xf72CfD1B34a91A64f9A98537fe63FBaB7530AdcA", //Verified
+      defaultArbitrator: "0x1c2811550551d84030cd1b608e6fe3fd6fd5fc0d", //Updated 10/11/2025 to Blockchain court + 3 jurors
     },
   },
   [SUPPORTED_CHAINS.GNOSIS]: {
